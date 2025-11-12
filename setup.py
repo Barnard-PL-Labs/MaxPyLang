@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='MaxPy',
+    name='MaxPy-lang',
     version='0.1.0',
     author='Ranger Liu',
     author_email='ranger.liu@columbia.edu',
