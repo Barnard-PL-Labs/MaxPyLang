@@ -36,7 +36,7 @@ patch.save("hello_world.maxpat")
 
 ## Citation
 
-MaxPy was published as a [demo paper](MaxPy-NIME-2023-Paper.pdf) for NIME 2023.
+MaxPy was published as a [demo paper](examples/NIME2023/MaxPy-NIME-2023-Paper.pdf) for NIME 2023.
 The package name was updated to MaxPyLang in 2025 to avoid confusion with other similarly named packages.
 
 ## Video Demos 

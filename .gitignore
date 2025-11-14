@@ -11,3 +11,6 @@ __pycache__/
 # Virtual environments
 env/
 *.egg
+
+# macOS
+.DS_Store
