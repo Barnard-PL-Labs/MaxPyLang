@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.2"]
+requires = ["setuptools>=77.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,8 +7,12 @@ name = "maxpylang"
 version = "0.1.0"
 description = "Python API for making MaxMSP patches."
 readme = "README.md"
-requires-python = ">=3.8"
-license = {text = "MIT"}
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "MIT" 
 authors = [
     {name = "Ranger Liu", email = "ranger.liu@columbia.edu"}
 ]
@@ -26,3 +30,4 @@ packages = ["maxpylang"]
 
 [tool.setuptools.package-data]
 maxpylang = ["data/**/*"]
+
