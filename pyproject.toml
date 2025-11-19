@@ -14,7 +14,8 @@ classifiers = [
 ]
 license = "MIT" 
 authors = [
-    {name = "Ranger Liu", email = "ranger.liu@columbia.edu"}
+    {name = "Ranger Liu", email = "ranger.liu@columbia.edu"},
+    {name = "Mark Santolucito", email = "msantolu@barnard.edu"},
 ]
 dependencies = [
     "numpy>=1.22.0",
