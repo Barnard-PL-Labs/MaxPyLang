@@ -1,2 +1,5 @@
 include *.txt
 recursive-include docs *.txt
+recursive-include maxpylang/tools *
+recursive-include maxpylang/data *
+include README.md

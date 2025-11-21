@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "maxpylang"
-version = "0.1.0"
+version = "0.1.1"
 description = "Python API for making MaxMSP patches."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -27,8 +27,9 @@ dependencies = [
 Homepage = "http://pypi.python.org/pypi/MaxPyLang/"
 
 [tool.setuptools]
-packages = ["maxpylang"]
+include-package-data = true
 
-[tool.setuptools.package-data]
-maxpylang = ["data/**/*"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["maxpylang*"]
 
