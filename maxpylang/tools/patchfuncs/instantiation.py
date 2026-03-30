@@ -61,12 +61,18 @@ def load_file(self, f, reorder=True, verbose=True):
         print("Patcher: loading patch from existing file:", os.path.split(f)[-1])
 
     #read .maxpat or .amxd file into dict
-    if Path(f).suffix == ".amxd":
+    ext = Path(f).suffix
+    if ext == ".amxd":
         from ...amxd import load_amxd
         patch_dict = load_amxd(f)
-    else:
+    elif ext == ".maxpat":
         with open(f, 'r') as file:
             patch_dict = json.loads(file.read())
+    else:
+        raise ValueError(
+            f"Unsupported file extension '{ext}'. "
+            f"Expected '.maxpat' or '.amxd'."
+        )
 
 
     #load in objs
