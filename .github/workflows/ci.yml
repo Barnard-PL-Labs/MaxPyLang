@@ -26,17 +26,28 @@ jobs:
           python -m pip install --upgrade pip
           pip install "setuptools>=77.0.0" wheel
           pip install -e .
+          pip install pytest
 
-      - name: Run hello_world example
+      - name: Run examples
         run: |
-          cd examples/hello_world
-          python main.py
+          cd examples/hello_world && python main.py && cd ../..
+          cd examples/m4l_instrument && python main.py && cd ../..
+          cd examples/m4l_audio_effect && python main.py && cd ../..
+          cd examples/attributes && python main.py && cd ../..
+          cd examples/random_pitch_generator && python tester3.py && cd ../..
 
-      - name: Verify output file was created
+      - name: Verify output files were created
         run: |
           test -f examples/hello_world/hello_world.maxpat
-          echo "✓ hello_world.maxpat successfully created"
+          echo "hello_world.maxpat created"
+          test -f examples/m4l_instrument/m4l_instrument.amxd
+          echo "m4l_instrument.amxd created"
+          test -f examples/m4l_audio_effect/m4l_audio_effect.amxd
+          echo "m4l_audio_effect.amxd created"
+          test -f examples/attributes/attributes.maxpat
+          echo "attributes.maxpat created"
+          test -f examples/random_pitch_generator/tester3.maxpat
+          echo "random_pitch_generator/tester3.maxpat created"
 
-      - name: Display output file
-        run: |
-          cat examples/hello_world/hello_world.maxpat
+      - name: Run tests
+        run: python -m pytest tests/ -v
