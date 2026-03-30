@@ -3,7 +3,7 @@ tools.patchfuncs.saving
 
 Methods related to saving MaxPatches to files.
 
-    save() --> save MaxPatch to file
+    save() --> save MaxPatch to file (.maxpat or .amxd)
     get_json() --> get json representation of MaxPatch
 """
 
@@ -12,40 +12,63 @@ from pathlib import Path
 import copy
 
 #save patch to file
-def save(self, filename="default.maxpat", verbose=True, check=True):
+def save(self, filename="default.maxpat", device_type=None, verbose=True, check=True):
 
     """
-    Save to .maxpat file.
+    Save to .maxpat or .amxd file.
 
     Usage:
-    filename --> savefile name
+    filename --> savefile name (.maxpat or .amxd)
+    device_type --> for Max for Live .amxd files: "instrument", "audio_effect", or "midi_effect"
+                    required when saving as .amxd; when set, forces .amxd extension
     verbose --> print log message to console
     check --> run check_patch before saving
     """
 
-    #check proper extension
-    if ".maxpat" not in Path(filename).suffixes:
-        filename += ".maxpat"
+    ext = Path(filename).suffix
 
-    #get json rep
-    json_dict = self.get_json()
+    if ext == ".amxd" or device_type is not None:
+        # Max for Live save path
+        from ...amxd import save_amxd
 
-    #write json to file 
-    with open(filename, 'w') as f:
-        json.dump(json_dict, f, indent=2)
-        
+        if device_type is None:
+            raise ValueError(
+                "device_type is required for .amxd files. "
+                "Choose from: 'instrument', 'audio_effect', 'midi_effect'"
+            )
+
+        if ".amxd" not in Path(filename).suffixes:
+            # replace existing extension (e.g. .maxpat) with .amxd, or append .amxd if none
+            filename = str(Path(filename).with_suffix(".amxd"))
+
+        json_dict = self.get_json()
+        save_amxd(json_dict, filename, device_type=device_type)
+
+    else:
+        # Standard .maxpat save path
+        if ".maxpat" not in Path(filename).suffixes:
+            filename += ".maxpat"
+
+        json_dict = self.get_json()
+
+        with open(filename, 'w') as f:
+            json.dump(json_dict, f, indent=2)
+
     #save filepath for later saving
     self._filename = filename
-        
+
     #log unknown objs and unlinked js objs
     #(abstractions only get marked as abstractions if the file is found)
-    #also log linked abstractions and linked js files 
+    #also log linked abstractions and linked js files
     if check:
         self.check('unknown', 'js', 'abstractions')
-            
+
     #log messages
     if verbose:
-        print("maxpatch saved to", filename)
+        if device_type is not None:
+            print(f"maxpatch saved to {filename} (M4L {device_type})")
+        else:
+            print("maxpatch saved to", filename)
 
 
     return

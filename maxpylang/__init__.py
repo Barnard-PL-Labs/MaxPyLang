@@ -21,12 +21,13 @@ Core API
     patch.place(*objs, num_objs=1, spacing_type="grid", spacing=[80,80],
                 starting_pos=None, verbose=False) -> list[MaxObject]
     patch.connect(*connections, verbose=True)
-    patch.save(filename="default.maxpat", verbose=True, check=True)
+    patch.save(filename="default.maxpat", device_type=None, verbose=True, check=True)
     patch.set_position(new_x, new_y)
 
 - ``place()`` **always returns a list** — use ``[0]`` for a single object.
 - Each connection is ``[outlet, inlet]``: ``patch.connect([obj1.outs[0], obj2.ins[0]])``.
 - ``save()`` auto-appends ``.maxpat`` if missing.
+- For Max for Live devices: ``patch.save("device.amxd", device_type="instrument")``.
 
 Properties: ``patch.objs`` (dict), ``patch.num_objs`` (int), ``patch.curr_position`` (list).
 
@@ -185,6 +186,7 @@ from .maxobject import MaxObject
 from .maxpatch import MaxPatch
 from .importobjs import import_objs
 from .xlet import Inlet, Outlet
+from .amxd import save_amxd, load_amxd, DEVICE_TYPES
 
 try:
     from . import objects
