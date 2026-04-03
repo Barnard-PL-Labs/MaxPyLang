@@ -8,6 +8,7 @@ and online Cycling '74 documentation.
 import json
 import os
 import re
+import urllib.request
 
 from .constants import get_constant
 
@@ -122,3 +123,109 @@ def get_all_gen_operator_names(gen_docs_path=None):
         for op in ops:
             names.add(op["name"])
     return sorted(names)
+
+
+_CYCLING74_GEN_URLS = {
+    "common": "https://docs.cycling74.com/userguide/gen/gen_common_operators",
+    "gen_tilde": "https://docs.cycling74.com/userguide/gen/gen~_operators",
+    "jitter": "https://docs.cycling74.com/userguide/gen/gen_jitter_operators",
+}
+
+
+def extract_online_gen_operators():
+    """
+    Scrape gen operator names from Cycling '74 online documentation.
+    Returns dict with keys 'common', 'gen_tilde', 'jitter',
+    each containing a list of operator name strings.
+    Falls back to empty lists if URLs are unreachable.
+    """
+    result = {}
+    for key, url in _CYCLING74_GEN_URLS.items():
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "MaxPyLang/1.0"})
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                html = resp.read().decode("utf-8", errors="replace")
+            names = re.findall(r'class="[^"]*object-link[^"]*"[^>]*>([^<]+)<', html)
+            seen = set()
+            unique = []
+            for name in names:
+                name = name.strip()
+                if name and name not in seen:
+                    seen.add(name)
+                    unique.append(name)
+            result[key] = unique
+        except Exception:
+            result[key] = []
+    return result
+
+
+def compare_local_vs_online(gen_docs_path=None):
+    """
+    Compare local and online gen operator catalogs.
+    Returns dict with local_only, online_only, both, local_total, online_total.
+    """
+    local = extract_local_gen_operators(gen_docs_path)
+    online = extract_online_gen_operators()
+
+    local_names = set()
+    for ops in local.values():
+        for op in ops:
+            local_names.add(op["name"])
+
+    online_names = set()
+    for ops in online.values():
+        for name in ops:
+            online_names.add(name)
+
+    return {
+        "local_only": sorted(local_names - online_names),
+        "online_only": sorted(online_names - local_names),
+        "both": sorted(local_names & online_names),
+        "local_total": len(local_names),
+        "online_total": len(online_names),
+    }
+
+
+def generate_comparison_report(gen_docs_path=None, output_path=None):
+    """Generate a markdown comparison report and write to output_path."""
+    report = compare_local_vs_online(gen_docs_path)
+
+    lines = [
+        "# Gen Operator Comparison: Local vs. Cycling '74 Online Docs",
+        "",
+        f"**Local operators:** {report['local_total']}",
+        f"**Online operators:** {report['online_total']}",
+        f"**In both:** {len(report['both'])}",
+        f"**Local only:** {len(report['local_only'])}",
+        f"**Online only:** {len(report['online_only'])}",
+        "",
+    ]
+
+    if report["local_only"]:
+        lines.append("## Operators Found Only in Local Installation")
+        lines.append("")
+        for name in report["local_only"]:
+            lines.append(f"- `{name}`")
+        lines.append("")
+
+    if report["online_only"]:
+        lines.append("## Operators Found Only in Online Docs")
+        lines.append("")
+        for name in report["online_only"]:
+            lines.append(f"- `{name}`")
+        lines.append("")
+
+    if report["both"]:
+        lines.append("## Operators Found in Both Sources")
+        lines.append("")
+        for name in report["both"]:
+            lines.append(f"- `{name}`")
+        lines.append("")
+
+    content = "\n".join(lines)
+
+    if output_path:
+        with open(output_path, "w") as f:
+            f.write(content)
+
+    return content

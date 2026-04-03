@@ -174,3 +174,17 @@ class TestGenScraper:
         for group, ops in result.items():
             for op in ops:
                 assert "category" in op, f"Operator {op['name']} missing category in {group}"
+
+
+class TestGenComparison:
+    """Test comparison between local and online gen operator catalogs."""
+
+    def test_generate_comparison_report(self):
+        """Should produce a comparison dict with expected keys."""
+        from maxpylang.tools.gen_scraper import compare_local_vs_online
+        report = compare_local_vs_online()
+        assert "local_only" in report
+        assert "online_only" in report
+        assert "both" in report
+        assert "local_total" in report
+        assert "online_total" in report
