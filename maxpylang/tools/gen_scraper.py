@@ -249,30 +249,166 @@ def _make_gen_obj_info(name, category=""):
         }
     }
 
-    # Special cases for known inlet/outlet counts
-    if name in ("in", "in1", "in2", "in3", "in4", "in5"):
+    # --- Inlet/outlet counts for gen operators ---
+    # 0 inlets, 1 outlet: sources, constants, parameters
+    _0in_1out = {
+        "in", "in1", "in2", "in3", "in4", "in5",
+        "param", "Param",
+        "noise",
+        "constant",
+        "samplerate", "SAMPLERATE", "vectorsize", "VECTORSIZE",
+        "elapsed", "voice", "voicecount",
+        "mc_channel", "mc_channelcount",
+        "pi", "PI", "twopi", "TWOPI", "e", "E",
+        "halfpi", "HALFPI", "invpi", "INVPI",
+        "degtorad", "DEGTORAD", "radtodeg", "RADTODEG",
+        "ln2", "LN2", "ln10", "LN10",
+        "log2e", "LOG2E", "log10e", "LOG10E",
+        "sqrt2", "SQRT2", "sqrt1_2", "SQRT1_2",
+        "PHI", "phi",
+        "fftfullspect", "FFTFULLSPECT",
+        "ffthop", "FFTHOP",
+        "fftoffset", "FFTOFFSET",
+        "fftsize", "FFTSIZE",
+        "buffer",
+    }
+    # 1 inlet, 0 outlets: sinks
+    _1in_0out = {
+        "out", "out1", "out2", "out3", "out4", "out5",
+    }
+    # 2 inlets, 1 outlet: binary operators
+    _2in_1out = {
+        # math
+        "+", "add", "-", "sub", "*", "mul", "/", "div",
+        "!-", "rsub", "!/", "rdiv", "!%", "rmod",
+        "%", "mod", "pow", "atan2", "absdiff", "hypot",
+        # comparison
+        "==", "eq", "!=", "neq", ">", "gt", "<", "lt",
+        ">=", "gte", "<=", "lte",
+        "==p", "eqp", "!=p", "neqp", ">p", "gtp", "<p", "ltp",
+        ">=p", "gtep", "<=p", "ltep",
+        "max", "maximum", "min", "minimum", "step",
+        # logic
+        "&&", "and", "||", "or", "^^", "xor",
+        # range/scaling
+        "clamp", "clip", "fold", "wrap", "scale",
+        # routing
+        "mix", "smoothstep",
+        # gen~ specific
+        "delay", "interp",
+        "sah", "latch",
+        "+=", "plusequals", "accum",
+        "*=", "mulequals",
+        # feedback
+        "slide",
+    }
+    # 3 inlets, 1 outlet: ternary operators
+    _3in_1out = {
+        "?", "switch", "selector",
+        "gate",
+    }
+    # 1 inlet, 2 outlets
+    _1in_2out = {
+        "cartopol", "poltocar",
+        "fftinfo",
+    }
+    # special: peek/poke/sample/wave/lookup have variable inlets
+    _peek_like = {
+        "peek",      # 2 in (index, channel), 1 out
+        "sample",    # 2 in (position, channel), 1 out
+        "nearest",   # 2 in (position, channel), 1 out
+        "lookup",    # 1 in (position), 1 out
+        "wave",      # 3 in (position, start, end), 1 out
+    }
+    _poke_like = {
+        "poke",      # 3 in (value, index, channel), 0 out
+        "splat",     # 3 in (value, index, channel), 0 out
+    }
+
+    if name in _0in_1out:
         default_box["box"]["numinlets"] = 0
         default_box["box"]["numoutlets"] = 1
-    elif name in ("out", "out1", "out2", "out3", "out4", "out5"):
+    elif name in _1in_0out:
         default_box["box"]["numinlets"] = 1
         default_box["box"]["numoutlets"] = 0
-    elif name in ("param", "Param"):
-        default_box["box"]["numinlets"] = 0
-        default_box["box"]["numoutlets"] = 1
-    elif name in ("+", "add", "-", "sub", "*", "mul", "/", "div",
-                  "==", "eq", "!=", "neq", ">", "gt", "<", "lt",
-                  ">=", "gte", "<=", "lte", "max", "min", "pow",
-                  "atan2", "mod", "%", "scale", "clip", "clamp",
-                  "fold", "wrap", "mix", "smoothstep", "?", "switch",
-                  "gate", "selector", "delay"):
+    elif name in _2in_1out:
         default_box["box"]["numinlets"] = 2
         default_box["box"]["numoutlets"] = 1
-    elif name in ("noise", "samplerate", "SAMPLERATE", "vectorsize",
-                  "VECTORSIZE", "elapsed", "voice", "voicecount",
-                  "mc_channel", "mc_channelcount",
-                  "pi", "PI", "twopi", "TWOPI", "e", "E",
-                  "halfpi", "HALFPI", "constant"):
+    elif name in _3in_1out:
+        default_box["box"]["numinlets"] = 3
+        default_box["box"]["numoutlets"] = 1
+    elif name in _1in_2out:
+        default_box["box"]["numinlets"] = 1
+        default_box["box"]["numoutlets"] = 2
+        default_box["box"]["outlettype"] = ["", ""]
+    elif name in _peek_like:
+        default_box["box"]["numinlets"] = 2
+        default_box["box"]["numoutlets"] = 1
+        if name == "wave":
+            default_box["box"]["numinlets"] = 3
+        elif name == "lookup":
+            default_box["box"]["numinlets"] = 1
+    elif name in _poke_like:
+        default_box["box"]["numinlets"] = 3
+        default_box["box"]["numoutlets"] = 0
+    elif name in ("data",):
         default_box["box"]["numinlets"] = 0
+        default_box["box"]["numoutlets"] = 1
+    elif name in ("channels", "dim"):
+        default_box["box"]["numinlets"] = 1
+        default_box["box"]["numoutlets"] = 1
+    elif name in ("counter", "round"):
+        default_box["box"]["numinlets"] = 2
+        default_box["box"]["numoutlets"] = 1
+    elif name in ("r", "receive"):
+        default_box["box"]["numinlets"] = 0
+        default_box["box"]["numoutlets"] = 1
+    elif name in ("s", "send"):
+        default_box["box"]["numinlets"] = 1
+        default_box["box"]["numoutlets"] = 0
+    elif name in ("setparam",):
+        default_box["box"]["numinlets"] = 1
+        default_box["box"]["numoutlets"] = 0
+    elif name in ("gen",):
+        # gen subpatcher: variable, default 1/1
+        pass
+    elif name in ("codebox", "expr"):
+        # variable I/O depending on code
+        pass
+    # Jitter-specific operators
+    elif name in ("vec",):
+        default_box["box"]["numinlets"] = 2
+        default_box["box"]["numoutlets"] = 1
+    elif name in ("swiz",):
+        default_box["box"]["numinlets"] = 1
+        default_box["box"]["numoutlets"] = 1
+    elif name in ("concat",):
+        default_box["box"]["numinlets"] = 2
+        default_box["box"]["numoutlets"] = 1
+    elif name in ("cross",):
+        default_box["box"]["numinlets"] = 2
+        default_box["box"]["numoutlets"] = 1
+    elif name in ("dot",):
+        default_box["box"]["numinlets"] = 2
+        default_box["box"]["numoutlets"] = 1
+    elif name in ("norm", "snorm", "cell"):
+        default_box["box"]["numinlets"] = 0
+        default_box["box"]["numoutlets"] = 1
+    elif name in ("nearestpix", "samplepix"):
+        default_box["box"]["numinlets"] = 2
+        default_box["box"]["numoutlets"] = 1
+    elif name in ("sphere", "torus", "circle", "plane", "cone", "cylinder"):
+        default_box["box"]["numinlets"] = 1
+        default_box["box"]["numoutlets"] = 1
+    elif name in ("hsl2rgb", "rgb2hsl"):
+        default_box["box"]["numinlets"] = 1
+        default_box["box"]["numoutlets"] = 1
+    elif name in ("qconj", "qmul", "qrot"):
+        default_box["box"]["numinlets"] = 2 if name != "qconj" else 1
+        default_box["box"]["numoutlets"] = 1
+    elif name in ("length", "normalize", "faceforward", "reflect", "refract", "rotor"):
+        nin = 1 if name in ("length", "normalize") else 2
+        default_box["box"]["numinlets"] = nin
         default_box["box"]["numoutlets"] = 1
 
     return {

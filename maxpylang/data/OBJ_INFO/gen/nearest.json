@@ -3,7 +3,7 @@
     "box": {
       "id": "obj-1",
       "maxclass": "newobj",
-      "numinlets": 1,
+      "numinlets": 2,
       "numoutlets": 1,
       "outlettype": [
         ""

@@ -4,8 +4,9 @@
       "id": "obj-1",
       "maxclass": "newobj",
       "numinlets": 1,
-      "numoutlets": 1,
+      "numoutlets": 2,
       "outlettype": [
+        "",
         ""
       ],
       "patching_rect": [

@@ -65,7 +65,6 @@ gen_patch.place("comment --- SAMPLE AND HOLD ---", verbose=False)[0]
 
 gen_patch.set_position(80, 390)
 sah = gen_patch.place("sah", verbose=False)[0]           # sah: holds input when triggered
-sah.add_xlets(1, 'numinlets')                            # sah needs 2 inlets: signal and trigger
 
 # --- SCALING ---
 gen_patch.set_position(80, 460)
