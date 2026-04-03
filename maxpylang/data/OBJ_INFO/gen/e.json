@@ -14,7 +14,7 @@
         60.0,
         22.0
       ],
-      "text": "E"
+      "text": "e"
     }
   },
   "args": {
@@ -24,7 +24,7 @@
   "attribs": [],
   "in/out": {},
   "doc": {
-    "digest": "Gen operator: E",
-    "description": "Gen operator 'E' (category: Constant)"
+    "digest": "Gen operator: e",
+    "description": "Gen operator 'e' (category: Constant)"
   }
 }

@@ -14,7 +14,7 @@
         60.0,
         22.0
       ],
-      "text": "INVPI"
+      "text": "invpi"
     }
   },
   "args": {
@@ -24,7 +24,7 @@
   "attribs": [],
   "in/out": {},
   "doc": {
-    "digest": "Gen operator: INVPI",
-    "description": "Gen operator 'INVPI' (category: Constant)"
+    "digest": "Gen operator: invpi",
+    "description": "Gen operator 'invpi' (category: Constant)"
   }
 }

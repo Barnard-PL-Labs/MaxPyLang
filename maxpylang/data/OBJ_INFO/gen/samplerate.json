@@ -14,7 +14,7 @@
         60.0,
         22.0
       ],
-      "text": "SAMPLERATE"
+      "text": "samplerate"
     }
   },
   "args": {
@@ -24,7 +24,7 @@
   "attribs": [],
   "in/out": {},
   "doc": {
-    "digest": "Gen operator: SAMPLERATE",
-    "description": "Gen operator 'SAMPLERATE' (category: Constants)"
+    "digest": "Gen operator: samplerate",
+    "description": "Gen operator 'samplerate' (category: Constants)"
   }
 }

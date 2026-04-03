@@ -14,7 +14,7 @@
         60.0,
         22.0
       ],
-      "text": "FFTOFFSET"
+      "text": "fftoffset"
     }
   },
   "args": {
@@ -24,7 +24,7 @@
   "attribs": [],
   "in/out": {},
   "doc": {
-    "digest": "Gen operator: FFTOFFSET",
-    "description": "Gen operator 'FFTOFFSET' (category: Constants)"
+    "digest": "Gen operator: fftoffset",
+    "description": "Gen operator 'fftoffset' (category: Constants)"
   }
 }

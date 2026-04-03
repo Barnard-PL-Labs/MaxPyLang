@@ -14,7 +14,7 @@
         60.0,
         22.0
       ],
-      "text": "LOG2E"
+      "text": "log2e"
     }
   },
   "args": {
@@ -24,7 +24,7 @@
   "attribs": [],
   "in/out": {},
   "doc": {
-    "digest": "Gen operator: LOG2E",
-    "description": "Gen operator 'LOG2E' (category: Constant)"
+    "digest": "Gen operator: log2e",
+    "description": "Gen operator 'log2e' (category: Constant)"
   }
 }

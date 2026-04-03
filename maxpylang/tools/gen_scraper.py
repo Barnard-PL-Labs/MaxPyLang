@@ -442,8 +442,14 @@ def generate_gen_obj_info(gen_docs_path=None, output_dir=None):
     # Generate info file for each operator
     for name, op in all_ops.items():
         info = _make_gen_obj_info(name, category=op.get("category", ""))
-        # Sanitize filename: replace '/' with '_div_' to avoid path issues
+        # Sanitize filename for filesystem safety:
+        # - replace '/' with '_div_' to avoid path separator issues
+        # - skip uppercase variants that collide with lowercase on
+        #   case-insensitive filesystems (e.g., 'PI' vs 'pi' on macOS).
+        #   These are handled via case-insensitive fallback in get_ref().
         safe_name = name.replace("/", "_div_")
+        if safe_name != safe_name.lower() and safe_name.lower() in all_ops:
+            continue  # skip; lowercase version covers this
         filepath = os.path.join(output_dir, f"{safe_name}.json")
         with open(filepath, "w") as f:
             json.dump(info, f, indent=2)

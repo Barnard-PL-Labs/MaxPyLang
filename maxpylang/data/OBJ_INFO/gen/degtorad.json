@@ -14,7 +14,7 @@
         60.0,
         22.0
       ],
-      "text": "DEGTORAD"
+      "text": "degtorad"
     }
   },
   "args": {
@@ -24,7 +24,7 @@
   "attribs": [],
   "in/out": {},
   "doc": {
-    "digest": "Gen operator: DEGTORAD",
-    "description": "Gen operator 'DEGTORAD' (category: Constant)"
+    "digest": "Gen operator: degtorad",
+    "description": "Gen operator 'degtorad' (category: Constant)"
   }
 }

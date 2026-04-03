@@ -14,7 +14,7 @@
         60.0,
         22.0
       ],
-      "text": "FFTFULLSPECT"
+      "text": "fftfullspect"
     }
   },
   "args": {
@@ -24,7 +24,7 @@
   "attribs": [],
   "in/out": {},
   "doc": {
-    "digest": "Gen operator: FFTFULLSPECT",
-    "description": "Gen operator 'FFTFULLSPECT' (category: Constants)"
+    "digest": "Gen operator: fftfullspect",
+    "description": "Gen operator 'fftfullspect' (category: Constants)"
   }
 }

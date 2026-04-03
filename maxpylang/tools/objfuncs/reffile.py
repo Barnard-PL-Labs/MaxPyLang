@@ -40,6 +40,16 @@ def get_ref(self, name):
             if os.path.exists(ref_file):
                 return ref_file
 
+    #case-insensitive fallback for gen operators (e.g., PI -> pi, SAMPLERATE -> samplerate)
+    #needed because case-insensitive filesystems can't store both pi.json and PI.json
+    for package, obj_list in self.known_objs.items():
+        name_lower = name.lower()
+        if name_lower in obj_list:
+            package_folder = os.path.join(self.obj_info_folder, package)
+            ref_file = os.path.join(package_folder, name_lower + ".json")
+            if os.path.exists(ref_file):
+                return ref_file
+
     if ref_file is None:
         #look for possible abstraction file in current directory
         if os.path.exists(name) or os.path.exists(name + '.maxpat'):

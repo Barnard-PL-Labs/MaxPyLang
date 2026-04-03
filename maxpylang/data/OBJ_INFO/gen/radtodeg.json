@@ -14,7 +14,7 @@
         60.0,
         22.0
       ],
-      "text": "RADTODEG"
+      "text": "radtodeg"
     }
   },
   "args": {
@@ -24,7 +24,7 @@
   "attribs": [],
   "in/out": {},
   "doc": {
-    "digest": "Gen operator: RADTODEG",
-    "description": "Gen operator 'RADTODEG' (category: Constant)"
+    "digest": "Gen operator: radtodeg",
+    "description": "Gen operator 'radtodeg' (category: Constant)"
   }
 }

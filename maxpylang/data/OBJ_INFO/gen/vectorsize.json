@@ -14,7 +14,7 @@
         60.0,
         22.0
       ],
-      "text": "VECTORSIZE"
+      "text": "vectorsize"
     }
   },
   "args": {
@@ -24,7 +24,7 @@
   "attribs": [],
   "in/out": {},
   "doc": {
-    "digest": "Gen operator: VECTORSIZE",
-    "description": "Gen operator 'VECTORSIZE' (category: Constants)"
+    "digest": "Gen operator: vectorsize",
+    "description": "Gen operator 'vectorsize' (category: Constants)"
   }
 }

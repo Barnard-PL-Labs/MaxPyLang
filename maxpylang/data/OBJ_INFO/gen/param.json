@@ -14,7 +14,7 @@
         60.0,
         22.0
       ],
-      "text": "Param"
+      "text": "param"
     }
   },
   "args": {
@@ -24,7 +24,7 @@
   "attribs": [],
   "in/out": {},
   "doc": {
-    "digest": "Gen operator: Param",
-    "description": "Gen operator 'Param' (category: Declare)"
+    "digest": "Gen operator: param",
+    "description": "Gen operator 'param' (category: Declare)"
   }
 }

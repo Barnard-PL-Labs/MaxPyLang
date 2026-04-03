@@ -14,7 +14,7 @@
         60.0,
         22.0
       ],
-      "text": "SQRT2"
+      "text": "sqrt2"
     }
   },
   "args": {
@@ -24,7 +24,7 @@
   "attribs": [],
   "in/out": {},
   "doc": {
-    "digest": "Gen operator: SQRT2",
-    "description": "Gen operator 'SQRT2' (category: Constant)"
+    "digest": "Gen operator: sqrt2",
+    "description": "Gen operator 'sqrt2' (category: Constant)"
   }
 }

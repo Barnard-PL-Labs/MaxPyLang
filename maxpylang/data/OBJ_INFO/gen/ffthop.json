@@ -14,7 +14,7 @@
         60.0,
         22.0
       ],
-      "text": "FFTHOP"
+      "text": "ffthop"
     }
   },
   "args": {
@@ -24,7 +24,7 @@
   "attribs": [],
   "in/out": {},
   "doc": {
-    "digest": "Gen operator: FFTHOP",
-    "description": "Gen operator 'FFTHOP' (category: Constants)"
+    "digest": "Gen operator: ffthop",
+    "description": "Gen operator 'ffthop' (category: Constants)"
   }
 }

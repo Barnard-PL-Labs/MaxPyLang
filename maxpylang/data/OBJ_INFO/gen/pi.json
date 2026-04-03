@@ -14,7 +14,7 @@
         60.0,
         22.0
       ],
-      "text": "PI"
+      "text": "pi"
     }
   },
   "args": {
@@ -24,7 +24,7 @@
   "attribs": [],
   "in/out": {},
   "doc": {
-    "digest": "Gen operator: PI",
-    "description": "Gen operator 'PI' (category: Constant)"
+    "digest": "Gen operator: pi",
+    "description": "Gen operator 'pi' (category: Constant)"
   }
 }

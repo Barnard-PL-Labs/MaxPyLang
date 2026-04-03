@@ -14,7 +14,7 @@
         60.0,
         22.0
       ],
-      "text": "HALFPI"
+      "text": "halfpi"
     }
   },
   "args": {
@@ -24,7 +24,7 @@
   "attribs": [],
   "in/out": {},
   "doc": {
-    "digest": "Gen operator: HALFPI",
-    "description": "Gen operator 'HALFPI' (category: Constant)"
+    "digest": "Gen operator: halfpi",
+    "description": "Gen operator 'halfpi' (category: Constant)"
   }
 }

@@ -14,7 +14,7 @@
         60.0,
         22.0
       ],
-      "text": "FFTSIZE"
+      "text": "fftsize"
     }
   },
   "args": {
@@ -24,7 +24,7 @@
   "attribs": [],
   "in/out": {},
   "doc": {
-    "digest": "Gen operator: FFTSIZE",
-    "description": "Gen operator 'FFTSIZE' (category: Constants)"
+    "digest": "Gen operator: fftsize",
+    "description": "Gen operator 'fftsize' (category: Constants)"
   }
 }

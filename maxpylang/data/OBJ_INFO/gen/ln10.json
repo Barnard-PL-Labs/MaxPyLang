@@ -14,7 +14,7 @@
         60.0,
         22.0
       ],
-      "text": "LN10"
+      "text": "ln10"
     }
   },
   "args": {
@@ -24,7 +24,7 @@
   "attribs": [],
   "in/out": {},
   "doc": {
-    "digest": "Gen operator: LN10",
-    "description": "Gen operator 'LN10' (category: Constant)"
+    "digest": "Gen operator: ln10",
+    "description": "Gen operator 'ln10' (category: Constant)"
   }
 }

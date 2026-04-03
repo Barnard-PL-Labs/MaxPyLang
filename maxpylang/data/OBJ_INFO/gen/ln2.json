@@ -14,7 +14,7 @@
         60.0,
         22.0
       ],
-      "text": "LN2"
+      "text": "ln2"
     }
   },
   "args": {
@@ -24,7 +24,7 @@
   "attribs": [],
   "in/out": {},
   "doc": {
-    "digest": "Gen operator: LN2",
-    "description": "Gen operator 'LN2' (category: Constant)"
+    "digest": "Gen operator: ln2",
+    "description": "Gen operator 'ln2' (category: Constant)"
   }
 }
