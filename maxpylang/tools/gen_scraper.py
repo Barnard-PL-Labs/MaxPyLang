@@ -280,7 +280,7 @@ def _make_gen_obj_info(name, category=""):
     }
     # 1 inlet, 1 outlet: unary operators
     _1in_1out = {
-        "round", "phasor", "phasewrap",
+        "round", "phasewrap",
         "change", "dcblock", "delta",
         "history",
         "atodb", "dbtoa", "mstosamps", "sampstoms",
@@ -306,7 +306,7 @@ def _make_gen_obj_info(name, category=""):
         "+=", "plusequals", "accum",
         "*=", "mulequals",
         # waveform
-        "cycle", "triangle", "rate",
+        "cycle", "triangle", "rate", "phasor",
         # convert (2-inlet variants)
         "ftom", "mtof",
         # buffer
@@ -335,8 +335,8 @@ def _make_gen_obj_info(name, category=""):
         "splat":    (3, 0),  # value, index, channel
         "buffer":   (1, 2),  # name -> length, channels
         "data":     (0, 2),  # -> length, channels
-        "cartopol": (1, 2),  # -> magnitude, angle
-        "poltocar": (1, 2),  # -> x, y
+        "cartopol": (2, 2),  # x, y -> magnitude, angle
+        "poltocar": (2, 2),  # r, theta -> x, y
         "scale":    (6, 1),  # input, ilo, ihi, olo, ohi, exp
         "interp":   (7, 1),  # t, a, b, c, d, e, f
     }
