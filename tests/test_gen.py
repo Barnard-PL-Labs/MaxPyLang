@@ -10,6 +10,13 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import maxpylang as mp
 
+# Skip marker for tests that require Max installed locally
+_MAX_GEN_DOCS = "/Applications/Max.app/Contents/Resources/C74/docs/userguide/content/gen/"
+requires_max = pytest.mark.skipif(
+    not os.path.exists(_MAX_GEN_DOCS),
+    reason="Max not installed — gen reference files not available"
+)
+
 
 class TestGenPatcherCreation:
     """Test creating gen patchers with gen_type parameter."""
@@ -134,6 +141,7 @@ class TestGenPatcherEmbedding:
         assert "patcher" not in osc._dict["box"]
 
 
+@requires_max
 class TestGenScraper:
     """Test gen operator extraction from local Max files."""
 
@@ -176,6 +184,7 @@ class TestGenScraper:
                 assert "category" in op, f"Operator {op['name']} missing category in {group}"
 
 
+@requires_max
 class TestGenObjInfo:
     """Test gen operator OBJ_INFO metadata generation."""
 
@@ -218,6 +227,7 @@ class TestGenObjInfo:
             assert "text" in box
 
 
+@requires_max
 class TestGenComparison:
     """Test comparison between local and online gen operator catalogs."""
 
@@ -232,6 +242,7 @@ class TestGenComparison:
         assert "online_total" in report
 
 
+@requires_max
 class TestGenStubs:
     """Test gen.py stub generation and imports."""
 
