@@ -5,9 +5,7 @@
       "maxclass": "newobj",
       "numinlets": 3,
       "numoutlets": 0,
-      "outlettype": [
-        ""
-      ],
+      "outlettype": [],
       "patching_rect": [
         0.0,
         0.0,

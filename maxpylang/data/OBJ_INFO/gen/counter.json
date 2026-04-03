@@ -3,9 +3,11 @@
     "box": {
       "id": "obj-1",
       "maxclass": "newobj",
-      "numinlets": 2,
-      "numoutlets": 1,
+      "numinlets": 3,
+      "numoutlets": 3,
       "outlettype": [
+        "",
+        "",
         ""
       ],
       "patching_rect": [

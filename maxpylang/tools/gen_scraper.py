@@ -250,6 +250,8 @@ def _make_gen_obj_info(name, category=""):
     }
 
     # --- Inlet/outlet counts for gen operators ---
+    # Verified against https://docs.cycling74.com/userguide/gen/gen~_operators
+    #
     # 0 inlets, 1 outlet: sources, constants, parameters
     _0in_1out = {
         "in", "in1", "in2", "in3", "in4", "in5",
@@ -270,11 +272,20 @@ def _make_gen_obj_info(name, category=""):
         "ffthop", "FFTHOP",
         "fftoffset", "FFTOFFSET",
         "fftsize", "FFTSIZE",
-        "buffer",
+        "fftinfo",
     }
     # 1 inlet, 0 outlets: sinks
     _1in_0out = {
         "out", "out1", "out2", "out3", "out4", "out5",
+    }
+    # 1 inlet, 1 outlet: unary operators
+    _1in_1out = {
+        "round", "phasor", "phasewrap",
+        "change", "dcblock", "delta",
+        "history",
+        "atodb", "dbtoa", "mstosamps", "sampstoms",
+        "fixdenorm", "fixnan", "isdenorm", "isnan",
+        "t60", "t60time",
     }
     # 2 inlets, 1 outlet: binary operators
     _2in_1out = {
@@ -295,34 +306,34 @@ def _make_gen_obj_info(name, category=""):
         # routing
         "mix", "smoothstep",
         # gen~ specific
-        "delay", "interp",
-        "sah", "latch",
+        "delay", "interp", "latch",
         "+=", "plusequals", "accum",
         "*=", "mulequals",
-        # feedback
-        "slide",
+        # waveform
+        "cycle", "triangle", "rate",
+        # convert (2-inlet variants)
+        "ftom", "mtof",
+        # buffer
+        "peek", "sample", "nearest", "lookup",
     }
     # 3 inlets, 1 outlet: ternary operators
     _3in_1out = {
         "?", "switch", "selector",
         "gate",
+        "sah",    # input, trigger, threshold
+        "slide",  # input, slideup, slidedown
+        "train",  # frequency, width, phase
     }
-    # 1 inlet, 2 outlets
-    _1in_2out = {
-        "cartopol", "poltocar",
-        "fftinfo",
-    }
-    # special: peek/poke/sample/wave/lookup have variable inlets
-    _peek_like = {
-        "peek",      # 2 in (index, channel), 1 out
-        "sample",    # 2 in (position, channel), 1 out
-        "nearest",   # 2 in (position, channel), 1 out
-        "lookup",    # 1 in (position), 1 out
-        "wave",      # 3 in (position, start, end), 1 out
-    }
-    _poke_like = {
-        "poke",      # 3 in (value, index, channel), 0 out
-        "splat",     # 3 in (value, index, channel), 0 out
+    # Special multi-inlet/outlet operators
+    _special_io = {
+        "counter":  (3, 3),  # increment, reset, max -> count, carry, underflow
+        "wave":     (4, 1),  # phase, start, end, channel
+        "poke":     (3, 0),  # value, index, channel
+        "splat":    (3, 0),  # value, index, channel
+        "buffer":   (1, 2),  # name -> length, channels
+        "data":     (0, 2),  # -> length, channels
+        "cartopol": (1, 2),  # -> magnitude, angle
+        "poltocar": (1, 2),  # -> x, y
     }
 
     if name in _0in_1out:
@@ -331,35 +342,20 @@ def _make_gen_obj_info(name, category=""):
     elif name in _1in_0out:
         default_box["box"]["numinlets"] = 1
         default_box["box"]["numoutlets"] = 0
+    elif name in _1in_1out:
+        default_box["box"]["numinlets"] = 1
+        default_box["box"]["numoutlets"] = 1
     elif name in _2in_1out:
         default_box["box"]["numinlets"] = 2
         default_box["box"]["numoutlets"] = 1
     elif name in _3in_1out:
         default_box["box"]["numinlets"] = 3
         default_box["box"]["numoutlets"] = 1
-    elif name in _1in_2out:
-        default_box["box"]["numinlets"] = 1
-        default_box["box"]["numoutlets"] = 2
-        default_box["box"]["outlettype"] = ["", ""]
-    elif name in _peek_like:
-        default_box["box"]["numinlets"] = 2
-        default_box["box"]["numoutlets"] = 1
-        if name == "wave":
-            default_box["box"]["numinlets"] = 3
-        elif name == "lookup":
-            default_box["box"]["numinlets"] = 1
-    elif name in _poke_like:
-        default_box["box"]["numinlets"] = 3
-        default_box["box"]["numoutlets"] = 0
-    elif name in ("data",):
-        default_box["box"]["numinlets"] = 0
-        default_box["box"]["numoutlets"] = 1
-    elif name in ("channels", "dim"):
-        default_box["box"]["numinlets"] = 1
-        default_box["box"]["numoutlets"] = 1
-    elif name in ("counter", "round"):
-        default_box["box"]["numinlets"] = 2
-        default_box["box"]["numoutlets"] = 1
+    elif name in _special_io:
+        nin, nout = _special_io[name]
+        default_box["box"]["numinlets"] = nin
+        default_box["box"]["numoutlets"] = nout
+        default_box["box"]["outlettype"] = [""] * nout
     elif name in ("r", "receive"):
         default_box["box"]["numinlets"] = 0
         default_box["box"]["numoutlets"] = 1
