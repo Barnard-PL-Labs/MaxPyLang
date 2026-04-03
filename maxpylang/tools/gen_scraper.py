@@ -10,7 +10,7 @@ import os
 import re
 import urllib.request
 
-from .constants import get_constant
+from .constants import get_constant, obj_info_folder
 
 
 _DEFAULT_GEN_DOCS_PATH = "/Applications/Max.app/Contents/Resources/C74/docs/userguide/content/gen/"
@@ -229,3 +229,89 @@ def generate_comparison_report(gen_docs_path=None, output_path=None):
             f.write(content)
 
     return content
+
+
+def _make_gen_obj_info(name, category=""):
+    """
+    Create an OBJ_INFO-compatible dict for a gen operator.
+    """
+    default_box = {
+        "box": {
+            "id": "obj-1",
+            "maxclass": "newobj",
+            "numinlets": 1,
+            "numoutlets": 1,
+            "outlettype": [""],
+            "patching_rect": [0.0, 0.0, 60.0, 22.0],
+            "text": name,
+        }
+    }
+
+    # Special cases for known inlet/outlet counts
+    if name in ("in", "in1", "in2", "in3", "in4", "in5"):
+        default_box["box"]["numinlets"] = 0
+        default_box["box"]["numoutlets"] = 1
+    elif name in ("out", "out1", "out2", "out3", "out4", "out5"):
+        default_box["box"]["numinlets"] = 1
+        default_box["box"]["numoutlets"] = 0
+    elif name in ("param", "Param"):
+        default_box["box"]["numinlets"] = 0
+        default_box["box"]["numoutlets"] = 1
+    elif name in ("+", "add", "-", "sub", "*", "mul", "/", "div",
+                  "==", "eq", "!=", "neq", ">", "gt", "<", "lt",
+                  ">=", "gte", "<=", "lte", "max", "min", "pow",
+                  "atan2", "mod", "%", "scale", "clip", "clamp",
+                  "fold", "wrap", "mix", "smoothstep", "?", "switch",
+                  "gate", "selector", "delay"):
+        default_box["box"]["numinlets"] = 2
+        default_box["box"]["numoutlets"] = 1
+    elif name in ("noise", "samplerate", "SAMPLERATE", "vectorsize",
+                  "VECTORSIZE", "elapsed", "voice", "voicecount",
+                  "mc_channel", "mc_channelcount",
+                  "pi", "PI", "twopi", "TWOPI", "e", "E",
+                  "halfpi", "HALFPI", "constant"):
+        default_box["box"]["numinlets"] = 0
+        default_box["box"]["numoutlets"] = 1
+
+    return {
+        "default": default_box,
+        "args": {"required": [], "optional": []},
+        "attribs": [],
+        "in/out": {},
+        "doc": {
+            "digest": f"Gen operator: {name}",
+            "description": f"Gen operator '{name}' (category: {category})",
+        },
+    }
+
+
+def generate_gen_obj_info(gen_docs_path=None, output_dir=None):
+    """
+    Generate OBJ_INFO JSON files for all gen operators.
+    If output_dir is None, writes to maxpylang/data/OBJ_INFO/gen/.
+    """
+    if output_dir is None:
+        output_dir = os.path.join(obj_info_folder, "gen")
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    local_ops = extract_local_gen_operators(gen_docs_path)
+
+    # Flatten all operators, deduplicating by name
+    all_ops = {}
+    for group, ops in local_ops.items():
+        for op in ops:
+            name = op["name"]
+            if name not in all_ops:
+                all_ops[name] = op
+
+    # Generate info file for each operator
+    for name, op in all_ops.items():
+        info = _make_gen_obj_info(name, category=op.get("category", ""))
+        # Sanitize filename: replace '/' with '_div_' to avoid path issues
+        safe_name = name.replace("/", "_div_")
+        filepath = os.path.join(output_dir, f"{safe_name}.json")
+        with open(filepath, "w") as f:
+            json.dump(info, f, indent=2)
+
+    return len(all_ops)

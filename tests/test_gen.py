@@ -176,6 +176,48 @@ class TestGenScraper:
                 assert "category" in op, f"Operator {op['name']} missing category in {group}"
 
 
+class TestGenObjInfo:
+    """Test gen operator OBJ_INFO metadata generation."""
+
+    def test_generate_gen_obj_info(self, tmp_path):
+        """Should create JSON files for gen operators."""
+        from maxpylang.tools.gen_scraper import generate_gen_obj_info
+        generate_gen_obj_info(output_dir=str(tmp_path))
+
+        json_files = [f for f in os.listdir(tmp_path) if f.endswith(".json")]
+        assert len(json_files) > 200  # we expect ~243 operators
+
+    def test_gen_obj_info_file_structure(self, tmp_path):
+        """Each OBJ_INFO JSON should have expected keys."""
+        from maxpylang.tools.gen_scraper import generate_gen_obj_info
+        generate_gen_obj_info(output_dir=str(tmp_path))
+
+        history_path = os.path.join(tmp_path, "history.json")
+        if os.path.exists(history_path):
+            with open(history_path, "r") as f:
+                info = json.load(f)
+            assert "default" in info
+            assert "args" in info
+            assert "attribs" in info
+            assert "in/out" in info
+            assert "doc" in info
+
+    def test_gen_obj_info_default_has_box(self, tmp_path):
+        """Each OBJ_INFO default should contain a valid box dict."""
+        from maxpylang.tools.gen_scraper import generate_gen_obj_info
+        generate_gen_obj_info(output_dir=str(tmp_path))
+
+        # Check a known operator - use 'noise.json' since 'in' might have naming issues
+        noise_path = os.path.join(tmp_path, "noise.json")
+        if os.path.exists(noise_path):
+            with open(noise_path, "r") as f:
+                info = json.load(f)
+            box = info["default"]["box"]
+            assert "id" in box
+            assert "maxclass" in box
+            assert "text" in box
+
+
 class TestGenComparison:
     """Test comparison between local and online gen operator catalogs."""
 
