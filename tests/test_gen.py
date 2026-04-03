@@ -263,3 +263,88 @@ class TestGenStubs:
             content = f.read()
         # 'in' is a Python keyword -> should become 'in_'
         assert "in_ = MaxObject(" in content
+
+
+class TestGenEndToEnd:
+    """End-to-end tests: create gen patchers, embed them, save, and verify output."""
+
+    def test_passthrough_patch(self, tmp_path):
+        """Recreate the ex1_passthrough.maxpat using the new API."""
+        gen_patch = mp.MaxPatch(gen_type="dsp.gen", verbose=False)
+        inp = gen_patch.place("in 1", verbose=False)[0]
+        outp = gen_patch.place("out 1", verbose=False)[0]
+        gen_patch.connect([inp.outs[0], outp.ins[0]], verbose=False)
+
+        patch = mp.MaxPatch(verbose=False)
+        gen_obj = patch.place("gen~", gen_patcher=gen_patch, verbose=False)[0]
+        dac = patch.place("dac~", verbose=False)[0]
+        patch.connect([gen_obj.outs[0], dac.ins[0]], verbose=False)
+
+        filepath = str(tmp_path / "passthrough.maxpat")
+        patch.save(filepath, verbose=False, check=False)
+
+        with open(filepath, "r") as f:
+            saved = json.load(f)
+
+        assert len(saved["patcher"]["boxes"]) == 2
+
+        gen_boxes = [b for b in saved["patcher"]["boxes"]
+                     if b["box"].get("text", "").startswith("gen~")]
+        assert len(gen_boxes) == 1
+
+        gen_box = gen_boxes[0]["box"]
+        assert "patcher" in gen_box
+        assert gen_box["patcher"]["classnamespace"] == "dsp.gen"
+        assert len(gen_box["patcher"]["boxes"]) == 2
+        assert len(gen_box["patcher"]["lines"]) == 1
+
+    def test_gen_with_cycle_operator(self, tmp_path):
+        """Create a gen~ patch that uses the cycle operator."""
+        gen_patch = mp.MaxPatch(gen_type="dsp.gen", verbose=False)
+        inp = gen_patch.place("in 1", verbose=False)[0]
+        cyc = gen_patch.place("cycle", verbose=False)[0]
+        outp = gen_patch.place("out 1", verbose=False)[0]
+        gen_patch.connect(
+            [inp.outs[0], cyc.ins[0]],
+            [cyc.outs[0], outp.ins[0]],
+            verbose=False,
+        )
+
+        patch = mp.MaxPatch(verbose=False)
+        gen_obj = patch.place("gen~", gen_patcher=gen_patch, verbose=False)[0]
+        dac = patch.place("ezdac~", verbose=False)[0]
+        patch.connect([gen_obj.outs[0], dac.ins[0]], verbose=False)
+
+        filepath = str(tmp_path / "gen_cycle.maxpat")
+        patch.save(filepath, verbose=False, check=False)
+
+        with open(filepath, "r") as f:
+            saved = json.load(f)
+
+        gen_box = [b for b in saved["patcher"]["boxes"]
+                   if b["box"].get("text", "").startswith("gen~")][0]
+        inner_texts = [b["box"]["text"] for b in gen_box["box"]["patcher"]["boxes"]]
+        assert "in 1" in inner_texts
+        assert "cycle" in inner_texts
+        assert "out 1" in inner_texts
+        assert len(gen_box["box"]["patcher"]["lines"]) == 2
+
+    def test_jit_gen_patcher(self, tmp_path):
+        """Create a jit.gen patch with correct classnamespace."""
+        gen_patch = mp.MaxPatch(gen_type="jit.gen", verbose=False)
+        inp = gen_patch.place("in 1", verbose=False)[0]
+        outp = gen_patch.place("out 1", verbose=False)[0]
+        gen_patch.connect([inp.outs[0], outp.ins[0]], verbose=False)
+
+        patch = mp.MaxPatch(verbose=False)
+        gen_obj = patch.place("jit.gen", gen_patcher=gen_patch, verbose=False)[0]
+
+        filepath = str(tmp_path / "jit_gen_test.maxpat")
+        patch.save(filepath, verbose=False, check=False)
+
+        with open(filepath, "r") as f:
+            saved = json.load(f)
+
+        gen_box = [b for b in saved["patcher"]["boxes"]
+                   if "patcher" in b["box"]][0]
+        assert gen_box["box"]["patcher"]["classnamespace"] == "jit.gen"
