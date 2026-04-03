@@ -1,0 +1,57 @@
+{
+  "name": "maxpylang",
+  "displayName": "MaxPyLang",
+  "description": "Generate Max/MSP and Max for Live patches using natural language prompts",
+  "version": "0.0.1",
+  "publisher": "barnard-pl-labs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Barnard-PL-Labs/MaxPyLang"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "maxpylang.openPrompt",
+        "title": "MaxPyLang: Open Prompt"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "maxpylang",
+          "title": "MaxPyLang",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "maxpylang": [
+        {
+          "type": "webview",
+          "id": "maxpylang.promptView",
+          "name": "Generate Plugin"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0",
+    "@vscode/vsce": "^3.0.0"
+  }
+}
