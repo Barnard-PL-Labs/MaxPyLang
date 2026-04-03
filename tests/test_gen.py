@@ -230,3 +230,36 @@ class TestGenComparison:
         assert "both" in report
         assert "local_total" in report
         assert "online_total" in report
+
+
+class TestGenStubs:
+    """Test gen.py stub generation and imports."""
+
+    def test_generate_gen_stubs(self, tmp_path):
+        """Should create a gen.py stub file."""
+        from maxpylang.tools.gen_scraper import generate_gen_stubs
+        stub_path = str(tmp_path / "gen.py")
+        generate_gen_stubs(output_path=stub_path)
+        assert os.path.exists(stub_path)
+
+    def test_gen_stubs_contain_known_operators(self, tmp_path):
+        """Generated stubs should contain known gen operators."""
+        from maxpylang.tools.gen_scraper import generate_gen_stubs
+        stub_path = str(tmp_path / "gen.py")
+        generate_gen_stubs(output_path=stub_path)
+        with open(stub_path, "r") as f:
+            content = f.read()
+        assert "history" in content
+        assert "phasor" in content
+        assert "cycle" in content
+        assert "noise" in content
+
+    def test_gen_stubs_sanitize_names(self, tmp_path):
+        """Operators with special chars should get sanitized Python names."""
+        from maxpylang.tools.gen_scraper import generate_gen_stubs
+        stub_path = str(tmp_path / "gen.py")
+        generate_gen_stubs(output_path=stub_path)
+        with open(stub_path, "r") as f:
+            content = f.read()
+        # 'in' is a Python keyword -> should become 'in_'
+        assert "in_ = MaxObject(" in content
