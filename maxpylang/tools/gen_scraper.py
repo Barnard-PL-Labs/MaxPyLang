@@ -301,12 +301,8 @@ def _make_gen_obj_info(name, category=""):
         "max", "maximum", "min", "minimum", "step",
         # logic
         "&&", "and", "||", "or", "^^", "xor",
-        # range/scaling
-        "clamp", "clip", "fold", "wrap", "scale",
-        # routing
-        "mix", "smoothstep",
         # gen~ specific
-        "delay", "interp", "latch",
+        "delay", "latch",
         "+=", "plusequals", "accum",
         "*=", "mulequals",
         # waveform
@@ -315,14 +311,21 @@ def _make_gen_obj_info(name, category=""):
         "ftom", "mtof",
         # buffer
         "peek", "sample", "nearest", "lookup",
+        # routing
+        "gate",  # choose, input
     }
     # 3 inlets, 1 outlet: ternary operators
     _3in_1out = {
         "?", "switch", "selector",
-        "gate",
-        "sah",    # input, trigger, threshold
-        "slide",  # input, slideup, slidedown
-        "train",  # frequency, width, phase
+        "sah",        # input, trigger, threshold
+        "slide",      # input, slideup, slidedown
+        "train",      # frequency, width, phase
+        "clip",       # input, min, max
+        "clamp",      # input, min, max
+        "fold",       # input, min, max
+        "wrap",       # input, min, max
+        "mix",        # loval, hival, interp
+        "smoothstep", # loval, hival, interp
     }
     # Special multi-inlet/outlet operators
     _special_io = {
@@ -334,6 +337,8 @@ def _make_gen_obj_info(name, category=""):
         "data":     (0, 2),  # -> length, channels
         "cartopol": (1, 2),  # -> magnitude, angle
         "poltocar": (1, 2),  # -> x, y
+        "scale":    (6, 1),  # input, ilo, ihi, olo, ohi, exp
+        "interp":   (7, 1),  # t, a, b, c, d, e, f
     }
 
     if name in _0in_1out:

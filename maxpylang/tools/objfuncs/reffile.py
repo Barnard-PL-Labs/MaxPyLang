@@ -42,13 +42,15 @@ def get_ref(self, name):
 
     #case-insensitive fallback for gen operators (e.g., PI -> pi, SAMPLERATE -> samplerate)
     #needed because case-insensitive filesystems can't store both pi.json and PI.json
+    #checks both directions: name.lower() in list, AND list entries whose .lower() matches
+    name_lower = name.lower()
     for package, obj_list in self.known_objs.items():
-        name_lower = name.lower()
-        if name_lower in obj_list:
-            package_folder = os.path.join(self.obj_info_folder, package)
-            ref_file = os.path.join(package_folder, name_lower + ".json")
-            if os.path.exists(ref_file):
-                return ref_file
+        for obj_name in obj_list:
+            if obj_name.lower() == name_lower:
+                package_folder = os.path.join(self.obj_info_folder, package)
+                ref_file = os.path.join(package_folder, obj_name + ".json")
+                if os.path.exists(ref_file):
+                    return ref_file
 
     if ref_file is None:
         #look for possible abstraction file in current directory
