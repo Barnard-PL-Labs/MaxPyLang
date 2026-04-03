@@ -132,3 +132,45 @@ class TestGenPatcherEmbedding:
         patch = mp.MaxPatch(verbose=False)
         osc = patch.place("cycle~ 440", verbose=False)[0]
         assert "patcher" not in osc._dict["box"]
+
+
+class TestGenScraper:
+    """Test gen operator extraction from local Max files."""
+
+    def test_extract_common_operators(self):
+        """Should extract common gen operators from local file."""
+        from maxpylang.tools.gen_scraper import extract_local_gen_operators
+        result = extract_local_gen_operators()
+        assert "common" in result
+        assert len(result["common"]) > 100  # we know there are 150
+
+    def test_extract_gen_tilde_operators(self):
+        """Should extract gen~ specific operators from local file."""
+        from maxpylang.tools.gen_scraper import extract_local_gen_operators
+        result = extract_local_gen_operators()
+        assert "gen_tilde" in result
+        assert len(result["gen_tilde"]) > 50  # we know there are 63
+
+    def test_extract_jitter_operators(self):
+        """Should extract jitter gen operators from local file."""
+        from maxpylang.tools.gen_scraper import extract_local_gen_operators
+        result = extract_local_gen_operators()
+        assert "jitter" in result
+        assert len(result["jitter"]) > 20  # we know there are 30
+
+    def test_operators_have_names(self):
+        """Each operator should have at least a name."""
+        from maxpylang.tools.gen_scraper import extract_local_gen_operators
+        result = extract_local_gen_operators()
+        for category, ops in result.items():
+            for op in ops:
+                assert "name" in op, f"Operator missing name in {category}"
+                assert len(op["name"]) > 0
+
+    def test_operators_have_categories(self):
+        """Each operator should have a category."""
+        from maxpylang.tools.gen_scraper import extract_local_gen_operators
+        result = extract_local_gen_operators()
+        for group, ops in result.items():
+            for op in ops:
+                assert "category" in op, f"Operator {op['name']} missing category in {group}"
