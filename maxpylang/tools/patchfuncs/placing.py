@@ -34,6 +34,7 @@ def place(
     spacing=[80.0, 80.0],
     starting_pos=None,
     verbose=False,
+    gen_patcher=None,
 ) -> list[MaxObject]:
     """
     Place objects in the patch.
@@ -82,15 +83,15 @@ def place(
 
     # place objects according to spacing
     if spacing_type == "grid":
-        placed_objs = self.place_grid(picked_objs, spacing, verbose=verbose)
+        placed_objs = self.place_grid(picked_objs, spacing, verbose=verbose, gen_patcher=gen_patcher)
     elif spacing_type == "custom":
-        placed_objs = self.place_custom(picked_objs, spacing, verbose=verbose)
+        placed_objs = self.place_custom(picked_objs, spacing, verbose=verbose, gen_patcher=gen_patcher)
     elif spacing_type == "random":
         if seed is None:  # generate seed if not given
             seed = random.randrange(2 ** 32 - 1)
-        placed_objs = self.place_random(picked_objs, seed, verbose=verbose)
+        placed_objs = self.place_random(picked_objs, seed, verbose=verbose, gen_patcher=gen_patcher)
     elif spacing_type == "vertical":
-        placed_objs = self.place_vertical(picked_objs, spacing, verbose=verbose)
+        placed_objs = self.place_vertical(picked_objs, spacing, verbose=verbose, gen_patcher=gen_patcher)
 
     return placed_objs
 
@@ -231,7 +232,7 @@ def place_pick_objs(self, objs, randpick, num_objs, seed, weights, verbose):
 
 
 # spacing
-def place_grid(self, objs, spacing, verbose=False):
+def place_grid(self, objs, spacing, verbose=False, gen_patcher=None):
     """
     Helper function for placing.
     Places objects in a grid.
@@ -260,7 +261,7 @@ def place_grid(self, objs, spacing, verbose=False):
         if curr_x > (canvas_x - x_space):
             curr_x = x_space
             curr_y += y_space
-        placedObj = self.place_obj(obj, position=[curr_x, curr_y], verbose=verbose)
+        placedObj = self.place_obj(obj, position=[curr_x, curr_y], verbose=verbose, gen_patcher=gen_patcher)
         createdObjs.append(placedObj)
 
     self._curr_position = [curr_x, curr_y]
@@ -269,7 +270,7 @@ def place_grid(self, objs, spacing, verbose=False):
 
 
 # spacing
-def place_random(self, objs, seed, verbose=False):
+def place_random(self, objs, seed, verbose=False, gen_patcher=None):
     """
     Helper function for placing.
     Places objects randomly.
@@ -287,14 +288,14 @@ def place_random(self, objs, seed, verbose=False):
     createdObjs = []
     for obj in objs:
         position = [np.random.random() * x, np.random.random() * y]
-        placedObj = self.place_obj(obj, position=position, verbose=verbose)
+        placedObj = self.place_obj(obj, position=position, verbose=verbose, gen_patcher=gen_patcher)
         createdObjs.append(placedObj)
 
     return createdObjs
 
 
 # spacing
-def place_custom(self, objs, positions, verbose=False):
+def place_custom(self, objs, positions, verbose=False, gen_patcher=None):
     """
     Helper function for placing.
     Places objects according to custom positions.
@@ -307,7 +308,7 @@ def place_custom(self, objs, positions, verbose=False):
 
     createdObjs = []
     for obj, pos in zip(objs, positions):
-        placedObj = self.place_obj(obj, position=pos, verbose=verbose)
+        placedObj = self.place_obj(obj, position=pos, verbose=verbose, gen_patcher=gen_patcher)
         createdObjs.append(placedObj)
 
     self._curr_position = pos
@@ -316,7 +317,7 @@ def place_custom(self, objs, positions, verbose=False):
 
 
 # spacing
-def place_vertical(self, objs, spacing, verbose=False):
+def place_vertical(self, objs, spacing, verbose=False, gen_patcher=None):
     """
     Helper function for placing.
     Places objects vertically.
@@ -333,7 +334,7 @@ def place_vertical(self, objs, spacing, verbose=False):
     createdObjs = []
     for obj in objs:
         y += spacing
-        placedObj = self.place_obj(obj, position=[x, y], verbose=verbose)
+        placedObj = self.place_obj(obj, position=[x, y], verbose=verbose, gen_patcher=gen_patcher)
         createdObjs.append(placedObj)
 
     self._curr_position = [x, y]
@@ -342,7 +343,7 @@ def place_vertical(self, objs, spacing, verbose=False):
 
 
 # actual placement of a single object
-def place_obj(self, obj, position=[0.0, 0.0], verbose=False, replace_id=None):
+def place_obj(self, obj, position=[0.0, 0.0], verbose=False, replace_id=None, gen_patcher=None):
     """
     Helper function for placing.
     If obj denoted by string, creates obj; otherwise, adds existing object to patcher at specified position.
@@ -351,6 +352,7 @@ def place_obj(self, obj, position=[0.0, 0.0], verbose=False, replace_id=None):
     position --> patcher position
     verbose --> debug commands
     replace_id --> 'obj-num' string of object being replaced
+    gen_patcher --> MaxPatch instance to embed as a gen sub-patcher inside this object
     """
 
     # get object from specification
@@ -365,6 +367,10 @@ def place_obj(self, obj, position=[0.0, 0.0], verbose=False, replace_id=None):
         obj._dict["box"]["id"] = replace_id  # change obj id to replacement id
 
     obj._dict["box"]["patching_rect"][0:2] = position  # change position
+
+    # embed gen patcher if provided
+    if gen_patcher is not None:
+        obj._dict["box"]["patcher"] = gen_patcher.get_json()["patcher"]
 
     # add to various dictionaries of patch objects by obj-id
     obj_id = obj._dict["box"]["id"]
