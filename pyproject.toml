@@ -23,6 +23,9 @@ dependencies = [
     "tabulate",
 ]
 
+[project.scripts]
+maxpylang = "maxpylang.cli:main"
+
 [project.urls]
 Homepage = "http://pypi.python.org/pypi/MaxPyLang/"
 
