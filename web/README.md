@@ -36,18 +36,33 @@ RMS + dominant frequency — an automatable "does it make sound?" check.
 
 ## Supported objects (this prototype)
 
+**Audio (MSP)** — `objects/audio/`:
 `cycle~`, `phasor~`*, `*~`, `+~`, `-~`, `gain~`, `clip~`, `lores~`, `ezdac~`
 (*`phasor~` is an approximation; see inline notes.)
 
+**Control (message)** — `objects/control/`:
+`metro`, `delay`, `counter`, `random`, `+`, `-`, `*`, `/`, `%`, `mtof`, `scale`,
+`int`/`i`, `float`/`f`, `number`, `flonum`, `toggle`, `button`/`bng`, `message`
+
+Control objects push values along non-signal cords into `controlIns` handlers
+(e.g. `mtof → cycle~` drives the oscillator frequency). Two prototype
+simplifications: values are single atoms (no lists/attributes), and a `metro`
+**auto-starts when the transport starts** so a patch plays on ▶ without needing a
+toggle click (an explicit `0` into its left inlet still stops it).
+
 ## Verified
 
-`hello_world` (`cycle~ 440 → *~ 0.2 → ezdac~`) self-tests to **440.0 Hz, RMS 0.1414**
-(= 0.2 amplitude sine), confirming correct end-to-end audio rendering.
+- `hello_world` (`cycle~ 440 → *~ 0.2 → ezdac~`) self-tests to **440.0 Hz, RMS
+  0.1414** (= 0.2 amplitude sine) — correct end-to-end audio.
+- `arpeggiator` (`metro → counter → + 60 → mtof → cycle~ → *~ → ezdac~`) drives an
+  ascending chromatic scale from C4; the control chain is unit-tested
+  (`test/control.test.ts`) down to the emitted frequencies.
 
 ## Roadmap
 
 - **M3** — full synth spine fidelity (AudioWorklet `phasor~`, faithful signal math).
-- **M4** — control domain: scheduler + `metro`/`counter`/`random`/UI widgets.
+- **M4** — remaining control domain: clickable UI widgets, `sel`/`trigger`/`pack`,
+  sample-accurate scheduling.
 - **M5** — meters, then MIDI (Web MIDI) and Jitter (`jit.*` → canvas/WebGL).
 - **Switch to in-browser generation** — replace the file loader with Pyodide running
   maxpylang; the engine consumes the identical JSON, so nothing downstream changes.

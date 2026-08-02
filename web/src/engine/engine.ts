@@ -63,16 +63,20 @@ export class Engine {
       // 'video' cords are ignored for now.
     }
 
-    for (const n of this.nodes.values()) n.start?.();
+    // Note: node.start/stop are the transport hooks (see start()/stop()), not
+    // called here — timed control objects (metro, delay) begin only when the
+    // user presses ▶, so they stay in sync with when audio actually plays.
 
     return { built: this.nodes, unsupported: [...unsupported] };
   }
 
   async start(): Promise<void> {
     if (this.ctx instanceof AudioContext) await this.ctx.resume();
+    for (const n of this.nodes.values()) n.start?.();
   }
 
   async stop(): Promise<void> {
+    for (const n of this.nodes.values()) n.stop?.();
     if (this.ctx instanceof AudioContext) await this.ctx.suspend();
   }
 

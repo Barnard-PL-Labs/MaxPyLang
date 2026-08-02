@@ -1,7 +1,8 @@
 // App entry: load a .maxpat (bundled sample, file picker, or drag-drop),
 // parse -> IR, render the graph, build the audio engine, and expose transport.
 
-import './objects/audio'; // side-effect: registers audio objects
+import './objects/audio';   // side-effect: registers audio (MSP) objects
+import './objects/control'; // side-effect: registers control (message) objects
 import { parseMaxPat } from './parser/maxpat';
 import { renderGraph } from './ui/graph';
 import { Engine } from './engine/engine';
