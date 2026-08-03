@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MaxPy Studio — write patches in the browser</title>
+    <style>
+      :root {
+        --bg: #16181c; --panel: #1d2027; --line: #2c313a;
+        --ink: #d6dbe2; --dim: #8b93a0;
+        --signal: #e8b73e; --control: #5aa9e6; --video: #a882e6; --go: #4bd08a; --err: #e8736b;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--ink); display: flex; flex-direction: column; }
+      header {
+        padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel);
+        display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+      }
+      h1 { font-size: 14px; margin: 0 10px 0 0; font-weight: 650; }
+      .spacer { flex: 1; }
+      a.nav { color: var(--dim); font-size: 13px; text-decoration: none; }
+      a.nav:hover { color: var(--ink); }
+      button {
+        background: #262b33; color: var(--ink); border: 1px solid #39404b; border-radius: 6px;
+        padding: 6px 11px; font-size: 13px; cursor: pointer;
+      }
+      button:hover:not(:disabled) { background: #2f3540; border-color: #4a5361; }
+      button:disabled { opacity: .4; cursor: default; }
+      #run { border-color: var(--control); color: #d6ecfb; }
+      #start { border-color: var(--go); color: #cdf6e3; }
+
+      main { flex: 1; display: flex; min-height: 0; }
+      .editor-pane { width: 42%; min-width: 320px; display: flex; flex-direction: column; border-right: 1px solid var(--line); }
+      #code {
+        flex: 1; resize: none; border: 0; outline: none; padding: 14px 16px;
+        background: #14161a; color: #e6ebf1; tab-size: 4;
+        font: 13px/1.55 ui-monospace, "SF Mono", Menlo, monospace;
+      }
+      #console {
+        white-space: pre-wrap; padding: 10px 16px; border-top: 1px solid var(--line);
+        background: #101216; font: 12px/1.5 ui-monospace, monospace; color: var(--dim);
+        max-height: 34%; overflow: auto; min-height: 44px;
+      }
+      #console.ok { color: #9fe3c1; }
+      #console.error { color: var(--err); }
+      #graph {
+        flex: 1; overflow: auto; padding: 20px;
+        background: radial-gradient(circle at 1px 1px, #23272f 1px, transparent 0) 0 0 / 22px 22px;
+      }
+      .hint { font-size: 11px; color: #6b7280; }
+
+      /* graph nodes + widgets (shared look with the player) */
+      .patch-graph { display: block; }
+      .patch-graph .node-body { fill: #23272f; stroke: #3a414c; }
+      .patch-graph .node:hover .node-body { stroke: #566173; }
+      .patch-graph .node-label { fill: var(--ink); font: 11px ui-monospace, Menlo, monospace; dominant-baseline: middle; }
+      .patch-graph .node-stub .node-body { fill: #24282f; stroke: #4a3a3a; stroke-dasharray: 4 3; }
+      .patch-graph .node-stub .node-label { fill: #8a8f98; }
+      .patch-graph .node-caption { fill: var(--dim); font: 10px ui-monospace, monospace; }
+      .widget-host { overflow: visible; }
+      .max-widget { width: 100%; height: 100%; margin: 0; }
+      input[type=range].max-widget { -webkit-appearance: none; appearance: none; background: transparent; cursor: pointer; }
+      input[type=range].max-widget::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: #363d47; }
+      input[type=range].max-widget::-moz-range-track { height: 6px; border-radius: 3px; background: #363d47; }
+      input[type=range].max-widget::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; margin-top: -5px; border-radius: 50%; background: var(--control); border: 2px solid #1a1d22; }
+      input[type=range].max-widget::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--control); border: 2px solid #1a1d22; }
+      input[type=range].max-dial::-webkit-slider-thumb { background: var(--signal); }
+      input[type=range].max-dial::-moz-range-thumb { background: var(--signal); }
+      input[type=number].max-widget { background: #1a1d22; color: var(--ink); border: 1px solid #39404b; border-radius: 4px; font: 12px ui-monospace, monospace; }
+    </style>
+    <script type="module" crossorigin src="/MaxPyLang/app/assets/studio-BbY4UddX.js"></script>
+    <link rel="modulepreload" crossorigin href="/MaxPyLang/app/assets/selftest-DcQOfUE2.js">
+  </head>
+  <body>
+    <header>
+      <h1>MaxPy Studio</h1>
+      <button id="run" disabled>▶ Run (⌘↵)</button>
+      <button id="start" disabled>▶ Start audio</button>
+      <button id="stop" disabled>■ Stop</button>
+      <button id="selftest" disabled>✓ Self-test</button>
+      <span class="hint">edit Python → run → press ▶ → drag the widgets</span>
+      <span class="spacer"></span>
+      <a class="nav" href="./index.html">→ Player</a>
+    </header>
+    <main>
+      <div class="editor-pane">
+        <textarea id="code" spellcheck="false">import maxpylang as mp
+
+# Build a patch, then call save() — the Studio plays whatever you save.
+patch = mp.MaxPatch()
+
+pitch = patch.place("slider")[0];            pitch.move(40, 60)   # drag: pitch
+mtof  = patch.place("mtof")[0];              mtof.move(40, 130)
+osc   = patch.place("cycle~ 220")[0];        osc.move(40, 190)
+
+cut   = patch.place("dial")[0];              cut.move(280, 55)    # drag: cutoff
+scale = patch.place("scale 0 127 200 6000")[0]; scale.move(280, 130)
+lp    = patch.place("lores~ 1500 3")[0];     lp.move(40, 250)
+
+amp   = patch.place("*~ 0.2")[0];            amp.move(40, 310)
+dac   = patch.place("ezdac~")[0];            dac.move(40, 370)
+
+patch.connect([pitch.outs[0], mtof.ins[0]])
+patch.connect([mtof.outs[0],  osc.ins[0]])
+patch.connect([osc.outs[0],   lp.ins[0]])
+patch.connect([cut.outs[0],   scale.ins[0]])
+patch.connect([scale.outs[0], lp.ins[1]])
+patch.connect([lp.outs[0],    amp.ins[0]])
+patch.connect([amp.outs[0],   dac.ins[0]])
+patch.connect([amp.outs[0],   dac.ins[1]])
+
+patch.save("my_synth.maxpat")
+</textarea>
+        <div id="console">Loading the Python runtime… (first load downloads ~15 MB, then it's cached)</div>
+      </div>
+      <div id="graph"></div>
+    </main>
+  </body>
+</html>
