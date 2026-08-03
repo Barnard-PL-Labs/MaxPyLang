@@ -30,11 +30,12 @@ async function loadPatch(json: unknown, name: string): Promise<void> {
   }
 
   currentJson = json;
-  renderGraph(graphEl, patch);
 
   if (engine) await engine.dispose();
   engine = new Engine();
   const report = engine.build(patch);
+  // render after build so widget objects can mount their DOM into the graph
+  renderGraph(graphEl, patch, report.built);
 
   const parts: string[] = [];
   if (report.stubbed.length) parts.push(`stubbed: ${report.stubbed.join(', ')}`);

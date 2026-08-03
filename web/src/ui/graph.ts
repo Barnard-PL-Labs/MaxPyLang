@@ -2,7 +2,7 @@
 // and colours cords by domain. Unsupported objects get a dashed outline.
 
 import type { IRPatch } from '../ir/types';
-import { isSupported } from '../engine/registry';
+import { isSupported, type MaxNode } from '../engine/registry';
 
 const DOMAIN_COLOR: Record<string, string> = {
   signal: '#e0b341', // yellow-ish, like Max signal cords
@@ -28,7 +28,11 @@ function portX(rect: number[], index: number, count: number): number {
   return x + (w * index) / (count - 1);
 }
 
-export function renderGraph(container: HTMLElement, patch: IRPatch): void {
+export function renderGraph(
+  container: HTMLElement,
+  patch: IRPatch,
+  built?: Map<string, MaxNode>
+): void {
   container.innerHTML = '';
 
   const pad = 40;
@@ -57,18 +61,31 @@ export function renderGraph(container: HTMLElement, patch: IRPatch): void {
 
   for (const n of patch.nodes) {
     const [x, y, w, h] = n.rect;
+    const width = Math.max(w, 30);
+    const height = Math.max(h, 18);
+
+    // If the built object provides a DOM widget (slider, dial, number box…),
+    // mount it in place via a foreignObject instead of the default box.
+    const widget = built?.get(n.id)?.el;
+    if (widget) {
+      const fo = el('foreignObject', { x, y, width, height });
+      fo.appendChild(widget);
+      svg.appendChild(fo);
+      continue;
+    }
+
     const supported = isSupported(n.className);
     const g = el('g', {});
     g.appendChild(
       el('rect', {
-        x, y, width: Math.max(w, 30), height: Math.max(h, 18), rx: 3,
+        x, y, width, height, rx: 3,
         fill: supported ? '#2c2c2c' : '#3a2020',
         stroke: supported ? '#666' : '#a55',
         'stroke-dasharray': supported ? '0' : '4 3',
       })
     );
     const label = el('text', {
-      x: x + 5, y: y + Math.max(h, 18) / 2 + 4, fill: '#ddd', 'font-size': 11,
+      x: x + 5, y: y + height / 2 + 4, fill: '#ddd', 'font-size': 11,
       'font-family': 'monospace',
     });
     label.textContent = n.text || n.className;
