@@ -20,3 +20,6 @@ maxpylang/data/OBJ_ALIASES/
 # macOS
 .DS_Store
 tasks/
+
+# Claude Code local state (worktrees, etc.)
+.claude/
