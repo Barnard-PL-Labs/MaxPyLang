@@ -6,6 +6,7 @@ import { parseMaxPat } from './parser/maxpat';
 import { renderGraph } from './ui/graph';
 import { Engine } from './engine/engine';
 import { renderTone } from './engine/selftest';
+import { preloadWorklets } from './runtime/worklet';
 import type { IRPatch } from './ir/types';
 
 const graphEl = document.getElementById('graph')!;
@@ -33,6 +34,10 @@ async function loadPatch(json: unknown, name: string): Promise<void> {
 
   if (engine) await engine.dispose();
   engine = new Engine();
+  // Worklet modules must be added to the context BEFORE any AudioWorkletNode is
+  // created, so preload the DSP worklets before the engine builds the patch. When
+  // worklets are unavailable this resolves immediately and objects pass through.
+  await preloadWorklets(engine.ctx);
   const report = engine.build(patch);
   // render after build so widget objects can mount their DOM into the graph
   renderGraph(graphEl, patch, report.built);
