@@ -15,6 +15,7 @@ import { keymap } from '@codemirror/view';
 import { indentWithTab } from '@codemirror/commands';
 import { python } from '@codemirror/lang-python';
 import { oneDark } from '@codemirror/theme-one-dark';
+import { maxpyComplete } from './compiler/completions';
 
 const PYODIDE_CDN = 'https://cdn.jsdelivr.net/pyodide/v314.0.3/full/';
 
@@ -139,16 +140,20 @@ selftestBtn.addEventListener('click', async () => {
 // ── CodeMirror editor (Python mode) ───────────────────────────────────────────
 // ⌘/Ctrl+Enter runs; Tab indents (indentWithTab). Created synchronously at load,
 // so it exists before the worker's async 'ready' triggers the first run().
+const pyLang = python();
 const view = new EditorView({
   doc: STARTER,
   parent: document.getElementById('editor')!,
   extensions: [
     basicSetup,
-    python(),
+    pyLang,
     oneDark,
     keymap.of([
       indentWithTab,
       { key: 'Mod-Enter', preventDefault: true, run: () => { void run(); return true; } },
     ]),
+    // MaxPy completions (Max object names in place("…"), API after a dot),
+    // registered alongside the Python language's own keyword completion.
+    pyLang.language.data.of({ autocomplete: maxpyComplete }),
   ],
 });
