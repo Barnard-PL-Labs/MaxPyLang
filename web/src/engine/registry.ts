@@ -19,6 +19,25 @@ export interface BuildContext {
 }
 
 /**
+ * The video domain (Jitter). A `jit_matrix` cord carries frames, not audio, so it
+ * has its own tiny contract, deliberately separate from the Web Audio graph.
+ *
+ * A frame is just "something drawable": a <canvas>, <video>, or ImageBitmap plus its
+ * pixel dimensions. The engine pumps frames from sources to sinks on a rAF loop.
+ */
+export interface VideoFrame {
+  /** Anything CanvasRenderingContext2D.drawImage() accepts. */
+  source: CanvasImageSource;
+  width: number;
+  height: number;
+}
+
+/** A video outlet: pull the current frame, or undefined until one exists yet. */
+export interface VideoSource {
+  getFrame(): VideoFrame | undefined;
+}
+
+/**
  * A built runtime object. Signal cords wire signalOuts -> signalIns via the Web
  * Audio graph; control cords wire onControlOut emitters -> controlIns handlers.
  * All arrays are indexed by inlet/outlet number; a missing entry means "no such port".
@@ -32,7 +51,11 @@ export interface MaxNode {
   controlIns?: (((m: Msg) => void) | undefined)[];
   /** Register a listener for messages leaving outlet i. */
   onControlOut?: (outlet: number, cb: (m: Msg) => void) => void;
-  /** Optional DOM widget (sliders, number boxes, meters). */
+  /** Video source for outlet i — a jit_matrix cord pulls frames from here. */
+  videoOuts?: (VideoSource | undefined)[];
+  /** Video sink for inlet i — receives each frame pushed along a jit_matrix cord. */
+  videoIns?: (((frame: VideoFrame) => void) | undefined)[];
+  /** Optional DOM widget (sliders, number boxes, meters, jit.window canvas). */
   el?: HTMLElement;
   /** Transport ▶ hook (e.g. a metro begins ticking). */
   start?: () => void;
