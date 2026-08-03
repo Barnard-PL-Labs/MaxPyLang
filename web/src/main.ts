@@ -1,8 +1,7 @@
 // App entry: load a .maxpat (bundled sample, file picker, or drag-drop),
 // parse -> IR, render the graph, build the audio engine, and expose transport.
 
-import './objects/audio';   // side-effect: registers audio (MSP) objects
-import './objects/control'; // side-effect: registers control (message) objects
+import './objects'; // side-effect: registers all objects (real + Tier-A stubs)
 import { parseMaxPat } from './parser/maxpat';
 import { renderGraph } from './ui/graph';
 import { Engine } from './engine/engine';
@@ -37,13 +36,13 @@ async function loadPatch(json: unknown, name: string): Promise<void> {
   engine = new Engine();
   const report = engine.build(patch);
 
-  const supportedCount = patch.nodes.length - report.unsupported.length;
-  const unsupported = report.unsupported.length
-    ? ` · unsupported: ${report.unsupported.join(', ')}`
-    : '';
+  const parts: string[] = [];
+  if (report.stubbed.length) parts.push(`stubbed: ${report.stubbed.join(', ')}`);
+  if (report.unknown.length) parts.push(`unknown: ${report.unknown.join(', ')}`);
+  const detail = parts.length ? ` · ${parts.join(' · ')}` : '';
   coverageEl.textContent =
     `${name}: ${patch.nodes.length} objects, ${patch.edges.length} cords` +
-    ` · ${supportedCount} playable${unsupported}`;
+    ` · ${report.implemented.length} implemented${detail}`;
 
   startBtn.disabled = false;
   stopBtn.disabled = false;

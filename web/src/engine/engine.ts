@@ -5,11 +5,15 @@
 // scheduler in a later milestone — the seams are already here.
 
 import type { IRPatch } from '../ir/types';
-import { getFactory, type MaxNode } from './registry';
+import { getFactory, tierOf, type MaxNode } from './registry';
+import { scheduler } from '../runtime/scheduler';
+import { buses } from '../runtime/buses';
 
 export interface BuildReport {
   built: Map<string, MaxNode>;
-  unsupported: string[]; // class names with no factory (rendered as placeholders)
+  implemented: string[]; // Tier B: real behavior
+  stubbed: string[]; // Tier A: recognized (correct I/O) but no behavior yet
+  unknown: string[]; // not in the manifest at all (e.g. a subpatcher/abstraction)
 }
 
 export class Engine {
@@ -26,19 +30,22 @@ export class Engine {
 
   /** Instantiate every object and connect the cords. Returns what got built. */
   build(patch: IRPatch): BuildReport {
-    const unsupported = new Set<string>();
+    const implemented = new Set<string>();
+    const stubbed = new Set<string>();
+    const unknown = new Set<string>();
 
     for (const node of patch.nodes) {
       const factory = getFactory(node.className);
       if (!factory) {
-        unsupported.add(node.className);
+        unknown.add(node.className);
         continue;
       }
       try {
         this.nodes.set(node.id, factory(node.args, { ctx: this.ctx }));
+        (tierOf(node.className) === 'B' ? implemented : stubbed).add(node.className);
       } catch (err) {
         console.error(`Failed to build ${node.className} (${node.id}):`, err);
-        unsupported.add(node.className);
+        unknown.add(node.className);
       }
     }
 
@@ -67,22 +74,31 @@ export class Engine {
     // called here — timed control objects (metro, delay) begin only when the
     // user presses ▶, so they stay in sync with when audio actually plays.
 
-    return { built: this.nodes, unsupported: [...unsupported] };
+    return {
+      built: this.nodes,
+      implemented: [...implemented],
+      stubbed: [...stubbed],
+      unknown: [...unknown],
+    };
   }
 
   async start(): Promise<void> {
     if (this.ctx instanceof AudioContext) await this.ctx.resume();
+    scheduler.start(); // arm every timed control object (metro, delay, …)
     for (const n of this.nodes.values()) n.start?.();
   }
 
   async stop(): Promise<void> {
     for (const n of this.nodes.values()) n.stop?.();
+    scheduler.stop();
     if (this.ctx instanceof AudioContext) await this.ctx.suspend();
   }
 
   /** Tear everything down (called before loading a new patch). */
   async dispose(): Promise<void> {
-    for (const n of this.nodes.values()) n.stop?.();
+    for (const n of this.nodes.values()) { n.stop?.(); n.dispose?.(); }
+    scheduler.clear();
+    buses.clear();
     this.nodes.clear();
     if (this.ctx instanceof AudioContext) await this.ctx.close();
   }

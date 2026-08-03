@@ -1,96 +1,74 @@
-// Control (Max message) objects — the non-signal domain: timers, counters,
-// math, and value stores. These don't touch the audio graph directly; they push
-// ControlValues along control cords, which the engine routes to controlIns
-// handlers (e.g. cycle~'s frequency handler).
+// Control (Max message) objects — the non-signal domain: timers, counters, math,
+// and value stores. They push messages (Atom lists) along control cords, which the
+// engine routes into controlIns handlers (e.g. cycle~'s frequency handler).
 //
-// Fidelity notes are inline. Like the audio objects, the goal is "recognisably
-// correct behaviour" for the common cases, not full Max parity (no lists, no
-// attributes, single-atom values only).
+// REFERENCE PATTERN for new control objects:
+//   const o = makeOutlets();                       // fan-out helper
+//   return {
+//     signalIns: [], signalOuts: [],
+//     controlIns: [ (m) => { ...; o.emit(0, [result]); } ],
+//     onControlOut: o.onControlOut,
+//     dispose: () => {...},                         // cancel timers / unsubscribe
+//   };
+// Messages are Atom[] (see runtime/atoms): a bang is BANG, a number is [n], a list
+// is [a, b, c]. Use firstNum(m)/nums(m)/isBang(m) to read them. Time-driven objects
+// use the shared `scheduler` so ▶/■ start and stop them in sync with audio.
 
-import { num, register, type ControlValue, type MaxNode } from '../../engine/registry';
+import { num, register, type MaxNode } from '../../engine/registry';
+import { makeOutlets } from '../../runtime/outlets';
+import { scheduler } from '../../runtime/scheduler';
+import { BANG, firstNum, isBang, type Atom, type Msg } from '../../runtime/atoms';
 
-/**
- * A fan-out helper for control outlets. `emit(outlet, v)` delivers `v` to every
- * cord connected to that outlet; `onControlOut` is what the engine calls to
- * subscribe each destination. Every control object shares this shape.
- */
-function outlets() {
-  const listeners = new Map<number, Array<(v: ControlValue) => void>>();
-  return {
-    onControlOut(outlet: number, cb: (v: ControlValue) => void) {
-      const arr = listeners.get(outlet) ?? [];
-      arr.push(cb);
-      listeners.set(outlet, arr);
-    },
-    emit(outlet: number, v: ControlValue) {
-      const arr = listeners.get(outlet);
-      if (arr) for (const cb of arr) cb(v);
-    },
-  };
-}
-
-/** True for anything that should "fire" a bang-like object (a bang or a number). */
-function isTrigger(v: ControlValue): boolean {
-  return v === 'bang' || typeof v === 'number';
+/** A message that should "fire" a bang-like object (a bang or any number). */
+function isTrigger(m: Msg): boolean {
+  return isBang(m) || firstNum(m) !== undefined;
 }
 
 // ── Timing ──────────────────────────────────────────────────────────────────
 
 // metro <ms> : bang repeatedly at a fixed interval. inlet 0 turns it on/off
-// (nonzero/bang = on, 0 = off); inlet 1 sets the interval. outlet 0 is a bang.
+// (nonzero/bang = on, 0 = off); inlet 1 sets the interval.
 //
-// Prototype convenience: a metro also AUTO-STARTS when the transport starts, so
-// a loaded patch plays without needing a toggle click. An explicit 0 at inlet 0
-// still stops it. (In Max a metro only runs once switched on.)
+// Prototype convenience: on by default, and the shared scheduler only lets it tick
+// while the transport is running — so a loaded patch plays on ▶ without a toggle
+// click. An explicit 0 into inlet 0 still stops it.
 register('metro', (args) => {
-  const o = outlets();
+  const o = makeOutlets();
   let interval = Math.max(1, num(args[0], 500));
-  let timer: ReturnType<typeof setInterval> | null = null;
-
-  const on = () => {
-    if (timer != null) return;
-    timer = setInterval(() => o.emit(0, 'bang'), interval);
-  };
-  const off = () => {
-    if (timer != null) { clearInterval(timer); timer = null; }
-  };
-
+  let cancel: (() => void) | null = null;
+  const on = () => { if (!cancel) cancel = scheduler.everyMs(interval, () => o.emit(0, BANG)); };
+  const off = () => { if (cancel) { cancel(); cancel = null; } };
+  on(); // auto-start (scheduler gates actual ticking to the transport)
   return {
     signalIns: [],
     signalOuts: [],
     controlIns: [
-      (v) => {
-        if (v === 'bang') on();
-        else if (typeof v === 'number') (v !== 0 ? on() : off());
+      (m) => {
+        if (isBang(m)) on();
+        else { const n = firstNum(m); if (n !== undefined) (n !== 0 ? on() : off()); }
       },
-      (v) => {
-        if (typeof v === 'number') {
-          interval = Math.max(1, v);
-          if (timer != null) { off(); on(); } // restart at the new rate
-        }
-      },
+      (m) => { const n = firstNum(m); if (n !== undefined) { interval = Math.max(1, n); if (cancel) { off(); on(); } } },
     ],
     onControlOut: o.onControlOut,
-    start: on,   // transport ▶ auto-starts the metro
-    stop: off,   // transport ■ / patch reload halts the timer
+    dispose: off,
   } satisfies MaxNode;
 });
 
 // delay <ms> : bang in -> bang out, `ms` later. A new bang reschedules.
 register('delay', (args) => {
-  const o = outlets();
+  const o = makeOutlets();
   let ms = Math.max(0, num(args[0], 0));
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  const cancel = () => { if (timer != null) { clearTimeout(timer); timer = null; } };
+  let cancel: (() => void) | null = null;
+  const clear = () => { if (cancel) { cancel(); cancel = null; } };
   return {
     signalIns: [],
     signalOuts: [],
     controlIns: [
-      (v) => { if (isTrigger(v)) { cancel(); timer = setTimeout(() => o.emit(0, 'bang'), ms); } },
-      (v) => { if (typeof v === 'number') ms = Math.max(0, v); },
+      (m) => { if (isTrigger(m)) { clear(); cancel = scheduler.afterMs(ms, () => o.emit(0, BANG)); } },
+      (m) => { const n = firstNum(m); if (n !== undefined) ms = Math.max(0, n); },
     ],
     onControlOut: o.onControlOut,
-    stop: cancel,
+    dispose: clear,
   } satisfies MaxNode;
 });
 
@@ -99,7 +77,7 @@ register('delay', (args) => {
 // counter [min] [max] : on each bang, output the current count, then advance,
 // wrapping min..max. One arg = max (min 0); two args = min, max.
 register('counter', (args) => {
-  const o = outlets();
+  const o = makeOutlets();
   const min = args.length >= 2 ? num(args[0], 0) : 0;
   const max = args.length >= 2 ? num(args[1], 127) : num(args[0], 127);
   let count = min;
@@ -107,9 +85,9 @@ register('counter', (args) => {
     signalIns: [],
     signalOuts: [],
     controlIns: [
-      (v) => {
-        if (!isTrigger(v)) return;
-        o.emit(0, count);
+      (m) => {
+        if (!isTrigger(m)) return;
+        o.emit(0, [count]);
         count = count >= max ? min : count + 1;
       },
     ],
@@ -119,14 +97,14 @@ register('counter', (args) => {
 
 // random <N> : on a bang, output a random int in [0, N). inlet 1 sets N.
 register('random', (args) => {
-  const o = outlets();
+  const o = makeOutlets();
   let n = Math.max(1, num(args[0], 128));
   return {
     signalIns: [],
     signalOuts: [],
     controlIns: [
-      (v) => { if (isTrigger(v)) o.emit(0, Math.floor(Math.random() * n)); },
-      (v) => { if (typeof v === 'number') n = Math.max(1, v); },
+      (m) => { if (isTrigger(m)) o.emit(0, [Math.floor(Math.random() * n)]); },
+      (m) => { const v = firstNum(m); if (v !== undefined) n = Math.max(1, v); },
     ],
     onControlOut: o.onControlOut,
   } satisfies MaxNode;
@@ -134,22 +112,23 @@ register('random', (args) => {
 
 // ── Math ────────────────────────────────────────────────────────────────────
 
-// Binary control math (+ - * / %): the left inlet triggers output, the right
-// inlet (or the creation arg) stores the operand. A bang re-outputs.
+// Binary control math (+ - * / %): the left inlet triggers output, the right inlet
+// (or the creation arg) stores the operand. A bang re-outputs.
 function makeControlMath(op: (a: number, b: number) => number) {
-  return (args: (number | string)[]): MaxNode => {
-    const o = outlets();
+  return (args: Atom[]): MaxNode => {
+    const o = makeOutlets();
     let operand = num(args[0], 0);
     let left = 0;
     return {
       signalIns: [],
       signalOuts: [],
       controlIns: [
-        (v) => {
-          if (typeof v === 'number') { left = v; o.emit(0, op(left, operand)); }
-          else if (v === 'bang') o.emit(0, op(left, operand));
+        (m) => {
+          const n = firstNum(m);
+          if (n !== undefined) { left = n; o.emit(0, [op(left, operand)]); }
+          else if (isBang(m)) o.emit(0, [op(left, operand)]);
         },
-        (v) => { if (typeof v === 'number') operand = v; },
+        (m) => { const n = firstNum(m); if (n !== undefined) operand = n; },
       ],
       onControlOut: o.onControlOut,
     };
@@ -161,22 +140,22 @@ register('*', makeControlMath((a, b) => a * b));
 register('/', makeControlMath((a, b) => (b === 0 ? 0 : a / b)));
 register('%', makeControlMath((a, b) => (b === 0 ? 0 : a % b)));
 
-// mtof : MIDI note number -> frequency in Hz (A4 = 69 = 440 Hz). The classic
-// bridge from control ints to a cycle~/saw frequency inlet.
+// mtof : MIDI note number -> frequency in Hz (A4 = 69 = 440 Hz). The classic bridge
+// from control ints to a cycle~/saw frequency inlet.
 register('mtof', () => {
-  const o = outlets();
+  const o = makeOutlets();
   return {
     signalIns: [],
     signalOuts: [],
-    controlIns: [(v) => { if (typeof v === 'number') o.emit(0, 440 * Math.pow(2, (v - 69) / 12)); }],
+    controlIns: [(m) => { const n = firstNum(m); if (n !== undefined) o.emit(0, [440 * Math.pow(2, (n - 69) / 12)]); }],
     onControlOut: o.onControlOut,
   } satisfies MaxNode;
 });
 
-// scale <inLo> <inHi> <outLo> <outHi> : linearly remap a number from one range
-// to another (default in 0..127, out 0..1).
+// scale <inLo> <inHi> <outLo> <outHi> : linearly remap a number between ranges
+// (default in 0..127, out 0..1).
 register('scale', (args) => {
-  const o = outlets();
+  const o = makeOutlets();
   const inLo = num(args[0], 0);
   const inHi = num(args[1], 127);
   const outLo = num(args[2], 0);
@@ -185,32 +164,28 @@ register('scale', (args) => {
   return {
     signalIns: [],
     signalOuts: [],
-    controlIns: [(v) => {
-      if (typeof v === 'number') o.emit(0, outLo + ((v - inLo) / span) * (outHi - outLo));
-    }],
+    controlIns: [(m) => { const n = firstNum(m); if (n !== undefined) o.emit(0, [outLo + ((n - inLo) / span) * (outHi - outLo)]); }],
     onControlOut: o.onControlOut,
   } satisfies MaxNode;
 });
 
 // ── Value stores & UI-ish objects ────────────────────────────────────────────
 
-// int/i, float/f, number, flonum : store a value. A number at the left inlet
-// stores AND outputs it; a bang outputs the stored value; the right inlet stores
-// without output. (number/flonum are UI boxes here treated as headless stores;
-// clickable widgets come with the UI milestone.)
+// int/i, float/f, number, flonum : store a value. A number at the left inlet stores
+// AND outputs it; a bang outputs the stored value; the right inlet stores silently.
 function makeStore(coerce: (x: number) => number) {
-  return (args: (number | string)[]): MaxNode => {
-    const o = outlets();
+  return (args: Atom[]): MaxNode => {
+    const o = makeOutlets();
     let val = coerce(num(args[0], 0));
     return {
       signalIns: [],
       signalOuts: [],
       controlIns: [
-        (v) => {
-          if (v === 'bang') o.emit(0, val);
-          else if (typeof v === 'number') { val = coerce(v); o.emit(0, val); }
+        (m) => {
+          if (isBang(m)) o.emit(0, [val]);
+          else { const n = firstNum(m); if (n !== undefined) { val = coerce(n); o.emit(0, [val]); } }
         },
-        (v) => { if (typeof v === 'number') val = coerce(v); },
+        (m) => { const n = firstNum(m); if (n !== undefined) val = coerce(n); },
       ],
       onControlOut: o.onControlOut,
     };
@@ -223,47 +198,44 @@ register('f', makeStore((x) => x));
 register('number', makeStore(Math.trunc));
 register('flonum', makeStore((x) => x));
 
-// toggle : bang flips its 0/1 state; a number sets it (nonzero -> 1). Outputs
-// the resulting state.
+// toggle : bang flips its 0/1 state; a number sets it (nonzero -> 1). Outputs state.
 register('toggle', () => {
-  const o = outlets();
+  const o = makeOutlets();
   let state = 0;
   return {
     signalIns: [],
     signalOuts: [],
-    controlIns: [(v) => {
-      if (v === 'bang') state = state ? 0 : 1;
-      else if (typeof v === 'number') state = v !== 0 ? 1 : 0;
-      o.emit(0, state);
+    controlIns: [(m) => {
+      if (isBang(m)) state = state ? 0 : 1;
+      else { const n = firstNum(m); if (n !== undefined) state = n !== 0 ? 1 : 0; }
+      o.emit(0, [state]);
     }],
     onControlOut: o.onControlOut,
   } satisfies MaxNode;
 });
 
 // button/bng : any input produces a bang.
-function makeButton() {
-  const o = outlets();
+function makeButton(): MaxNode {
+  const o = makeOutlets();
   return {
     signalIns: [],
     signalOuts: [],
-    controlIns: [(_v: ControlValue) => o.emit(0, 'bang')],
+    controlIns: [() => o.emit(0, BANG)],
     onControlOut: o.onControlOut,
-  } satisfies MaxNode;
+  };
 }
 register('button', makeButton);
 register('bng', makeButton);
 
-// message : on any trigger, output its stored content. Multi-atom messages emit
-// each atom in turn (a stand-in for real Max list output).
+// message : on any trigger, output its stored content as a message (list of atoms).
 register('message', (args) => {
-  const o = outlets();
+  const o = makeOutlets();
   return {
     signalIns: [],
     signalOuts: [],
-    controlIns: [(v) => {
-      if (!isTrigger(v) && typeof v !== 'string') return;
-      if (args.length === 0) o.emit(0, 'bang');
-      else for (const a of args) o.emit(0, a);
+    controlIns: [(m) => {
+      if (!isTrigger(m) && m.length === 0) return;
+      o.emit(0, args.length ? (args as Msg) : BANG);
     }],
     onControlOut: o.onControlOut,
   } satisfies MaxNode;

@@ -5,6 +5,8 @@
 // sound", not sample-accurate parity with Max's DSP.
 
 import { num, register, type MaxNode } from '../../engine/registry';
+import { firstNum } from '../../runtime/atoms';
+import { makeOutlets } from '../../runtime/outlets';
 
 // cycle~ : sine oscillator. inlet 0 sets frequency (signal or float), outlet 0 is audio.
 register('cycle~', (args, { ctx }) => {
@@ -13,7 +15,7 @@ register('cycle~', (args, { ctx }) => {
   return {
     signalIns: [osc.frequency],
     signalOuts: [osc],
-    controlIns: [(v) => { if (typeof v === 'number') osc.frequency.value = v; }],
+    controlIns: [(m) => { const n = firstNum(m); if (n !== undefined) osc.frequency.value = n; }],
   } satisfies MaxNode;
 });
 
@@ -30,7 +32,7 @@ register('phasor~', (args, { ctx }) => {
   return {
     signalIns: [saw.frequency],
     signalOuts: [half],
-    controlIns: [(v) => { if (typeof v === 'number') saw.frequency.value = v; }],
+    controlIns: [(m) => { const n = firstNum(m); if (n !== undefined) saw.frequency.value = n; }],
   } satisfies MaxNode;
 });
 
@@ -40,7 +42,7 @@ register('*~', (args, { ctx }) => {
   return {
     signalIns: [gain, gain.gain], // inlet 0 = audio in, inlet 1 = multiplier
     signalOuts: [gain],
-    controlIns: [undefined, (v) => { if (typeof v === 'number') gain.gain.value = v; }],
+    controlIns: [undefined, (m) => { const n = firstNum(m); if (n !== undefined) gain.gain.value = n; }],
   } satisfies MaxNode;
 });
 
@@ -55,17 +57,24 @@ function makeAdder(sign: 1 | -1) {
     return {
       signalIns: [pass, offset.offset],
       signalOuts: [pass],
-      controlIns: [undefined, (v) => { if (typeof v === 'number') offset.offset.value = sign * v; }],
+      controlIns: [undefined, (m) => { const n = firstNum(m); if (n !== undefined) offset.offset.value = sign * n; }],
     };
   };
 }
 register('+~', makeAdder(1));
 register('-~', makeAdder(-1));
 
-// gain~ : slider-controlled amp. Prototype: fixed pass-through gain (UI comes later).
+// gain~ : slider-controlled amp. Outlet 0 is the scaled signal; outlet 1 emits the
+// raw slider value (control). Prototype: fixed pass-through gain, no UI slider yet,
+// so the control outlet exists but stays quiet until the widget lands.
 register('gain~', (_args, { ctx }) => {
   const gain = new GainNode(ctx, { gain: 1 });
-  return { signalIns: [gain], signalOuts: [gain] } satisfies MaxNode;
+  const o = makeOutlets();
+  return {
+    signalIns: [gain],
+    signalOuts: [gain, undefined], // outlet 1 is control, not signal
+    onControlOut: o.onControlOut,
+  } satisfies MaxNode;
 });
 
 // clip~ : hard-clip signal to [lo, hi] (default -1..1) via a WaveShaper.
