@@ -68,7 +68,16 @@ export function renderGraph(
     // mount it in place via a foreignObject instead of the default box.
     const widget = built?.get(n.id)?.el;
     if (widget) {
-      const fo = el('foreignObject', { x, y, width, height });
+      // Video windows (jit.window/pwindow) carry a <canvas> whose intrinsic pixel
+      // size is much larger than the tiny object box — size the foreignObject to the
+      // canvas so the frame is actually visible.
+      let fw = width;
+      let fh = height;
+      if (typeof HTMLCanvasElement !== 'undefined' && widget instanceof HTMLCanvasElement) {
+        fw = Math.max(width, widget.width);
+        fh = Math.max(height, widget.height);
+      }
+      const fo = el('foreignObject', { x, y, width: fw, height: fh });
       fo.appendChild(widget);
       svg.appendChild(fo);
       continue;
