@@ -33,7 +33,7 @@ class MaxPatch:
         patch_templates_path,
     )  #: Path to the patch templates folder MaxPy/maxpy/data/PATCH_TEMPLATES.
 
-    def __init__(self, template=None, load_file=None, reorder=True, verbose=True):
+    def __init__(self, template=None, load_file=None, reorder=True, verbose=True, gen_type=None):
         """
         Constructor method.
         """
@@ -44,6 +44,7 @@ class MaxPatch:
         self._patcher_dict = {}  #: the patch's JSON data
         self._curr_position = [0.0, 0.0]  #: 'cursor' position at which to place objects
         self._filename = "default.maxpat"  #: the file where the patch is saved
+        self._gen_type = gen_type
 
         # load existing maxpatch
         if load_file:
@@ -51,11 +52,19 @@ class MaxPatch:
 
         # or, make copy from template
         else:
-            if template is None:
-                template = os.path.join(
-                    self.patch_templates_path, "empty_template.json"
-                )
-            self.load_template(template, verbose=verbose)
+            if gen_type is not None:
+                if template is None:
+                    template = os.path.join(
+                        self.patch_templates_path, "gen_template.json"
+                    )
+                self.load_template(template, verbose=verbose)
+                self._patcher_dict["patcher"]["classnamespace"] = gen_type
+            else:
+                if template is None:
+                    template = os.path.join(
+                        self.patch_templates_path, "empty_template.json"
+                    )
+                self.load_template(template, verbose=verbose)
 
         return
 

@@ -1,0 +1,31 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "newobj",
+      "numinlets": 2,
+      "numoutlets": 2,
+      "outlettype": [
+        "",
+        ""
+      ],
+      "patching_rect": [
+        0.0,
+        0.0,
+        60.0,
+        22.0
+      ],
+      "text": "poltocar"
+    }
+  },
+  "args": {
+    "required": [],
+    "optional": []
+  },
+  "attribs": [],
+  "in/out": {},
+  "doc": {
+    "digest": "Gen operator: poltocar",
+    "description": "Gen operator 'poltocar' (category: Math)"
+  }
+}
