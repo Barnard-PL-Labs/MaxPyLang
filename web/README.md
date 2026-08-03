@@ -34,21 +34,34 @@ RMS + dominant frequency — an automatable "does it make sound?" check.
   `control/`, `ui/`). Unsupported objects render as dashed placeholders and are listed in
   the coverage line; they never crash a patch.
 
-## Supported objects (this prototype)
+## Object coverage
 
-**Audio (MSP)** — `objects/audio/`:
-`cycle~`, `phasor~`*, `*~`, `+~`, `-~`, `gain~`, `clip~`, `lores~`, `ezdac~`
-(*`phasor~` is an approximation; see inline notes.)
+Every one of the **1004 Max/MSP/Jitter objects** in maxpylang's metadata database is
+**recognized** — it builds with correct inlet/outlet arity + domain and never crashes a
+patch. Objects come in two tiers:
 
-**Control (message)** — `objects/control/`:
-`metro`, `delay`, `counter`, `random`, `+`, `-`, `*`, `/`, `%`, `mtof`, `scale`,
-`int`/`i`, `float`/`f`, `number`, `flonum`, `toggle`, `button`/`bng`, `message`
+- **Tier B (implemented):** real behavior with passing unit tests. **~311 objects
+  (≈30%)** and rising — all of `objects/control/`, `objects/audio/`, `objects/ui/`, plus
+  `mc.*` multichannel wrappers.
+- **Tier A (stub):** correct I/O, no behavior yet — the DSP/GPU/infra tail.
 
-Control objects push values along non-signal cords into `controlIns` handlers
-(e.g. `mtof → cycle~` drives the oscillator frequency). Two prototype
-simplifications: values are single atoms (no lists/attributes), and a `metro`
-**auto-starts when the transport starts** so a patch plays on ▶ without needing a
-toggle click (an explicit `0` into its left inlet still stops it).
+**The authoritative, always-current list is [`COVERAGE.md`](./COVERAGE.md)**
+(auto-generated from source by `npm run gen:coverage`, so it can never overstate).
+
+How it fits together:
+
+- `src/generated/manifest.json` (built by `npm run gen:manifest` from maxpylang's
+  `data/OBJ_INFO/`) drives Tier-A stub registration and the signature tests.
+- Real objects self-register; the bootstrap (`objects/index.ts`) auto-discovers every
+  module via `import.meta.glob`, wires aliases (`t`→`trigger`, …), adds `mc.*` wrappers,
+  then backfills stubs.
+- The shared runtime contract lives in `src/runtime/`: `atoms` (the `Atom[]` message
+  type), `scheduler` (transport-gated clock for `metro`/`delay`/…), `buses`
+  (`send`/`receive`/`value`), `outlets` (the `makeOutlets` fan-out helper).
+
+Two prototype simplifications: `metro` **auto-starts with the transport** so a patch
+plays on ▶ without a toggle click (an explicit `0` still stops it); and control messages
+are simple atom lists (no attributes).
 
 ## Verified
 
@@ -58,11 +71,22 @@ toggle click (an explicit `0` into its left inlet still stops it).
   ascending chromatic scale from C4; the control chain is unit-tested
   (`test/control.test.ts`) down to the emitted frequencies.
 
-## Roadmap
+## Testing
 
-- **M3** — full synth spine fidelity (AudioWorklet `phasor~`, faithful signal math).
-- **M4** — remaining control domain: clickable UI widgets, `sel`/`trigger`/`pack`,
-  sample-accurate scheduling.
-- **M5** — meters, then MIDI (Web MIDI) and Jitter (`jit.*` → canvas/WebGL).
-- **Switch to in-browser generation** — replace the file loader with Pyodide running
-  maxpylang; the engine consumes the identical JSON, so nothing downstream changes.
+`npm test` runs the Node suite (~340 tests): **signature** tests assert every one of the
+1004 objects satisfies its I/O contract; **fuzz** tests build every object with junk args
+and a mega-patch of all objects without throwing; **golden** unit tests cover each
+implemented object's behavior. A headless Web Audio mock (`test/setup/`) lets signal
+objects instantiate without a browser. True acoustic assertions (does a filter actually
+attenuate?) are the one deferred layer — they need Vitest browser mode (Playwright).
+
+## Roadmap (remaining tiers — each needs specific infra)
+
+- **AudioWorklet DSP** — `biquad~` (mutable coeffs), `+=~`, `rampsmooth~`, `degrade~`
+  fidelity, physical models. Needs a worklet host **and** browser-mode acoustic tests.
+- **Jitter video** — real `jit.grab`→`getUserMedia`, `jit.window`→canvas, plus video-cord
+  wiring in the engine; the GPU matrix tail stays stubbed.
+- **Web MIDI I/O** — the `*out`/`*in` sinks (`noteout`, `ctlout`, …) once Web MIDI lands.
+- **Heavy infra** — `js`/`jsui`, `poly~`, `pattr`/`autopattr`, `bpatcher`.
+- **In-browser generation** — swap the file loader for Pyodide running maxpylang; the
+  engine consumes identical JSON, so nothing downstream changes.

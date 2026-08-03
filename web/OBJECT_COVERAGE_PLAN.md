@@ -6,6 +6,29 @@ every object, or close to it. This document is the spec for an overnight autonom
 
 ---
 
+## STATUS (progress log)
+
+Live: https://barnard-pl-labs.github.io/MaxPyLang/app/ · authoritative coverage: [`COVERAGE.md`](./COVERAGE.md)
+
+| Wave | Scope | Result |
+|------|-------|--------|
+| 1 | Foundation: manifest (1004), Tier-A stubs, runtime contract (atoms/scheduler/buses/outlets), glob bootstrap, test scaffold (signature+fuzz, Web Audio mock) | ✅ recognized 1004/1004 |
+| 2 | Control: math, logic, `zl.*`, timing, convert, random, data, MIDI-logic, routing | ✅ +100 |
+| 3 | Audio: osc, filters, delay, env, pan, dynamics, routing, sampler, analysis | ✅ +47 |
+| 4 | `multichannelsignal` domain fix + `mc.*` mono wrappers | ✅ +59 |
+| 5 | Control long-tail: trig/bitwise, dataflow, `coll`, `dict`, triggers, `match` | ✅ +50 |
+| 6 | UI widgets: sliders, dial, `umenu`, `matrixctrl`, number boxes, led (+ graph DOM-mount) | ✅ +17 |
+
+**Current: 311/1054 functionally implemented (≈30%), 100% recognized, ~342 tests green.**
+Domains: signal 100/393 · control 198/451 (44%) · sink/ui 13/73 · video 0/137.
+
+The tractable, headlessly-testable set is largely done. The remainder (see Roadmap in
+`README.md`) needs specific infra — AudioWorklet DSP + browser-mode acoustic tests,
+WebGL/Jitter, Web MIDI, heavy infra (`js`/`poly~`/`pattr`) — each a deliberate next step
+rather than a rote fan-out, so status stays test-backed and honest.
+
+---
+
 ## 0. The target universe (measured, not guessed)
 
 maxpylang already ships a **complete object-metadata database** at
