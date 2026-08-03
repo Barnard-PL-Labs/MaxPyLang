@@ -34,6 +34,11 @@ for (const [name, e] of Object.entries(manifest)) {
   if (e.aliasOf && impl.has(e.aliasOf)) impl.add(name);
 }
 
+// mc.* multichannel objects reuse their mono impl (see objects/index.ts).
+for (const name of Object.keys(manifest)) {
+  if (name.startsWith('mc.') && impl.has(name.slice(3))) impl.add(name);
+}
+
 const primaryDomain = (e) =>
   e.outletDomains.includes('signal') ? 'signal'
   : e.outletDomains.includes('video') ? 'video'

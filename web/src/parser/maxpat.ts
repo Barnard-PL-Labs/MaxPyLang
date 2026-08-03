@@ -30,7 +30,7 @@ function parseText(maxclass: string, text: string): { className: string; args: A
 }
 
 function outletDomain(outlettype: string | undefined): Domain {
-  if (outlettype === 'signal') return 'signal';
+  if (outlettype === 'signal' || outlettype === 'multichannelsignal') return 'signal';
   if (outlettype === 'jit_matrix') return 'video';
   return 'control';
 }

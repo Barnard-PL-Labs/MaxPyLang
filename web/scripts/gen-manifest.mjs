@@ -19,7 +19,7 @@ const OUT = join(OUT_DIR, 'manifest.json');
 
 /** outlettype token -> engine domain (matches parser/maxpat.ts). */
 function outletDomain(t) {
-  if (t === 'signal') return 'signal';
+  if (t === 'signal' || t === 'multichannelsignal') return 'signal';
   if (t === 'jit_matrix') return 'video';
   return 'control';
 }
