@@ -26,9 +26,25 @@
       <button id="selftest">✓ Self-test</button>
       <select id="samples">
         <option value="">— sample patches —</option>
-        <option value="test-patches/hello_world.maxpat">hello_world</option>
-        <option value="test-patches/arpeggiator.maxpat">arpeggiator (metro/counter)</option>
-        <option value="test-patches/webcam_pixelated_synth.maxpat">webcam_pixelated_synth</option>
+        <optgroup label="Basics">
+          <option value="test-patches/hello_world.maxpat">hello_world — a 440 Hz tone</option>
+        </optgroup>
+        <optgroup label="Synths (press ▶)">
+          <option value="test-patches/subtractive_synth.maxpat">subtractive_synth — LFO-swept filter</option>
+          <option value="test-patches/fm_synth.maxpat">fm_synth — 2-op FM</option>
+          <option value="test-patches/tremolo.maxpat">tremolo — 5 Hz amplitude LFO</option>
+          <option value="test-patches/detuned_chord.maxpat">detuned_chord — beating oscillators</option>
+        </optgroup>
+        <optgroup label="Generative (press ▶)">
+          <option value="test-patches/arpeggiator.maxpat">arpeggiator — metro / counter / mtof</option>
+          <option value="test-patches/random_melody.maxpat">random_melody — metro / random</option>
+        </optgroup>
+        <optgroup label="Interactive (drag the widgets)">
+          <option value="test-patches/interactive_synth.maxpat">interactive_synth — slider + dials</option>
+        </optgroup>
+        <optgroup label="Video">
+          <option value="test-patches/webcam_pixelated_synth.maxpat">webcam_pixelated_synth — jit.grab</option>
+        </optgroup>
       </select>
       <label class="file">Load .maxpat<input id="file" type="file" accept=".maxpat,.json" /></label>
       <span class="hint">or drag a .maxpat onto the page</span>

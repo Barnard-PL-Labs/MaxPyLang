@@ -100,6 +100,13 @@ register('lores~', (args, { ctx }) => {
   return {
     signalIns: [filter, filter.frequency, filter.Q],
     signalOuts: [filter],
+    // inlet 1/2 also accept control floats (cutoff / resonance), so a dial or
+    // number box can sweep the filter, not just a signal.
+    controlIns: [
+      undefined,
+      (m) => { const n = firstNum(m); if (n !== undefined) filter.frequency.value = n; },
+      (m) => { const n = firstNum(m); if (n !== undefined) filter.Q.value = n; },
+    ],
   } satisfies MaxNode;
 });
 
