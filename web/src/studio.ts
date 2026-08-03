@@ -10,9 +10,42 @@ import { renderTone } from './engine/selftest';
 import { preloadWorklets } from './runtime/worklet';
 import type { IRPatch } from './ir/types';
 
+import { EditorView, basicSetup } from 'codemirror';
+import { keymap } from '@codemirror/view';
+import { indentWithTab } from '@codemirror/commands';
+import { python } from '@codemirror/lang-python';
+import { oneDark } from '@codemirror/theme-one-dark';
+
 const PYODIDE_CDN = 'https://cdn.jsdelivr.net/pyodide/v314.0.3/full/';
 
-const editor = document.getElementById('code') as HTMLTextAreaElement;
+const STARTER = `import maxpylang as mp
+
+# Build a patch, then call save() — the Studio plays whatever you save.
+patch = mp.MaxPatch()
+
+pitch = patch.place("slider")[0];            pitch.move(40, 60)   # drag: pitch
+mtof  = patch.place("mtof")[0];              mtof.move(40, 130)
+osc   = patch.place("cycle~ 220")[0];        osc.move(40, 190)
+
+cut   = patch.place("dial")[0];              cut.move(280, 55)    # drag: cutoff
+scale = patch.place("scale 0 127 200 6000")[0]; scale.move(280, 130)
+lp    = patch.place("lores~ 1500 3")[0];     lp.move(40, 250)
+
+amp   = patch.place("*~ 0.2")[0];            amp.move(40, 310)
+dac   = patch.place("ezdac~")[0];            dac.move(40, 370)
+
+patch.connect([pitch.outs[0], mtof.ins[0]])
+patch.connect([mtof.outs[0],  osc.ins[0]])
+patch.connect([osc.outs[0],   lp.ins[0]])
+patch.connect([cut.outs[0],   scale.ins[0]])
+patch.connect([scale.outs[0], lp.ins[1]])
+patch.connect([lp.outs[0],    amp.ins[0]])
+patch.connect([amp.outs[0],   dac.ins[0]])
+patch.connect([amp.outs[0],   dac.ins[1]])
+
+patch.save("my_synth.maxpat")
+`;
+
 const runBtn = document.getElementById('run') as HTMLButtonElement;
 const startBtn = document.getElementById('start') as HTMLButtonElement;
 const stopBtn = document.getElementById('stop') as HTMLButtonElement;
@@ -84,7 +117,7 @@ async function run(): Promise<void> {
   runBtn.disabled = true;
   log('Running…');
   try {
-    const json = await compile(editor.value);
+    const json = await compile(view.state.doc.toString());
     await loadPatch(JSON.parse(json));
   } catch (err) {
     log(String((err as Error).message || err), 'error');
@@ -103,13 +136,19 @@ selftestBtn.addEventListener('click', async () => {
   log(`self-test: rms=${rms.toFixed(4)} dominant≈${dominantHz.toFixed(1)}Hz`, 'ok');
 });
 
-// ⌘/Ctrl+Enter to run; Tab inserts spaces instead of leaving the editor.
-editor.addEventListener('keydown', (e) => {
-  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); void run(); }
-  else if (e.key === 'Tab') {
-    e.preventDefault();
-    const s = editor.selectionStart, en = editor.selectionEnd;
-    editor.value = editor.value.slice(0, s) + '    ' + editor.value.slice(en);
-    editor.selectionStart = editor.selectionEnd = s + 4;
-  }
+// ── CodeMirror editor (Python mode) ───────────────────────────────────────────
+// ⌘/Ctrl+Enter runs; Tab indents (indentWithTab). Created synchronously at load,
+// so it exists before the worker's async 'ready' triggers the first run().
+const view = new EditorView({
+  doc: STARTER,
+  parent: document.getElementById('editor')!,
+  extensions: [
+    basicSetup,
+    python(),
+    oneDark,
+    keymap.of([
+      indentWithTab,
+      { key: 'Mod-Enter', preventDefault: true, run: () => { void run(); return true; } },
+    ]),
+  ],
 });

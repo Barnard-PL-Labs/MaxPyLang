@@ -32,11 +32,10 @@
 
       main { flex: 1; display: flex; min-height: 0; }
       .editor-pane { width: 42%; min-width: 320px; display: flex; flex-direction: column; border-right: 1px solid var(--line); }
-      #code {
-        flex: 1; resize: none; border: 0; outline: none; padding: 14px 16px;
-        background: #14161a; color: #e6ebf1; tab-size: 4;
-        font: 13px/1.55 ui-monospace, "SF Mono", Menlo, monospace;
-      }
+      #editor { flex: 1; min-height: 0; overflow: hidden; background: #14161a; }
+      #editor .cm-editor { height: 100%; font: 13px/1.55 ui-monospace, "SF Mono", Menlo, monospace; }
+      #editor .cm-editor.cm-focused { outline: none; }
+      #editor .cm-scroller { overflow: auto; }
       #console {
         white-space: pre-wrap; padding: 10px 16px; border-top: 1px solid var(--line);
         background: #101216; font: 12px/1.5 ui-monospace, monospace; color: var(--dim);
@@ -83,33 +82,7 @@
     </header>
     <main>
       <div class="editor-pane">
-        <textarea id="code" spellcheck="false">import maxpylang as mp
-
-# Build a patch, then call save() — the Studio plays whatever you save.
-patch = mp.MaxPatch()
-
-pitch = patch.place("slider")[0];            pitch.move(40, 60)   # drag: pitch
-mtof  = patch.place("mtof")[0];              mtof.move(40, 130)
-osc   = patch.place("cycle~ 220")[0];        osc.move(40, 190)
-
-cut   = patch.place("dial")[0];              cut.move(280, 55)    # drag: cutoff
-scale = patch.place("scale 0 127 200 6000")[0]; scale.move(280, 130)
-lp    = patch.place("lores~ 1500 3")[0];     lp.move(40, 250)
-
-amp   = patch.place("*~ 0.2")[0];            amp.move(40, 310)
-dac   = patch.place("ezdac~")[0];            dac.move(40, 370)
-
-patch.connect([pitch.outs[0], mtof.ins[0]])
-patch.connect([mtof.outs[0],  osc.ins[0]])
-patch.connect([osc.outs[0],   lp.ins[0]])
-patch.connect([cut.outs[0],   scale.ins[0]])
-patch.connect([scale.outs[0], lp.ins[1]])
-patch.connect([lp.outs[0],    amp.ins[0]])
-patch.connect([amp.outs[0],   dac.ins[0]])
-patch.connect([amp.outs[0],   dac.ins[1]])
-
-patch.save("my_synth.maxpat")
-</textarea>
+        <div id="editor"></div>
         <div id="console">Loading the Python runtime… (first load downloads ~15 MB, then it's cached)</div>
       </div>
       <div id="graph"></div>
