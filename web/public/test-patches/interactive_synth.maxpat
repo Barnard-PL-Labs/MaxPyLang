@@ -58,7 +58,7 @@
           "parameter_enable": 0,
           "patching_rect": [
             40,
-            40,
+            60,
             20.0,
             140.0
           ],
@@ -76,7 +76,7 @@
           ],
           "patching_rect": [
             40,
-            220,
+            130,
             32.0,
             22.0
           ],
@@ -94,11 +94,11 @@
           ],
           "patching_rect": [
             40,
-            280,
+            190,
             43.0,
             22.0
           ],
-          "text": "cycle~"
+          "text": "cycle~ 220"
         }
       },
       {
@@ -112,8 +112,8 @@
           ],
           "parameter_enable": 0,
           "patching_rect": [
-            160,
-            40,
+            280,
+            55,
             40.0,
             40.0
           ],
@@ -130,12 +130,12 @@
             ""
           ],
           "patching_rect": [
-            160,
-            160,
+            280,
+            130,
             37.0,
             22.0
           ],
-          "text": "scale 0 127 100 6000"
+          "text": "scale 0 127 200 6000"
         }
       },
       {
@@ -149,53 +149,16 @@
           ],
           "patching_rect": [
             40,
-            340,
+            250,
             42.0,
             22.0
           ],
-          "text": "lores~ 2000 3"
+          "text": "lores~ 1500 3"
         }
       },
       {
         "box": {
           "id": "obj-7",
-          "maxclass": "dial",
-          "numinlets": 1,
-          "numoutlets": 1,
-          "outlettype": [
-            "float"
-          ],
-          "parameter_enable": 0,
-          "patching_rect": [
-            300,
-            40,
-            40.0,
-            40.0
-          ],
-          "text": "dial"
-        }
-      },
-      {
-        "box": {
-          "id": "obj-8",
-          "maxclass": "newobj",
-          "numinlets": 6,
-          "numoutlets": 1,
-          "outlettype": [
-            ""
-          ],
-          "patching_rect": [
-            300,
-            160,
-            37.0,
-            22.0
-          ],
-          "text": "scale 0 127 0.0 1.0"
-        }
-      },
-      {
-        "box": {
-          "id": "obj-9",
           "maxclass": "newobj",
           "numinlets": 2,
           "numoutlets": 1,
@@ -204,22 +167,22 @@
           ],
           "patching_rect": [
             40,
-            400,
+            310,
             20.0,
             22.0
           ],
-          "text": "*~ 0"
+          "text": "*~ 0.2"
         }
       },
       {
         "box": {
-          "id": "obj-10",
+          "id": "obj-8",
           "maxclass": "ezdac~",
           "numinlets": 2,
           "numoutlets": 0,
           "patching_rect": [
             40,
-            460,
+            370,
             45.0,
             45.0
           ],
@@ -306,7 +269,7 @@
       {
         "patchline": {
           "destination": [
-            "obj-9",
+            "obj-7",
             0
           ],
           "source": [
@@ -336,41 +299,11 @@
       {
         "patchline": {
           "destination": [
-            "obj-9",
-            1
-          ],
-          "source": [
             "obj-8",
-            0
-          ],
-          "midpoints": [
-            null
-          ]
-        }
-      },
-      {
-        "patchline": {
-          "destination": [
-            "obj-10",
-            0
-          ],
-          "source": [
-            "obj-9",
-            0
-          ],
-          "midpoints": [
-            null
-          ]
-        }
-      },
-      {
-        "patchline": {
-          "destination": [
-            "obj-10",
             1
           ],
           "source": [
-            "obj-9",
+            "obj-7",
             0
           ],
           "midpoints": [
