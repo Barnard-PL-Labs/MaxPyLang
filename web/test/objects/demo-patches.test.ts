@@ -18,6 +18,11 @@ const DEMOS = [
   'random_melody',
   'detuned_chord',
   'interactive_synth',
+  'theremin',
+  'ring_mod',
+  'overdrive',
+  'detune_drone',
+  'webcam_theremin',
 ];
 
 const OfflineCtx = (globalThis as unknown as {
