@@ -3,79 +3,32 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MaxPy Studio — write patches in the browser</title>
+    <!-- Inline so the page asks the server for nothing it does not need: a missing
+      favicon.ico is a 404 in every visitor's console. Two stacked boxes and a cord. -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%2316181c'/><rect x='3' y='2.5' width='10' height='3.5' rx='1' fill='%235aa9e6'/><rect x='3' y='10' width='10' height='3.5' rx='1' fill='%23e8b73e'/><path d='M5.5 6v4' stroke='%234bd08a' stroke-width='1.3'/></svg>" />
+    <!--
+      The Studio is now the patcher's Python drawer, so this URL lands on the app with
+      that drawer already open (`#python`, handled by src/patcher/main.ts) — the old
+      entry point still does what its name promised. Kept rather than deleted because the
+      URL was announced and could be bookmarked. No script, deliberately: a redirect that
+      depends on a bundle is a redirect that can fail to load.
+    -->
+    <meta http-equiv="refresh" content="0; url=./index.html#python" />
+    <title>MaxPy Studio — moved</title>
     <style>
-      :root {
-        --bg: #16181c; --panel: #1d2027; --line: #2c313a;
-        --ink: #d6dbe2; --dim: #8b93a0;
-        --signal: #e8b73e; --control: #5aa9e6; --video: #a882e6; --go: #4bd08a; --err: #e8736b;
+      html, body { height: 100%; margin: 0; background: #16181c; }
+      body {
+        display: grid; place-items: center;
+        font: 14px/1.6 system-ui, -apple-system, sans-serif; color: #8b93a0;
       }
-      * { box-sizing: border-box; }
-      html, body { height: 100%; }
-      body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--ink); display: flex; flex-direction: column; }
-      header {
-        padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel);
-        display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
-      }
-      h1 { font-size: 14px; margin: 0 10px 0 0; font-weight: 650; }
-      .spacer { flex: 1; }
-      a.nav { color: var(--dim); font-size: 13px; text-decoration: none; }
-      a.nav:hover { color: var(--ink); }
-      button {
-        background: #262b33; color: var(--ink); border: 1px solid #39404b; border-radius: 6px;
-        padding: 6px 11px; font-size: 13px; cursor: pointer;
-      }
-      button:hover:not(:disabled) { background: #2f3540; border-color: #4a5361; }
-      button:disabled { opacity: .4; cursor: default; }
-      #run { border-color: var(--control); color: #d6ecfb; }
-      #start { border-color: var(--go); color: #cdf6e3; }
-
-      main { flex: 1; display: flex; min-height: 0; }
-      .editor-pane { width: 42%; min-width: 320px; display: flex; flex-direction: column; border-right: 1px solid var(--line); }
-      #editor { flex: 1; min-height: 0; overflow: hidden; background: #14161a; }
-      #editor .cm-editor { height: 100%; font: 13px/1.55 ui-monospace, "SF Mono", Menlo, monospace; }
-      #editor .cm-editor.cm-focused { outline: none; }
-      #editor .cm-scroller { overflow: auto; }
-      #console {
-        white-space: pre-wrap; padding: 10px 16px; border-top: 1px solid var(--line);
-        background: #101216; font: 12px/1.5 ui-monospace, monospace; color: var(--dim);
-        max-height: 34%; overflow: auto; min-height: 44px;
-      }
-      #console.ok { color: #9fe3c1; }
-      #console.error { color: var(--err); }
-      #graph {
-        flex: 1; overflow: auto; padding: 20px;
-        background: radial-gradient(circle at 1px 1px, #23272f 1px, transparent 0) 0 0 / 22px 22px;
-      }
-      .hint { font-size: 11px; color: #6b7280; }
-
-      /* Boxes, cords and mounted widgets live in src/ui/patch.css, imported by
-         src/studio.ts and shared with the player and the patcher. */
+      p { margin: 0; text-align: center; }
+      a { color: #5aa9e6; }
     </style>
-    <script type="module" crossorigin src="/MaxPyLang/app/assets/studio-D-lYaHYy.js"></script>
-    <link rel="modulepreload" crossorigin href="/MaxPyLang/app/assets/engine-Bbh0OC4G.js">
-    <link rel="modulepreload" crossorigin href="/MaxPyLang/app/assets/selftest-C3YSB-xu.js">
-    <link rel="modulepreload" crossorigin href="/MaxPyLang/app/assets/catalog-YSb5Ez_d.js">
-    <link rel="stylesheet" crossorigin href="/MaxPyLang/app/assets/engine-EuCKCpRm.css">
   </head>
   <body>
-    <header>
-      <h1>MaxPy Studio</h1>
-      <button id="run" disabled>▶ Run (⌘↵)</button>
-      <button id="start" disabled>▶ Start audio</button>
-      <button id="stop" disabled>■ Stop</button>
-      <button id="selftest" disabled>✓ Self-test</button>
-      <span class="hint">edit Python → run → press ▶ → drag the widgets</span>
-      <span class="spacer"></span>
-      <a class="nav" href="./patcher.html">✛ Open in Patcher</a>
-      <a class="nav" href="./index.html">→ Player</a>
-    </header>
-    <main>
-      <div class="editor-pane">
-        <div id="editor"></div>
-        <div id="console">Loading the Python runtime… (first load downloads ~15 MB, then it's cached)</div>
-      </div>
-      <div id="graph"></div>
-    </main>
+    <p>
+      The Studio is now the Python drawer inside MaxPy (⌘J).<br />
+      <a href="./index.html#python">Continue, with the drawer open →</a>
+    </p>
   </body>
 </html>

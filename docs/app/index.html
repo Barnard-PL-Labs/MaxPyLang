@@ -3,59 +3,74 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MaxPyLang Web Engine — prototype</title>
-    <style>
-      :root {
-        --bg: #16181c; --panel: #1d2027; --line: #2c313a;
-        --ink: #d6dbe2; --dim: #8b93a0;
-        --signal: #e8b73e; --control: #5aa9e6; --video: #a882e6; --go: #4bd08a;
-      }
-      * { box-sizing: border-box; }
-      body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--ink); }
-      header {
-        padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel);
-        display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
-        position: sticky; top: 0; z-index: 5;
-      }
-      h1 { font-size: 14px; margin: 0 8px 0 0; font-weight: 650; letter-spacing: .2px; }
-      button, select, label.file {
-        background: #262b33; color: var(--ink); border: 1px solid #39404b; border-radius: 6px;
-        padding: 6px 11px; font-size: 13px; cursor: pointer; transition: background .12s, border-color .12s;
-      }
-      button:hover:not(:disabled), select:hover, label.file:hover { background: #2f3540; border-color: #4a5361; }
-      button:disabled { opacity: 0.4; cursor: default; }
-      #start { border-color: var(--go); color: #cdf6e3; }
-      #start:hover:not(:disabled) { background: #1f3d31; }
-      #coverage {
-        padding: 8px 16px; font-size: 12px; color: var(--dim); font-family: ui-monospace, monospace;
-        border-bottom: 1px solid var(--line); background: #14161a;
-      }
-      #graph {
-        padding: 20px; overflow: auto;
-        background:
-          radial-gradient(circle at 1px 1px, #23272f 1px, transparent 0) 0 0 / 22px 22px;
-      }
-      input[type=file] { display: none; }
-      .hint { font-size: 11px; color: #6b7280; }
+    <!-- Inline so the page asks the server for nothing it does not need: a missing
+      favicon.ico is a 404 in every visitor's console. Two stacked boxes and a cord. -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%2316181c'/><rect x='3' y='2.5' width='10' height='3.5' rx='1' fill='%235aa9e6'/><rect x='3' y='10' width='10' height='3.5' rx='1' fill='%23e8b73e'/><path d='M5.5 6v4' stroke='%234bd08a' stroke-width='1.3'/></svg>" />
+    <title>MaxPy — build, play and script Max patches in the browser</title>
+    <!--
+      THE tool. There used to be three pages — a read-only player (this file), a Python
+      Studio and a visual patcher — and the patcher was a strict superset of both: it
+      renders and plays a patch better than the player did (pan/zoom, real port geometry,
+      live widgets, and a run mode that IS the player), and it holds the Studio as its
+      Python drawer. So the other two are now redirect stubs (patcher.html, studio.html)
+      and everything lives here, at the URL people already had bookmarked.
 
-      /* The graph itself — boxes, cords and mounted widgets — is styled by
-         src/ui/patch.css, imported from src/main.ts and shared with the Studio and the
-         patcher. It used to be duplicated here, which is how the player quietly kept a
-         set of composite-widget rules the other two pages had lost. */
+      This page is a DOM CONTRACT, not a layout sketch. Six modules mount into it and
+      none of them creates its own chrome:
+        • src/patcher/main.ts  — the shell: owns every element with an id below, plus the
+          `patcher mode-edit|mode-run` classes on #patcher-canvas and the `data-*` state
+          on <body>. All of the styling arrives with it (ui/patch.css + ui/patcher.css),
+          so the ids here are the only coupling.
+        • src/ui/patcher.ts    — the renderer: mounts its <svg> INSIDE #patcher-canvas and
+          must not touch that element's own classes; the mode classes are the shell's.
+        • src/ui/patcher-input.ts — gestures, bound to the renderer's <svg>.
+        • src/ui/palette.ts    — takes over #palette-body (and retires its placeholder).
+        • src/ui/inspector.ts  — takes over #inspector-body (ditto).
+        • src/patcher/python-pane.ts — mounts into #drawer-body beside #console, and ONLY
+          when the drawer is first opened: it pulls ~15 MB of Pyodide and ~400 KB of
+          CodeMirror, which a visitor who came to look at a canvas must never pay for.
+      Everything the shell addresses is marked with an id. Class names are for styling.
+
+      The only inline CSS is the two properties needed to stop a white flash before the
+      stylesheet loads in dev (in a build Vite emits a <link> into this <head>).
+    -->
+    <style>
+      html, body { height: 100%; margin: 0; background: #16181c; }
     </style>
-    <script type="module" crossorigin src="/MaxPyLang/app/assets/index-DhlLHpWr.js"></script>
-    <link rel="modulepreload" crossorigin href="/MaxPyLang/app/assets/engine-Bbh0OC4G.js">
-    <link rel="modulepreload" crossorigin href="/MaxPyLang/app/assets/selftest-C3YSB-xu.js">
-    <link rel="stylesheet" crossorigin href="/MaxPyLang/app/assets/engine-EuCKCpRm.css">
+    <script type="module" crossorigin src="/MaxPyLang/app/assets/index-CuBvDoK7.js"></script>
+    <link rel="stylesheet" crossorigin href="/MaxPyLang/app/assets/index-CuOFCgNB.css">
   </head>
-  <body>
-    <header>
-      <h1>MaxPyLang Web Engine</h1>
-      <button id="start" disabled>▶ Start audio</button>
-      <button id="stop" disabled>■ Stop</button>
-      <button id="selftest">✓ Self-test</button>
-      <select id="samples">
-        <option value="">— sample patches —</option>
+  <body class="patcher-page" data-palette="open" data-inspector="pinned" data-drawer="closed">
+    <header id="patcher-header">
+      <h1>MaxPy</h1>
+
+      <!-- Mode. Two buttons rather than a checkbox: "which of these two am I in" is the
+           question a Max newcomer gets wrong, and a segmented control answers it without
+           being read. #mode-glyph repeats the answer next to the canvas border tint. -->
+      <div class="seg" id="mode-switch" role="group" aria-label="Canvas mode">
+        <button id="mode-edit" class="seg-btn" type="button" aria-pressed="true">✎ Edit</button>
+        <button id="mode-run" class="seg-btn" type="button" aria-pressed="false">🔒 Run</button>
+      </div>
+      <span id="mode-glyph" class="mode-glyph" title="Edit mode (⌘E) — drag boxes and cords">✎</span>
+
+      <span class="bar-sep" aria-hidden="true"></span>
+
+      <button id="start" type="button" title="Start audio">▶</button>
+      <button id="stop" type="button" title="Stop audio" disabled>■</button>
+      <button id="selftest" type="button" title="Render this patch offline and measure it — proves it makes sound without listening">✓ Self-test</button>
+
+      <span class="bar-sep" aria-hidden="true"></span>
+
+      <button id="file-new" type="button">New</button>
+      <button id="file-open" type="button" title="Open a .maxpat (⌘O)">Open</button>
+      <button id="file-save" type="button" title="Save (⌘S)">Save</button>
+      <button id="file-save-as" type="button" title="Save under a new name (⇧⌘S)">Save As</button>
+      <button id="file-share" type="button" title="Copy a link that carries this whole patch">Share</button>
+
+      <!-- The bundled examples the player used to offer, with the same labels: this is
+           the one thing that page had which the canvas did not. -->
+      <select id="samples" aria-label="Open an example patch">
+        <option value="">— example patches —</option>
         <optgroup label="Basics">
           <option value="test-patches/hello_world.maxpat">hello_world — a 440 Hz tone</option>
         </optgroup>
@@ -71,7 +86,7 @@
           <option value="test-patches/arpeggiator.maxpat">arpeggiator — metro / counter / mtof</option>
           <option value="test-patches/random_melody.maxpat">random_melody — metro / random</option>
         </optgroup>
-        <optgroup label="Play with the sliders (press ▶, then drag)">
+        <optgroup label="Play with the widgets (press ▶, switch to 🔒 Run, then drag)">
           <option value="test-patches/interactive_synth.maxpat">interactive_synth — pitch slider + cutoff dial</option>
           <option value="test-patches/theremin.maxpat">theremin — pitch + volume sliders</option>
           <option value="test-patches/detune_drone.maxpat">detune_drone — cutoff + volume sliders</option>
@@ -81,13 +96,95 @@
           <option value="test-patches/webcam_pixelated_synth.maxpat">webcam_pixelated_synth — jit.grab</option>
         </optgroup>
       </select>
-      <label class="file">Load .maxpat<input id="file" type="file" accept=".maxpat,.json" /></label>
-      <span class="hint">or drag a .maxpat onto the page</span>
-      <span style="flex:1"></span>
-      <a class="nav" href="./patcher.html" style="color:#8b93a0;font-size:13px;text-decoration:none">✛ Patcher — build by hand →</a>
-      <a class="nav" href="./studio.html" style="color:#8b93a0;font-size:13px;text-decoration:none">✎ Studio — write MaxPy →</a>
+
+      <span class="bar-sep" aria-hidden="true"></span>
+
+      <div class="zoom" role="group" aria-label="Zoom">
+        <button id="zoom-out" type="button" title="Zoom out (⌘−)">−</button>
+        <button id="zoom-level" type="button" title="Reset zoom to 100%">100%</button>
+        <button id="zoom-in" type="button" title="Zoom in (⌘+)">+</button>
+        <button id="zoom-fit" type="button" title="Fit the patch to the window (⌘0)">Fit</button>
+      </div>
+
+      <span class="bar-spacer"></span>
+      <nav>
+        <a class="nav" href="https://github.com/barnard-pl-labs/MaxPyLang" target="_blank" rel="noopener">MaxPyLang on GitHub ↗</a>
+      </nav>
     </header>
-    <div id="coverage">Loading…</div>
-    <div id="graph"></div>
+
+    <main id="patcher-body">
+      <!-- PALETTE — src/ui/palette.ts takes this over and removes the placeholder. -->
+      <aside id="palette" class="pane pane-left" aria-label="Object palette">
+        <div class="pane-head">
+          <button
+            id="palette-toggle" class="pane-btn" type="button"
+            title="Objects (⌘K)" aria-expanded="true" aria-controls="palette-body"
+          >⊞</button>
+          <h2 class="pane-title">Objects</h2>
+        </div>
+        <div class="pane-body" id="palette-body">
+          <p class="pane-placeholder">
+            The searchable list of all 1054 Max objects mounts here.
+            Until then, type a box name on the canvas.
+          </p>
+        </div>
+      </aside>
+
+      <!-- CANVAS. `patcher` + exactly one of `mode-edit` / `mode-run` live here and
+           nowhere else; ui/patcher.css hangs the whole mode behaviour off them. The
+           renderer appends its <svg> as a child. -->
+      <div
+        id="patcher-canvas" class="patcher mode-edit"
+        tabindex="0" role="application" aria-label="Patch canvas"
+      ></div>
+
+      <!-- INSPECTOR — src/ui/inspector.ts takes this over, placeholder and all. -->
+      <aside id="inspector" class="pane pane-right" aria-label="Inspector">
+        <div class="pane-head">
+          <h2 class="pane-title">Inspector</h2>
+          <button
+            id="inspector-pin" class="pane-btn" type="button"
+            title="Keep the inspector open" aria-pressed="true"
+          >📌</button>
+        </div>
+        <div class="pane-body" id="inspector-body">
+          <p class="pane-placeholder">
+            Select a box to see its arguments, attributes and I/O here.
+          </p>
+        </div>
+      </aside>
+
+      <!-- The autosave restore notice. Floats over the canvas rather than taking a row,
+           because it is transient and must not reflow the patch behind it. -->
+      <div id="restore-bar" class="restore-bar" role="status" hidden>
+        <span id="restore-text">Restored your last patch</span>
+        <button id="restore-fresh" type="button">Start fresh</button>
+        <button id="restore-dismiss" class="restore-x" type="button" aria-label="Keep it and hide this">✕</button>
+      </div>
+
+      <!-- Dismiss target for a pane shown as a floating overlay on a narrow window. -->
+      <div id="overlay-scrim" hidden></div>
+    </main>
+
+    <!-- DRAWER. Collapsed it is just this one row, which is why the status line lives in
+         it: the one piece of feedback that must never be hidden by a collapsed pane.
+         #drawer-body holds the console and — from the first time the drawer is opened —
+         the Python pane. -->
+    <footer id="drawer">
+      <div id="drawer-grip" role="separator" aria-orientation="horizontal" aria-label="Resize the drawer"></div>
+      <div class="drawer-head">
+        <button id="drawer-toggle" class="drawer-btn" type="button" aria-expanded="false" aria-controls="drawer-body">
+          <span class="chev" aria-hidden="true">▸</span> Python / Console
+          <span class="kbd">⌘J</span>
+        </button>
+        <span id="status" class="status" role="status" aria-live="polite">Loading…</span>
+        <span class="bar-spacer"></span>
+        <span id="doc-meta" class="doc-meta"></span>
+      </div>
+      <div class="drawer-body" id="drawer-body">
+        <div id="console" class="console"></div>
+      </div>
+    </footer>
+
   </body>
 </html>

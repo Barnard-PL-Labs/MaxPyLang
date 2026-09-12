@@ -86,6 +86,20 @@ body.patcher-page {
 #start:hover:not(:disabled) { background: #1f3d31; }
 #start.is-live { background: #1f3d31; border-color: var(--go); }
 
+/* The examples menu. Given the buttons' look rather than a look of its own, so a row of
+   controls that do the same kind of thing reads as one row. */
+#patcher-header select {
+  background: #262b33;
+  color: var(--ink);
+  border: 1px solid #39404b;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 13px;
+  max-width: 230px;
+  cursor: pointer;
+}
+#patcher-header select:hover { background: #2f3540; border-color: #4a5361; }
+
 .bar-sep { width: 1px; align-self: stretch; background: var(--line); margin: 0 3px; }
 .bar-spacer { flex: 1 1 auto; }
 
@@ -186,6 +200,44 @@ body[data-inspector='hidden'] #inspector { display: none; }
 #overlay-scrim { position: absolute; inset: 0; z-index: 25; background: rgba(11, 13, 16, .55); }
 #overlay-scrim[hidden] { display: none; }
 
+/* ── the autosave restore notice ──
+   Floats over the canvas instead of taking a row: the patch is already restored behind
+   it, and a bar that reflowed the canvas would move the boxes the user is looking at.
+   z-index below the overlay scrim's 25, so a floating pane still covers it. */
+.restore-bar {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(560px, calc(100% - 24px));
+  padding: 6px 8px 6px 12px;
+  border: 1px solid #3c4552;
+  border-radius: 7px;
+  background: #232a34;
+  color: var(--ink);
+  font-size: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .45);
+}
+.restore-bar[hidden] { display: none; }
+.restore-bar button {
+  background: #2d3540;
+  color: var(--ink);
+  border: 1px solid #4a5361;
+  border-radius: 5px;
+  padding: 3px 9px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.restore-bar button:hover { background: #39424f; }
+.restore-bar .restore-x { border-color: transparent; background: transparent; color: var(--dim); padding: 3px 6px; }
+.restore-bar .restore-x:hover { color: var(--ink); background: #2d3540; }
+
 /* ══ canvas ══════════════════════════════════════════════════════════════════ */
 
 #patcher-canvas {
@@ -222,6 +274,11 @@ body[data-inspector='hidden'] #inspector { display: none; }
 .patcher.mode-run { box-shadow: inset 0 0 0 2px rgba(75, 208, 138, .45); }
 .patcher.mode-edit:focus-visible { box-shadow: inset 0 0 0 2px var(--control); }
 .patcher.mode-run:focus-visible { box-shadow: inset 0 0 0 2px var(--go); }
+
+/* A drag ui/file-io.ts would accept is over the canvas. Outline rather than box-shadow,
+   so it stacks with the mode tint instead of replacing it — "this drop will land" and
+   "you are in edit mode" are two different facts and both stay legible. */
+#patcher-canvas.is-drop-target { outline: 2px dashed var(--control); outline-offset: -3px; }
 
 /* ══ SELECTION ═══════════════════════════════════════════════════════════════
    ui/patcher.ts toggles `.selected` on a box group, on its ports group and on a cord
@@ -320,24 +377,106 @@ body[data-drawer='open'] .drawer-btn .chev { transform: rotate(90deg); }
 .status.error { color: var(--err); }
 .doc-meta { font: 11px ui-monospace, monospace; color: #6b7280; }
 
-.drawer-body { display: none; flex: 1; min-height: 0; }
-body[data-drawer='open'] .drawer-body { display: flex; flex-direction: column; }
+/* Two columns: the Python editor takes the room, the console takes a fixed strip on the
+   right. The editor is appended AFTER the console (patcher/python-pane.ts mounts into
+   this element, which already holds #console), so the order is flipped here rather than
+   by reordering the markup — the console's place in the DOM is the shell's business. */
+.drawer-body { display: none; flex: 1; min-height: 0; border-top: 1px solid var(--line); }
+body[data-drawer='open'] .drawer-body { display: flex; flex-direction: row; }
+.drawer-body .py-pane { flex: 1 1 auto; min-width: 0; }
 
 .console {
-  flex: 1;
+  order: 2;
+  flex: 0 0 clamp(200px, 32%, 380px);
   min-height: 0;
   overflow: auto;
   margin: 0;
   padding: 8px 12px;
   background: #101216;
-  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
   font: 12px/1.5 ui-monospace, monospace;
   color: var(--dim);
   white-space: pre-wrap;
 }
 .console .log-error { color: var(--err); }
 .console .log-ok { color: #9fe3c1; }
-.drawer-note { flex: 0 0 auto; padding: 8px 12px; border-top: 1px solid var(--line); }
+
+/* ══ the Python pane ══════════════════════════════════════════════════════════
+   patcher/python-pane.ts builds this chrome inside #drawer-body and sets only the four
+   inline styles its layout cannot survive without (flex column, min-height 0, and the
+   editor's flex/overflow). Everything below is appearance, and the pane works — plainly
+   — with none of it, which is the property that lets a test mount the pane bare. */
+
+.py-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+}
+.py-run {
+  background: #262b33;
+  color: #d6ecfb;
+  border: 1px solid var(--control);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.py-run:hover:not(:disabled) { background: #22303c; }
+.py-run:disabled { opacity: .45; cursor: default; }
+.py-state { font-size: 11px; color: var(--dim); }
+
+/* The sync banner. Two tones, because the two states it reports are not the same news:
+   `info` is "this is a projection, as you asked", `warn` is "these two have diverged". */
+.py-notice {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+.py-notice[data-tone='info'] { background: #1b2430; color: #b9c6d4; }
+.py-notice[data-tone='warn'] { background: #33281c; color: #f0d9ae; }
+.py-notice-text { flex: 1 1 auto; min-width: 140px; }
+.py-notice-btn {
+  background: #262b33;
+  color: var(--ink);
+  border: 1px solid #4a5361;
+  border-radius: 5px;
+  padding: 3px 9px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.py-notice-btn:hover { background: #2f3540; }
+.py-notice-btn.primary { border-color: var(--control); color: #d6ecfb; }
+
+.py-editor { background: #14161a; }
+.py-editor .cm-editor { height: 100%; font: 13px/1.55 ui-monospace, "SF Mono", Menlo, monospace; }
+.py-editor .cm-editor.cm-focused { outline: none; }
+.py-editor .cm-scroller { overflow: auto; }
+
+/* A traceback. Capped, because a 40-line Python error must not push the editor out of a
+   drawer the user sized for the editor. */
+.py-output {
+  flex: 0 0 auto;
+  max-height: 38%;
+  overflow: auto;
+  margin: 0;
+  padding: 6px 10px;
+  border-top: 1px solid var(--line);
+  background: #1c1417;
+  color: var(--err);
+  font: 11px/1.5 ui-monospace, monospace;
+  white-space: pre-wrap;
+}
 
 /* ══ responsive ══════════════════════════════════════════════════════════════
    Order matters below: the overlay rules tie on specificity with the rail rules above
@@ -385,6 +524,15 @@ body[data-drawer='open'] .drawer-body { display: flex; flex-direction: column; }
   body.overlay-palette #palette .pane-title,
   body.overlay-palette #palette .pane-body { display: block; }
   body.overlay-palette #palette .pane-head { justify-content: flex-start; padding: 0 8px; }
+
+  /* Side by side, an editor and a console are each too narrow to read. Stacked, the
+     console keeps the last few lines and the editor keeps the rest. */
+  body[data-drawer='open'] .drawer-body { flex-direction: column; }
+  .console {
+    flex: 0 0 30%;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
 }
 
 /* ── the port assist tip ──

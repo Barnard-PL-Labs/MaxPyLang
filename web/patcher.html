@@ -3,136 +3,30 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MaxPy Patcher — build a Max patch in the browser</title>
+    <!-- Inline so the page asks the server for nothing it does not need: a missing
+      favicon.ico is a 404 in every visitor's console. Two stacked boxes and a cord. -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%2316181c'/><rect x='3' y='2.5' width='10' height='3.5' rx='1' fill='%235aa9e6'/><rect x='3' y='10' width='10' height='3.5' rx='1' fill='%23e8b73e'/><path d='M5.5 6v4' stroke='%234bd08a' stroke-width='1.3'/></svg>" />
     <!--
-      This page is a DOM CONTRACT, not a layout sketch. Three modules mount into it and
-      none of them creates its own chrome:
-        • src/patcher/main.ts  — the shell: owns every element with an id below, plus the
-          `patcher mode-edit|mode-run` classes on #patcher-canvas and the `data-*` state
-          on <body>. All of the styling arrives with it (ui/patch.css + ui/patcher.css),
-          so the ids here are the only coupling.
-        • src/ui/patcher.ts    — the renderer: mounts its <svg> INSIDE #patcher-canvas and
-          must not touch that element's own classes; the mode classes are the shell's.
-        • src/ui/patcher-input.ts — gestures, bound to the renderer's <svg>.
-      Everything the shell addresses is marked with an id. Class names are for styling.
-
-      The only inline CSS is the two properties needed to stop a white flash before the
-      stylesheet loads in dev (in a build Vite emits a <link> into this <head>).
+      The patcher IS the app now, so it lives at index.html. This file stays because the
+      URL was announced and could be bookmarked — a 404 is a worse answer than a hop.
+      No script: a redirect that depends on a bundle is a redirect that can fail to load.
     -->
+    <meta http-equiv="refresh" content="0; url=./index.html" />
+    <title>MaxPy Patcher — moved</title>
     <style>
       html, body { height: 100%; margin: 0; background: #16181c; }
+      body {
+        display: grid; place-items: center;
+        font: 14px/1.6 system-ui, -apple-system, sans-serif; color: #8b93a0;
+      }
+      p { margin: 0; text-align: center; }
+      a { color: #5aa9e6; }
     </style>
   </head>
-  <body class="patcher-page" data-palette="open" data-inspector="pinned" data-drawer="closed">
-    <header id="patcher-header">
-      <h1>MaxPy Patcher</h1>
-
-      <!-- Mode. Two buttons rather than a checkbox: "which of these two am I in" is the
-           question a Max newcomer gets wrong, and a segmented control answers it without
-           being read. #mode-glyph repeats the answer next to the canvas border tint. -->
-      <div class="seg" id="mode-switch" role="group" aria-label="Canvas mode">
-        <button id="mode-edit" class="seg-btn" type="button" aria-pressed="true">✎ Edit</button>
-        <button id="mode-run" class="seg-btn" type="button" aria-pressed="false">🔒 Run</button>
-      </div>
-      <span id="mode-glyph" class="mode-glyph" title="Edit mode (⌘E) — drag boxes and cords">✎</span>
-
-      <span class="bar-sep" aria-hidden="true"></span>
-
-      <button id="start" type="button" title="Start audio">▶</button>
-      <button id="stop" type="button" title="Stop audio" disabled>■</button>
-
-      <span class="bar-sep" aria-hidden="true"></span>
-
-      <button id="file-new" type="button">New</button>
-      <button id="file-open" type="button">Open</button>
-      <button id="file-save" type="button">Save</button>
-      <button id="file-share" type="button" disabled>Share</button>
-      <input id="file-input" type="file" accept=".maxpat,.json" hidden />
-
-      <span class="bar-sep" aria-hidden="true"></span>
-
-      <div class="zoom" role="group" aria-label="Zoom">
-        <button id="zoom-out" type="button" title="Zoom out (⌘−)">−</button>
-        <button id="zoom-level" type="button" title="Reset zoom to 100%">100%</button>
-        <button id="zoom-in" type="button" title="Zoom in (⌘+)">+</button>
-        <button id="zoom-fit" type="button" title="Fit the patch to the window (⌘0)">Fit</button>
-      </div>
-
-      <span class="bar-spacer"></span>
-      <nav>
-        <a class="nav" href="./studio.html">✎ Studio</a>
-        <a class="nav" href="./index.html">→ Player</a>
-      </nav>
-    </header>
-
-    <main id="patcher-body">
-      <!-- PALETTE — container, ids and collapse behaviour are real; contents are Phase 6. -->
-      <aside id="palette" class="pane pane-left" aria-label="Object palette">
-        <div class="pane-head">
-          <button
-            id="palette-toggle" class="pane-btn" type="button"
-            title="Objects (⌘K)" aria-expanded="true" aria-controls="palette-body"
-          >⊞</button>
-          <h2 class="pane-title">Objects</h2>
-        </div>
-        <div class="pane-body" id="palette-body">
-          <p class="pane-placeholder">
-            The searchable list of all 1054 Max objects mounts here.
-            Until then, type a box name on the canvas.
-          </p>
-        </div>
-      </aside>
-
-      <!-- CANVAS. `patcher` + exactly one of `mode-edit` / `mode-run` live here and
-           nowhere else; ui/patcher.css hangs the whole mode behaviour off them. The
-           renderer appends its <svg> as a child. -->
-      <div
-        id="patcher-canvas" class="patcher mode-edit"
-        tabindex="0" role="application" aria-label="Patch canvas"
-      ></div>
-
-      <!-- INSPECTOR — same deal as the palette: real container, Phase 6 contents. -->
-      <aside id="inspector" class="pane pane-right" aria-label="Inspector">
-        <div class="pane-head">
-          <h2 class="pane-title">Inspector</h2>
-          <button
-            id="inspector-pin" class="pane-btn" type="button"
-            title="Keep the inspector open" aria-pressed="true"
-          >📌</button>
-        </div>
-        <div class="pane-body" id="inspector-body">
-          <p class="pane-placeholder">
-            Select a box to see its arguments, attributes and I/O here.
-          </p>
-        </div>
-      </aside>
-
-      <!-- Dismiss target for a pane shown as a floating overlay on a narrow window. -->
-      <div id="overlay-scrim" hidden></div>
-    </main>
-
-    <!-- DRAWER. Collapsed it is just this one row, which is why the status line lives in
-         it: the one piece of feedback that must never be hidden by a collapsed pane. -->
-    <footer id="drawer">
-      <div id="drawer-grip" role="separator" aria-orientation="horizontal" aria-label="Resize the drawer"></div>
-      <div class="drawer-head">
-        <button id="drawer-toggle" class="drawer-btn" type="button" aria-expanded="false" aria-controls="drawer-body">
-          <span class="chev" aria-hidden="true">▸</span> Python / Console
-          <span class="kbd">⌘J</span>
-        </button>
-        <span id="status" class="status" role="status" aria-live="polite">Loading…</span>
-        <span class="bar-spacer"></span>
-        <span id="doc-meta" class="doc-meta"></span>
-      </div>
-      <div class="drawer-body" id="drawer-body">
-        <div id="console" class="console"></div>
-        <p class="pane-placeholder drawer-note">
-          The Python view of this patch — and the sync policy between the two — arrive with
-          the codegen phase. This half is the live console.
-        </p>
-      </div>
-    </footer>
-
-    <script type="module" src="/src/patcher/main.ts"></script>
+  <body>
+    <p>
+      The patcher is now the whole app.<br />
+      <a href="./index.html">Continue to MaxPy →</a>
+    </p>
   </body>
 </html>

@@ -1027,25 +1027,49 @@ export class Interaction {
       text = '';
     }
     if (this.destroyed) return;
-    this.paste(readFragment(text) ? text : this.stash);
+    this.insertFragment(readFragment(text) ? text : this.stash);
   }
 
-  private paste(text: string): void {
+  /**
+   * Insert patcher JSON — `{boxes, lines}` or a whole `{patcher: …}` file — as ONE
+   * undoable edit, and select what it created.
+   *
+   * Public because ⌘V is not the only way a fragment arrives: ui/file-io.ts's canvas
+   * drop handler reads the same payload off a DataTransfer and has nothing to call
+   * otherwise. `at` is the patch point the fragment's top-left corner should land on,
+   * which is what a drop means — it goes where the cursor is. Without it the fragment
+   * keeps its authored coordinates stepped by CLONE_OFFSET, which is what a paste means:
+   * the copy must be visibly not the original. Returns whether anything was inserted.
+   */
+  insertFragment(text: string, at?: Point): boolean {
     const frag = readFragment(text);
     if (!frag || frag.boxes.length === 0) {
-      this.status('Nothing on the clipboard this patcher can read.');
-      return;
+      this.status(
+        at
+          ? 'Nothing in that drop this patcher can read.'
+          : 'Nothing on the clipboard this patcher can read.'
+      );
+      return false;
+    }
+    const boxX = (box: Record<string, unknown>): number =>
+      Number((Array.isArray(box.patching_rect) ? (box.patching_rect as number[])[0] : 0) ?? 0);
+    const boxY = (box: Record<string, unknown>): number =>
+      Number((Array.isArray(box.patching_rect) ? (box.patching_rect as number[])[1] : 0) ?? 0);
+    // One offset for the whole fragment, computed from its top-left corner, so the boxes
+    // keep their relative layout and the cursor lands on the corner of what was dropped.
+    let dx = CLONE_OFFSET;
+    let dy = CLONE_OFFSET;
+    if (at) {
+      const xs = frag.boxes.map((e) => boxX(e.box));
+      const ys = frag.boxes.map((e) => boxY(e.box));
+      dx = at.x - Math.min(...xs);
+      dy = at.y - Math.min(...ys);
     }
     const map = new Map<string, string>();
-    this.doc.transact('Paste', () => {
+    this.doc.transact(at ? 'Drop' : 'Paste', () => {
       for (const entry of frag.boxes) {
         const box = entry.box;
-        const rect = Array.isArray(box.patching_rect) ? (box.patching_rect as number[]) : [0, 0];
-        const node = this.doc.addBox(
-          boxSourceText(box),
-          Number(rect[0] ?? 0) + CLONE_OFFSET,
-          Number(rect[1] ?? 0) + CLONE_OFFSET
-        );
+        const node = this.doc.addBox(boxSourceText(box), boxX(box) + dx, boxY(box) + dy);
         if (typeof box.id === 'string') map.set(box.id, node.id);
       }
       for (const entry of frag.lines) {
@@ -1061,6 +1085,7 @@ export class Interaction {
       }
     });
     this.view.select([...map.values()]);
+    return map.size > 0;
   }
 
   /**

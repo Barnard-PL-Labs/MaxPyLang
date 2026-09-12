@@ -2,8 +2,9 @@
 // every other patcher module plugs into.
 //
 // It deliberately renders nothing. The canvas is drawn by ui/patcher.ts and driven by
-// ui/patcher-input.ts; the palette and inspector are Phase 6. What lives here is the
-// state that must outlive all of them and can only have one owner:
+// ui/patcher-input.ts; the palette by ui/palette.ts, the inspector by ui/inspector.ts,
+// the Python drawer by patcher/python-pane.ts. What lives here is the state that must
+// outlive all of them and can only have one owner:
 //
 //   • ONE AudioContext, and ONE Engine on top of it, for the life of the page. Engine
 //     .dispose() closes the context, and a closed context throws away the user's
@@ -25,6 +26,15 @@
 //     everything patcher.html declares an id for. Layout state is written as `data-*` on
 //     <body> and never as an inline style, so ui/patcher.css owns every responsive
 //     decision and the persisted preferences restore in one assignment.
+//
+//   • THE PYTHON DRAWER, AND WHEN IT IS ALLOWED TO EXIST. patcher/python-pane.ts pulls
+//     ~15 MB of Pyodide and ~400 KB of CodeMirror, and most visitors open this page to
+//     look at a canvas. So the pane is CONSTRUCTED ON THE DRAWER'S FIRST OPEN and never
+//     at load — see ensurePythonPane() — and once constructed it is never destroyed, for
+//     the same reason the AudioContext is not: a ▶ Run REPLACES the document, and a pane
+//     torn down with its document would re-download a Python runtime on every run.
+//     ui/sync.ts sits between the pane and the document and is given a GETTER for the
+//     document precisely because the document is replaced underneath it.
 //
 // The renderer is attached through a factory rather than constructed inline:
 // useRenderer() is called whenever the document is REPLACED (open/new), and the shell
@@ -48,12 +58,30 @@ import type { Op } from '../doc/ops';
 import { PatchDoc } from '../doc/patch-doc';
 import { Engine, type BuildReport } from '../engine/engine';
 import { isSupported, type MaxNode } from '../engine/registry';
+import { renderTone } from '../engine/selftest';
 import { parseMaxPat } from '../parser/maxpat';
 import { EMPTY_PATCHER_HEADER, patchToMaxPat } from '../parser/write-maxpat';
 import { preloadWorklets } from '../runtime/worklet';
+import { clearAutosave, installAutosave, loadAutosave } from '../ui/autosave';
+import { installCanvasDrop, openMaxpat, PickerCancelled, saveMaxpat } from '../ui/file-io';
+import { Inspector } from '../ui/inspector';
+import { Palette } from '../ui/palette';
 import { PatcherView } from '../ui/patcher';
 import { Interaction, ownsKeyboard } from '../ui/patcher-input';
+import {
+  buildPermalink,
+  PermalinkTooLargeError,
+  readPermalinkFromLocation,
+  type Permalink,
+} from '../ui/permalink';
+import { SyncController } from '../ui/sync';
 import { attachPortTips } from '../ui/tooltip';
+// Static, and it stays that way: python-pane.ts has type-only static imports of its own,
+// so this costs ~11 KB in the shell's chunk and pulls in neither CodeMirror nor Pyodide
+// — both of which it loads through dynamic import(), from its constructor and from
+// preload() respectively. Constructing it is what starts the download; importing it is
+// not. See ensurePythonPane().
+import { PythonPane } from './python-pane';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Public API — two other modules are written against exactly this.
@@ -92,6 +120,10 @@ export interface PatcherShell {
   readonly view: PatcherView | null;
   /** The gesture controller bound to the current view's <svg>. Null with no view. */
   readonly input: Interaction | null;
+  /** The Python drawer, once it has been opened. Null until then — that is the point. */
+  readonly python: PythonPane | null;
+  /** The ownership state machine between the canvas and the drawer. Null with no pane. */
+  readonly sync: SyncController | null;
   readonly mode: PatcherMode;
   setMode(mode: PatcherMode): void;
   toggleMode(): void;
@@ -134,12 +166,19 @@ const modeGlyph = el('mode-glyph');
 
 const startBtn = el<HTMLButtonElement>('start');
 const stopBtn = el<HTMLButtonElement>('stop');
+const selftestBtn = el<HTMLButtonElement>('selftest');
 
 const newBtn = el<HTMLButtonElement>('file-new');
 const openBtn = el<HTMLButtonElement>('file-open');
 const saveBtn = el<HTMLButtonElement>('file-save');
+const saveAsBtn = el<HTMLButtonElement>('file-save-as');
 const shareBtn = el<HTMLButtonElement>('file-share');
-const fileInput = el<HTMLInputElement>('file-input');
+const samplesSelect = el<HTMLSelectElement>('samples');
+
+const restoreBar = el('restore-bar');
+const restoreText = el('restore-text');
+const restoreFreshBtn = el<HTMLButtonElement>('restore-fresh');
+const restoreDismissBtn = el<HTMLButtonElement>('restore-dismiss');
 
 const zoomInBtn = el<HTMLButtonElement>('zoom-in');
 const zoomOutBtn = el<HTMLButtonElement>('zoom-out');
@@ -320,6 +359,12 @@ function setDrawerOpen(open: boolean): void {
   document.body.dataset.drawer = open ? 'open' : 'closed';
   drawerToggle.setAttribute('aria-expanded', String(open));
   writePref('drawer.open', String(open));
+  // THE ONE PLACE the Python pane comes into existence. Opening the drawer is the user
+  // saying they want Python; nothing before it may cost them a runtime download. This
+  // also covers a drawer restored open from a previous session — the pane must not be
+  // an empty rectangle there — which is why the check lives in the setter and not in
+  // toggleDrawer().
+  if (open) ensurePythonPane();
 }
 
 function toggleDrawer(): void {
@@ -360,6 +405,25 @@ let viewFactory: ViewFactory | null = null;
 let unsubscribeDoc: (() => void) | null = null;
 let lastBuilt: Map<string, MaxNode> = new Map();
 let currentName = 'Untitled.maxpat';
+
+/**
+ * The file this document came from, when the browser gave us a handle for it.
+ *
+ * This is what makes ⌘S re-save in place rather than drop `fm_synth (7).maxpat` into
+ * ~/Downloads. Cleared by adopt() for every document, and re-assigned by openPatch()
+ * AFTER the load — one rule, so no caller has to remember the ordering.
+ */
+let fileHandle: FileSystemFileHandle | undefined;
+/** Uninstall thunk for the autosave install belonging to the CURRENT document. */
+let stopAutosave: (() => void) | null = null;
+
+// The three panes. The palette and the inspector are built once, at the bottom of this
+// file, and outlive every document (neither holds one). The Python pane is built on the
+// drawer's first open and then also outlives every document — see the module header.
+let palette: Palette | null = null;
+let inspector: Inspector | null = null;
+let pane: PythonPane | null = null;
+let sync: SyncController | null = null;
 
 /**
  * The page's one Engine, built lazily so the AudioContext is constructed on the way to
@@ -444,6 +508,101 @@ function onDocChange(ops: readonly Op[]): void {
     scheduleRebuild();
   }
   updateDocMeta();
+  // ONCE PER TRANSACTION, not once per op: doc.on() already batches, and the sync
+  // controller counts what it is handed as "one canvas edit" — a per-op call would
+  // report a three-box paste as three.
+  sync?.onCanvasChanged();
+  // The inspector shows the selected box, and an edit to it can come from anywhere —
+  // the canvas, ⌘Z, or the Python drawer. Re-showing is cheap: a node whose only change
+  // is its rect takes the pane's in-place path and rebuilds no DOM.
+  refreshInspector();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// The panes
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Where a box goes when nothing said where: the visible middle of the canvas. */
+function canvasCentre(): { x: number; y: number } {
+  if (!view) return { x: 60, y: 60 };
+  const box = canvasEl.getBoundingClientRect();
+  return view.clientToPatch({
+    clientX: box.left + box.width / 2,
+    clientY: box.top + box.height / 2,
+  });
+}
+
+/** Screen point (a drop, say) to patch coordinates, through the live viewport. */
+function toPatch(at: { clientX: number; clientY: number }): { x: number; y: number } {
+  return view ? view.clientToPatch(at) : { x: 60, y: 60 };
+}
+
+/**
+ * Create a box, and select it — placing an object the user cannot then see the
+ * properties of is half a gesture. Rounded because patching_rect coordinates are
+ * written to the file and a dropped box should not arrive at x = 213.60000000000002.
+ */
+function placeObject(name: string, at: { x: number; y: number }): void {
+  if (!doc) return;
+  const node = doc.addBox(name, Math.round(at.x), Math.round(at.y));
+  view?.select([node.id]);
+  status(`Placed ${name}`);
+}
+
+/** Point the inspector at whatever is selected now. */
+function showSelection(ids: ReadonlySet<string>): void {
+  if (!inspector) return;
+  if (ids.size === 0 || !doc) {
+    inspector.hide();
+    return;
+  }
+  if (ids.size > 1) {
+    inspector.showMulti([...ids]);
+    return;
+  }
+  const id = [...ids][0];
+  const node = doc.node(id);
+  if (node) inspector.show(node, lastBuilt.get(id));
+  else inspector.hide();
+}
+
+function refreshInspector(): void {
+  if (view) showSelection(view.selection);
+  else inspector?.hide();
+}
+
+/**
+ * Build the Python drawer, once, on the drawer's first open.
+ *
+ * Everything expensive is downstream of this call: the pane's constructor imports
+ * CodeMirror and preload() starts Pyodide. Nothing above calls it, and nothing here may
+ * start calling it from page load — see the module header.
+ *
+ * The controller is handed a GETTER for the document because a ▶ Run replaces the
+ * document wholesale, and it is handed loadPatch() so that replacement runs through the
+ * same path as Open — including the engine rebuild, the autosave install and the view.
+ */
+function ensurePythonPane(): void {
+  if (pane) return;
+  const host = el('drawer-body');
+  const built = new PythonPane(host, {
+    onRun: (json) => sync?.onPythonRun(json),
+    onStatus: (msg, kind) => status(msg, kind ?? 'info'),
+    onEdit: () => sync?.onPythonEdited(),
+  });
+  pane = built;
+  sync = new SyncController({
+    doc: () => doc,
+    pane: built,
+    onBanner: (state) => built.setNotice(state),
+    // Named after what the script itself saves, not after whatever file was open: a
+    // ▶ Run produces the script's patch, and calling it `fm_synth.maxpat` afterwards
+    // would be a claim about a file this document is no longer a copy of.
+    loadPatch: (json) => loadPatch(json, PY_FILENAME),
+    codegen: { filename: PY_FILENAME },
+  });
+  void built.preload(); // the ~15 MB download, and the only place it can start
+  sync.adopt(); // seed the pane: generated code, read-only, with [Detach & edit]
 }
 
 /**
@@ -503,6 +662,9 @@ function mountView(): void {
   // the view and nothing else has to know it exists.
   detachTips = attachPortTips({ svg: view.svg, doc: () => doc });
   updateZoom();
+  // A new view starts with nothing selected; say so, rather than leaving the inspector
+  // showing a box from the document that was just replaced.
+  refreshInspector();
 }
 
 /**
@@ -514,7 +676,15 @@ function mountView(): void {
 async function adopt(next: PatchDoc, name: string): Promise<void> {
   unsubscribeDoc?.();
   unsubscribeDoc = null;
+  // NOT flushed: uninstalling means the document is being replaced, and flushing here
+  // would make a reload restore the patch the user just closed. See ui/autosave.ts.
+  stopAutosave?.();
+  stopAutosave = null;
   unmountView();
+  restoreBar.hidden = true;
+  // Whatever file the LAST document came from is not this one's. openPatch() re-assigns
+  // after its load; every other path genuinely has no handle.
+  fileHandle = undefined;
 
   doc = next;
   currentName = name;
@@ -523,6 +693,15 @@ async function adopt(next: PatchDoc, name: string): Promise<void> {
   lastBuilt = report.built;
   mountView();
   unsubscribeDoc = next.on(onDocChange);
+  stopAutosave = installAutosave(() => patchToMaxPat(next, { renumber: true }), {
+    subscribe: (changed) => next.on(changed),
+    name: () => currentName,
+    onError: (message) => status(message, 'error'),
+  });
+  // The drawer, if it is open, is showing a projection of a document that no longer
+  // exists. Only while the canvas owns it: a script the user typed is theirs, and a
+  // document swap is not a reason to overwrite it.
+  if (sync?.owner === 'canvas') sync.adopt();
   reportBuild(name, report);
 }
 
@@ -542,28 +721,119 @@ async function openFile(file: File): Promise<void> {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// File I/O. Everything that leaves or enters the page as a file or a link.
+//
+// `renumber: true` on every write: the document's ids go sparse as you edit, and a saved
+// file should not show the holes — nor should a permalink, nor the autosave slot, so all
+// three ask for the same thing.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const fileName = (): string =>
+  currentName.endsWith('.maxpat') ? currentName : `${currentName}.maxpat`;
+
+async function openPatch(): Promise<void> {
+  try {
+    const picked = await openMaxpat();
+    if (!picked) return; // the user dismissed the picker; nothing to say about it
+    await loadPatch(picked.json, picked.name);
+    // AFTER the load: adopt() clears the handle for every document, so assigning it
+    // before would set it on the one being replaced.
+    fileHandle = picked.handle;
+  } catch (err) {
+    status(`Could not open that file: ${(err as Error).message}`, 'error');
+  }
+}
+
 /**
  * Write the document out as .maxpat.
  *
- * SEAM (Phase 7): ui/file-io.ts replaces this with the File System Access API so ⌘S
- * re-saves in place instead of dropping a new file in ~/Downloads every time. This is
- * the fallback that module will keep for browsers without it, so it is not throwaway.
- * `renumber` because the document's ids go sparse as you edit and a saved file should
- * not show the holes.
+ * `reuse` is the difference between Save and Save As: with a handle in hand the File
+ * System Access API writes straight back to the file that was opened, which is the whole
+ * point of keeping it. ui/file-io.ts falls back to a download where that API is missing,
+ * and reports that by returning no handle — so `fileHandle` is assigned from the result
+ * either way and the next ⌘S asks again rather than silently re-downloading.
  */
-function save(): void {
+async function writeFile(reuse: boolean): Promise<void> {
   if (!doc) return;
-  const name = currentName.endsWith('.maxpat') ? currentName : `${currentName}.maxpat`;
-  const blob = new Blob([JSON.stringify(patchToMaxPat(doc, { renumber: true }), null, 2)], {
-    type: 'application/json',
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = name;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 0);
-  status(`Saved ${name}`, 'ok');
+  try {
+    fileHandle = await saveMaxpat(
+      patchToMaxPat(doc, { renumber: true }),
+      fileName(),
+      reuse ? fileHandle : undefined
+    );
+    // A Save As can rename the document; the handle is the only place that shows up.
+    if (fileHandle?.name) currentName = fileHandle.name;
+    status(`Saved ${fileName()}`, 'ok');
+  } catch (err) {
+    // A dismissed picker is an answer, not a failure — announcing "Saved" or "Could not
+    // save" over a dialog the user just cancelled is the reason this is its own type.
+    if (err instanceof PickerCancelled) return;
+    status(`Could not save: ${(err as Error).message}`, 'error');
+  }
+}
+
+const save = (): void => void writeFile(true);
+const saveAs = (): void => void writeFile(false);
+
+/**
+ * Copy a link that carries the whole patch in its fragment.
+ *
+ * Two try blocks, because they fail for unrelated reasons and deserve unrelated answers:
+ * the patch can be too big to put in a URL at all, or the clipboard can be refused (no
+ * user gesture, no permission, an insecure origin). The second is recoverable — the link
+ * goes into the address bar instead, where the user can copy it themselves.
+ */
+async function share(): Promise<void> {
+  if (!doc) return;
+  let link: Permalink;
+  try {
+    link = await buildPermalink(patchToMaxPat(doc, { renumber: true }));
+  } catch (err) {
+    if (err instanceof PermalinkTooLargeError) {
+      status(err.message, 'error');
+      return;
+    }
+    status(`Could not make a link: ${(err as Error).message}`, 'error');
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(link.url);
+    status(
+      link.tooLong
+        ? `Link copied — ${link.bytes} characters, long enough that some apps will cut it`
+        : 'Link copied',
+      link.tooLong ? 'info' : 'ok'
+    );
+  } catch {
+    location.hash = link.url.slice(link.url.indexOf('#') + 1);
+    status('Link is in the address bar — the clipboard was not available.', 'info');
+  }
+}
+
+/**
+ * Prove the patch makes a sound, without anyone having to listen to it.
+ *
+ * engine/selftest.ts renders the document through an OfflineAudioContext and measures
+ * the result, so "does this work?" is an assertion rather than an opinion. The numbers
+ * are also hung off `window.__selftest`, which is how an automated check reads them —
+ * the one habit worth carrying over from the page this one replaced.
+ */
+async function selftest(): Promise<void> {
+  if (!doc) return;
+  selftestBtn.disabled = true;
+  try {
+    const result = await renderTone(patchToMaxPat(doc, { renumber: true }), 1);
+    (window as unknown as { __selftest?: typeof result }).__selftest = result;
+    status(
+      `self-test: rms=${result.rms.toFixed(4)} dominant≈${result.dominantHz.toFixed(1)} Hz`,
+      result.rms > 1e-4 ? 'ok' : 'info'
+    );
+  } catch (err) {
+    status(`Self-test failed: ${(err as Error).message}`, 'error');
+  } finally {
+    selftestBtn.disabled = false;
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -615,6 +885,17 @@ function zoomFit(): void {
 const STARTER = 'test-patches/hello_world.maxpat';
 
 /**
+ * The name the generated MaxPy saves under, and therefore the name a ▶ Run's document
+ * carries. Fixed rather than derived from currentName: it is written into the script as
+ * `patch.save("…")`, and a filename that changed out from under a script the user may
+ * have detached and edited would be a surprising edit to their text.
+ */
+const PY_FILENAME = 'my_patch.maxpat';
+
+/** The fragment studio.html redirects to, so the old Studio URL still opens Python. */
+const PYTHON_HASH = '#python';
+
+/**
  * Resolve a `?patch=` value to a URL under the deploy base. A bare name is taken as one
  * of the bundled samples, so `?patch=fm_synth` works.
  *
@@ -637,15 +918,53 @@ async function loadUrl(url: string, name: string): Promise<void> {
   await loadPatch(await res.json(), name);
 }
 
+/** How long ago the autosave slot was written, in words a person would use. */
+function agoWords(since: number): string {
+  const secs = Math.max(0, Math.round((Date.now() - since) / 1000));
+  if (secs < 90) return 'a moment ago';
+  const mins = Math.round(secs / 60);
+  if (mins < 60) return `${mins} minute${mins === 1 ? '' : 's'} ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 36) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+  return `${Math.round(hours / 24)} days ago`;
+}
+
 /**
- * Startup precedence: `?patch=<sample>` → the bundled starter.
+ * The restore notice.
  *
- * SEAM (Phase 7): a `#p=` permalink goes in FRONT of ?patch=, and the localStorage
- * autosave slot goes between ?patch= and the starter (restored behind a dismissible
- * "Restored your last patch · Start fresh" bar). Neither exists yet and neither is
- * stubbed here — a fake restore would be worse than none.
+ * The patch is ALREADY on the canvas by the time this appears — restoring behind a
+ * dialog would mean an empty page until the user answered a question about work they
+ * may not remember doing. The bar only offers the way back out.
+ */
+function showRestoreBar(snapshot: { savedAt: number; name?: string }): void {
+  restoreText.textContent = `Restored ${snapshot.name ?? 'your last patch'} · saved ${agoWords(
+    snapshot.savedAt
+  )}`;
+  restoreBar.hidden = false;
+}
+
+/**
+ * Startup precedence: `#p=` permalink → `?patch=<sample>` → the autosave slot → the
+ * bundled starter.
+ *
+ * The permalink goes first because it is the most specific thing anyone can hand you:
+ * somebody sent this exact patch to this exact person. The autosave comes AFTER both
+ * URL forms for the same reason in reverse — a link the user just clicked must not be
+ * overruled by whatever they happened to be editing yesterday.
  */
 async function boot(): Promise<void> {
+  try {
+    const shared = await readPermalinkFromLocation();
+    if (shared) {
+      await loadPatch(shared, 'Shared patch.maxpat');
+      return;
+    }
+  } catch (err) {
+    // A damaged `#p=` is worth saying out loud: the alternative is a user staring at the
+    // starter patch wondering what happened to the link they were sent.
+    status(`That shared link could not be read: ${(err as Error).message}`, 'error');
+  }
+
   const param = new URLSearchParams(location.search).get('patch');
   if (param) {
     try {
@@ -655,6 +974,21 @@ async function boot(): Promise<void> {
       status(`Could not load ?patch=${param}: ${(err as Error).message}`, 'error');
     }
   }
+
+  const snapshot = loadAutosave();
+  if (snapshot) {
+    try {
+      await loadPatch(snapshot.json, snapshot.name ?? 'Restored.maxpat');
+      showRestoreBar(snapshot);
+      return;
+    } catch (err) {
+      // A slot we cannot read is a slot worth dropping, or it greets the user again
+      // tomorrow with the same failure.
+      clearAutosave();
+      status(`Could not restore your last patch: ${(err as Error).message}`, 'error');
+    }
+  }
+
   try {
     await loadUrl(import.meta.env.BASE_URL + STARTER, 'hello_world.maxpat');
   } catch {
@@ -688,28 +1022,45 @@ stopBtn.addEventListener('click', () => {
   status('Audio stopped.');
 });
 
+selftestBtn.addEventListener('click', () => void selftest());
+
 newBtn.addEventListener('click', () => void newPatch());
-openBtn.addEventListener('click', () => fileInput.click());
+openBtn.addEventListener('click', () => void openPatch());
 saveBtn.addEventListener('click', save);
-shareBtn.title = 'Permalinks arrive with the sharing phase';
+saveAsBtn.addEventListener('click', saveAs);
+shareBtn.addEventListener('click', () => void share());
 
-fileInput.addEventListener('change', () => {
-  const file = fileInput.files?.[0];
-  if (file) void openFile(file);
-  fileInput.value = ''; // so re-picking the same file fires `change` again
+samplesSelect.addEventListener('change', () => {
+  const path = samplesSelect.value;
+  // Back to the prompt row immediately, so re-picking the sample you are already on
+  // fires `change` again — otherwise the menu is a one-shot per patch.
+  samplesSelect.selectedIndex = 0;
+  if (!path) return;
+  const name = path.split('/').pop() ?? path;
+  void loadUrl(import.meta.env.BASE_URL + path, name).catch((err: Error) =>
+    status(`Could not load ${name}: ${err.message}`, 'error')
+  );
 });
 
-// Drop is scoped to the canvas, not the document: the page has other drop targets to
-// come (the palette, the Python drawer) and a document-level handler would swallow them.
-canvasEl.addEventListener('dragover', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
+restoreFreshBtn.addEventListener('click', () => {
+  clearAutosave();
+  restoreBar.hidden = true;
+  void newPatch();
 });
-canvasEl.addEventListener('drop', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  const file = e.dataTransfer?.files?.[0];
-  if (file) void openFile(file);
+restoreDismissBtn.addEventListener('click', () => {
+  restoreBar.hidden = true;
+});
+
+// Drop is scoped to the canvas, not the document: the page has other drop targets (the
+// palette drags out of, the drawer) and a document-level handler would swallow them.
+// ui/file-io.ts decides what a drag is carrying from `dataTransfer.types` and claims
+// only the kinds that have a handler here.
+installCanvasDrop(canvasEl, {
+  onFile: (file) => void openFile(file),
+  onObject: (name, at) => placeObject(name, toPatch(at)),
+  onFragment: (text, at) => {
+    input?.insertFragment(text, toPatch(at));
+  },
 });
 
 zoomInBtn.addEventListener('click', () => zoomBy(1.25));
@@ -740,10 +1091,12 @@ window.addEventListener('keydown', (e) => {
   const act: Record<string, (() => void) | undefined> = {
     e: () => setMode(mode === 'edit' ? 'run' : 'edit'),
     j: toggleDrawer,
-    k: togglePalette,
+    k: openPaletteAndSearch,
     i: toggleInspector,
-    s: save,
-    o: () => fileInput.click(),
+    // ⇧⌘S is Save As in every application that has both; without it, "save a copy" is
+    // a trip to the toolbar in the middle of a keyboard-driven session.
+    s: e.shiftKey ? saveAs : save,
+    o: () => void openPatch(),
     '0': zoomFit,
     '=': () => zoomBy(1.25),
     '+': () => zoomBy(1.25),
@@ -755,11 +1108,51 @@ window.addEventListener('keydown', (e) => {
   run();
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Palette + inspector. Built once, here, because neither holds a document: they survive
+// every New, Open and ▶ Run, and remounting them per document would throw away the
+// user's search, their scroll position and their collapsed groups for no reason.
+// ─────────────────────────────────────────────────────────────────────────────
+
+palette = new Palette(el('palette-body'), {
+  // A click with no point of its own goes to the middle of what the user is looking at.
+  // `centre` (below) is what lets the palette cascade repeats from there itself.
+  onPlace: (name, at) => placeObject(name, at ?? canvasCentre()),
+  centre: canvasCentre,
+});
+
+inspector = new Inspector(el('inspector-body'), {
+  onEdit: (id, text) => doc?.setBoxText(id, text),
+  // The pane thinks in absolute positions and the document moves by deltas; nothing
+  // else can move a box from a text field, so the translation lives here.
+  onMove: (id, x, y) => {
+    const node = doc?.node(id);
+    if (node) doc?.moveNodes([id], x - node.rect[0], y - node.rect[1]);
+  },
+  // onAlign is deliberately absent: there is no align command anywhere in the app yet,
+  // and Inspector renders the six buttons only when it is given one — so the
+  // multi-selection panel says what it can do instead of offering six dead buttons.
+});
+
+/**
+ * ⌘K. OPEN first, then focus: a rail's pane-body is `display: none`, and focus() on
+ * something in a hidden subtree does nothing at all — the order is the whole fix. The
+ * focus is deferred a frame so it lands after the layout the class change causes.
+ */
+function openPaletteAndSearch(): void {
+  if (narrow.matches) setOverlay('palette', true);
+  else setPaletteOpen(true);
+  requestAnimationFrame(() => palette?.focusSearch());
+}
+
 // ── restore the persisted layout, before the first paint of anything below ──
 setPaletteOpen(readPref('palette.open') !== 'false');
 setInspectorPinned(readPref('inspector.pinned') !== 'false');
 setDrawerHeight(Number(readPref('drawer.height')) || DRAWER_DEFAULT, false);
-setDrawerOpen(readPref('drawer.open') === 'true');
+// `#python` is studio.html's redirect target: that URL promised a Python editor, so it
+// still opens one. It is the only fragment that opens the drawer — and it is checked
+// before boot() reads `#p=`, which is a different key in the same namespace.
+setDrawerOpen(location.hash === PYTHON_HASH || readPref('drawer.open') === 'true');
 setMode('edit');
 updateZoom();
 
@@ -782,6 +1175,12 @@ export const shell: PatcherShell = {
   },
   get input() {
     return input;
+  },
+  get python() {
+    return pane;
+  },
+  get sync() {
+    return sync;
   },
   get mode() {
     return mode;
@@ -828,5 +1227,9 @@ shell.useRenderer(
     new PatcherView(host, {
       doc: patch,
       widgetFor: (id) => lastBuilt.get(id)?.el,
+      // The inspector is a view of the selection, and the selection lives in the
+      // renderer. This is the only place it changes without a document transaction —
+      // clicking a box edits nothing — so it is the only place that can say so.
+      onSelectionChange: showSelection,
     })
 );

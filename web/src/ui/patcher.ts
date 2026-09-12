@@ -676,12 +676,15 @@ export class PatcherView {
   /**
    * Rendered size of a box.
    *
-   * Unlike the player, an authored `patching_rect` width WINS over the width derived
-   * from the text. The player re-derives because it renders a file it will never write
-   * back; an editor has to draw the box it is going to save, or reopening the patch in
-   * Max would move every cord's attachment point. A mounted widget is the exception —
-   * its Max box is typically 20x15, which is not a thing anyone can use with a mouse, so
-   * boxSize()'s usable size stands.
+   * Unlike the player, an authored `patching_rect` WINS where it is usable: an editor has
+   * to draw the box it is going to save, so a file authored in Max keeps the geometry Max
+   * gave it. But it can only ever GROW the box, never shrink it below what the text needs.
+   * maxpylang writes a `patching_rect` without measuring the text (it has no font metrics),
+   * so its patches carry widths like 43px for `cycle~ 440` — honouring those literally spills
+   * the label out of its own box and hangs the cords off the wrong place. Max itself
+   * re-measures a newobj's width on open, so growing to fit costs nothing on the round trip.
+   * A mounted widget is the other exception: its Max box is typically 20x15, which is not a
+   * thing anyone can use with a mouse, so boxSize()'s usable size stands.
    */
   private laidOut(node: IRNode, widget: HTMLElement | undefined): LaidBox {
     const [dw, dh] = boxSize(node, widget);
@@ -689,8 +692,8 @@ export class PatcherView {
     return {
       x,
       y,
-      w: widget ? dw : Math.max(aw > 0 ? aw : dw, MIN_BOX_W),
-      h: widget ? dh : Math.max(ah > 0 ? ah : dh, MIN_BOX_H),
+      w: widget ? dw : Math.max(aw, dw, MIN_BOX_W),
+      h: widget ? dh : Math.max(ah, dh, MIN_BOX_H),
       node,
       widget,
       authoredRect: [...node.rect],
@@ -895,8 +898,11 @@ export class PatcherView {
     // authored size that DID change still has to reach the body rect and the ports — and
     // can, without re-creating a single element, which is the whole point of this path.
     if (resized && !view.widget) {
-      view.lb.w = Math.max(rect[2] > 0 ? rect[2] : view.lb.w, MIN_BOX_W);
-      view.lb.h = Math.max(rect[3] > 0 ? rect[3] : view.lb.h, MIN_BOX_H);
+      // Same rule as laidOut(): an authored size may grow the box but never shrink it
+      // below what the text needs, or the label spills out of its own body.
+      const [dw, dh] = boxSize(node, undefined);
+      view.lb.w = Math.max(rect[2], dw, MIN_BOX_W);
+      view.lb.h = Math.max(rect[3], dh, MIN_BOX_H);
     }
     this.placeBox(view);
     if (resized && !view.widget) {
