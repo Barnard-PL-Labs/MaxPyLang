@@ -11,6 +11,7 @@ import { num, register, type MaxNode } from '../../engine/registry';
 import { firstNum, BANG } from '../../runtime/atoms';
 import { makeOutlets } from '../../runtime/outlets';
 import { scheduler } from '../../runtime/scheduler';
+import { stopSource } from './lifecycle';
 
 // ── Band-limited oscillators (saw~ / rect~ / tri~) ─────────────────────────────
 // All three are OscillatorNodes differing only by `type`. Inlet 0 is frequency
@@ -26,6 +27,7 @@ register('saw~', (args, { ctx }) => {
     signalIns: [osc.frequency, undefined], // inlet 1 = phase reset (unsupported)
     signalOuts: [osc],
     controlIns: [(m) => { const n = firstNum(m); if (n !== undefined) osc.frequency.value = n; }, undefined],
+    dispose: () => stopSource(osc),
   } satisfies MaxNode;
 });
 
@@ -42,6 +44,7 @@ register('rect~', (args, { ctx }) => {
       () => {}, // pulse-width: accepted but not yet reshaping the wave
       undefined,
     ],
+    dispose: () => stopSource(osc),
   } satisfies MaxNode;
 });
 
@@ -58,6 +61,7 @@ register('tri~', (args, { ctx }) => {
       () => {}, // duty-cycle: accepted but not yet reshaping the wave
       undefined,
     ],
+    dispose: () => stopSource(osc),
   } satisfies MaxNode;
 });
 
@@ -80,7 +84,7 @@ register('noise~', (_args, { ctx }) => {
   const src = makeNoiseBuffer(ctx, (data) => {
     for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
   });
-  return { signalIns: [undefined], signalOuts: [src] } satisfies MaxNode;
+  return { signalIns: [undefined], signalOuts: [src], dispose: () => stopSource(src) } satisfies MaxNode;
 });
 
 // pink~ : pink (1/f) noise via the Paul Kellet filtered-white-noise approximation.
@@ -99,7 +103,7 @@ register('pink~', (_args, { ctx }) => {
       b6 = white * 0.115926;
     }
   });
-  return { signalIns: [undefined], signalOuts: [src] } satisfies MaxNode;
+  return { signalIns: [undefined], signalOuts: [src], dispose: () => stopSource(src) } satisfies MaxNode;
 });
 
 // ── train~ : pulse train ───────────────────────────────────────────────────────
@@ -132,6 +136,6 @@ register('train~', (args, { ctx }) => {
       undefined,
     ],
     onControlOut: o.onControlOut,
-    dispose: () => { cancel?.(); cancel = null; },
+    dispose: () => { cancel?.(); cancel = null; stopSource(osc); },
   } satisfies MaxNode;
 });

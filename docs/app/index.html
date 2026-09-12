@@ -38,60 +38,15 @@
       input[type=file] { display: none; }
       .hint { font-size: 11px; color: #6b7280; }
 
-      /* ── graph nodes ── */
-      .patch-graph { display: block; }
-      .patch-graph .node-body { fill: #23272f; stroke: #3a414c; stroke-width: 1; }
-      .patch-graph .node:hover .node-body { stroke: #566173; }
-      .patch-graph .node-label {
-        fill: var(--ink); font: 11px ui-monospace, "SF Mono", Menlo, monospace; dominant-baseline: middle;
-      }
-      .patch-graph .node-stub .node-body { fill: #24282f; stroke: #4a3a3a; stroke-dasharray: 4 3; }
-      .patch-graph .node-stub .node-label { fill: #8a8f98; }
-      .patch-graph .node-caption {
-        fill: var(--dim); font: 10px ui-monospace, monospace;
-      }
-
-      /* ── widgets mounted in the graph ── */
-      .widget-host { overflow: visible; }
-      .max-widget { width: 100%; height: 100%; margin: 0; }
-      input[type=range].max-widget {
-        -webkit-appearance: none; appearance: none; background: transparent; cursor: pointer;
-      }
-      input[type=range].max-widget::-webkit-slider-runnable-track {
-        height: 6px; border-radius: 3px; background: #363d47;
-      }
-      input[type=range].max-widget::-moz-range-track { height: 6px; border-radius: 3px; background: #363d47; }
-      input[type=range].max-widget::-webkit-slider-thumb {
-        -webkit-appearance: none; appearance: none; width: 16px; height: 16px; margin-top: -5px;
-        border-radius: 50%; background: var(--control); border: 2px solid #1a1d22; box-shadow: 0 1px 3px #0007;
-      }
-      input[type=range].max-widget::-moz-range-thumb {
-        width: 16px; height: 16px; border-radius: 50%; background: var(--control); border: 2px solid #1a1d22;
-      }
-      input[type=range].max-dial { accent-color: var(--signal); }
-      input[type=range].max-dial::-webkit-slider-thumb { background: var(--signal); }
-      input[type=range].max-dial::-moz-range-thumb { background: var(--signal); }
-      input[type=number].max-widget {
-        background: #1a1d22; color: var(--ink); border: 1px solid #39404b; border-radius: 4px;
-        font: 12px ui-monospace, monospace; padding: 2px 4px;
-      }
-      .max-incdec, .max-rslider, .max-kslider, .max-nslider { display: flex; gap: 2px; height: 100%; }
-      .max-rslider { flex-direction: column; }
-      .max-incdec { flex-direction: column; }
-      .max-incdec button {
-        flex: 1; padding: 0; font-size: 8px; line-height: 1; border-radius: 3px; min-width: 22px;
-      }
-      .max-kslider { gap: 1px; }
-      .max-kslider .max-key {
-        flex: 1; padding: 0; background: #eef1f4; border: 1px solid #333; border-radius: 0 0 3px 3px; min-width: 12px;
-      }
-      .max-kslider .max-key:nth-child(2), .max-kslider .max-key:nth-child(4),
-      .max-kslider .max-key:nth-child(7), .max-kslider .max-key:nth-child(9),
-      .max-kslider .max-key:nth-child(11) { background: #2a2e35; }
-      .max-kslider .max-key:active { background: var(--control); }
+      /* The graph itself — boxes, cords and mounted widgets — is styled by
+         src/ui/patch.css, imported from src/main.ts and shared with the Studio and the
+         patcher. It used to be duplicated here, which is how the player quietly kept a
+         set of composite-widget rules the other two pages had lost. */
     </style>
-    <script type="module" crossorigin src="/MaxPyLang/app/assets/index-YFKy_j6G.js"></script>
-    <link rel="modulepreload" crossorigin href="/MaxPyLang/app/assets/selftest-Bewit-YS.js">
+    <script type="module" crossorigin src="/MaxPyLang/app/assets/index-DhlLHpWr.js"></script>
+    <link rel="modulepreload" crossorigin href="/MaxPyLang/app/assets/engine-Bbh0OC4G.js">
+    <link rel="modulepreload" crossorigin href="/MaxPyLang/app/assets/selftest-C3YSB-xu.js">
+    <link rel="stylesheet" crossorigin href="/MaxPyLang/app/assets/engine-EuCKCpRm.css">
   </head>
   <body>
     <header>
@@ -129,6 +84,7 @@
       <label class="file">Load .maxpat<input id="file" type="file" accept=".maxpat,.json" /></label>
       <span class="hint">or drag a .maxpat onto the page</span>
       <span style="flex:1"></span>
+      <a class="nav" href="./patcher.html" style="color:#8b93a0;font-size:13px;text-decoration:none">✛ Patcher — build by hand →</a>
       <a class="nav" href="./studio.html" style="color:#8b93a0;font-size:13px;text-decoration:none">✎ Studio — write MaxPy →</a>
     </header>
     <div id="coverage">Loading…</div>

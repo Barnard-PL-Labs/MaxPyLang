@@ -11,6 +11,7 @@ import { num, register, type MaxNode } from '../../engine/registry';
 import { firstNum, nums, BANG, type Msg } from '../../runtime/atoms';
 import { makeOutlets } from '../../runtime/outlets';
 import { scheduler } from '../../runtime/scheduler';
+import { stopSource } from './lifecycle';
 
 // line~ : signal ramp generator. inlet 0 takes `target` (jump) or `target time`
 // (ramp over `time` ms); optional list of pairs uses the first pair here. Outlet 0
@@ -47,7 +48,7 @@ register('line~', (args, { ctx }) => {
     signalOuts: [src, undefined],       // outlet 1 is control, not signal
     controlIns: [ramp, undefined],
     onControlOut: o.onControlOut,
-    dispose: clearDone,
+    dispose: () => { clearDone(); stopSource(src); },
   } satisfies MaxNode;
 });
 
@@ -95,7 +96,7 @@ register('curve~', (args, { ctx }) => {
       (m) => { const n = firstNum(m); if (n !== undefined) curveParam = n; },
     ],
     onControlOut: o.onControlOut,
-    dispose: clearDone,
+    dispose: () => { clearDone(); stopSource(src); },
   } satisfies MaxNode;
 });
 
@@ -160,7 +161,7 @@ register('adsr~', (args, { ctx }) => {
       setNum((n) => { release = n; }),
     ],
     onControlOut: o.onControlOut,
-    dispose: clearTimers,
+    dispose: () => { clearTimers(); stopSource(env); },
   } satisfies MaxNode;
 });
 

@@ -11,7 +11,10 @@
     "test": "vitest run",
     "test:browser": "vitest run --config vitest.browser.config.ts",
     "gen:manifest": "node scripts/gen-manifest.mjs",
-    "gen:coverage": "node scripts/gen-coverage.mjs"
+    "gen:objdocs": "node scripts/gen-objdocs.mjs",
+    "gen:coverage": "node scripts/gen-coverage.mjs",
+    "gen:io-fixtures": "../.venv/bin/python scripts/gen-io-fixtures.py",
+    "test:parity": "MAXPY_PARITY=1 vitest run test/roundtrip.test.ts"
   },
   "devDependencies": {
     "@types/node": "^26.1.0",

@@ -16,9 +16,21 @@ export async function renderTone(json: unknown, seconds = 1): Promise<ToneResult
   const offline = new OfflineAudioContext(2, sampleRate * seconds, sampleRate);
 
   const engine = new Engine(offline);
-  engine.build(parseMaxPat(json));
-
-  const buffer = await offline.startRendering();
+  let buffer: AudioBuffer;
+  try {
+    engine.build(parseMaxPat(json));
+    buffer = await offline.startRendering();
+  } finally {
+    // The render is over, but the patch it built is not: a metro registers its timer
+    // with the PROCESS-WIDE scheduler at construction, so an undisposed offline patch
+    // keeps ticking — and keeps broadcasting on the process-wide named buses — for the
+    // life of the page, once per ✓ Self-test press. clear(), not dispose(): dispose()
+    // would reset the scheduler and the buses that the user's LIVE patch is using, which
+    // is the bug clear() was split out of dispose() to prevent. Every object that
+    // registers with the shared runtime cancels its own registration in dispose(), and
+    // clear() calls it on each of them.
+    engine.clear();
+  }
   const data = buffer.getChannelData(0);
 
   let sumSq = 0;

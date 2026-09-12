@@ -2,6 +2,10 @@
 // parse -> IR, render the graph, build the audio engine, and expose transport.
 
 import './objects'; // side-effect: registers all objects (real + Tier-A stubs)
+// The look of the graph itself, shared with the Studio and the patcher. It used to be
+// an inline <style> in index.html, which meant a change to how a stub box reads had to
+// be made identically in three places — and in practice was not.
+import './ui/patch.css';
 import { parseMaxPat } from './parser/maxpat';
 import { renderGraph } from './ui/graph';
 import { Engine } from './engine/engine';
@@ -32,12 +36,18 @@ async function loadPatch(json: unknown, name: string): Promise<void> {
 
   currentJson = json;
 
-  if (engine) await engine.dispose();
-  engine = new Engine();
-  // Worklet modules must be added to the context BEFORE any AudioWorkletNode is
-  // created, so preload the DSP worklets before the engine builds the patch. When
-  // worklets are unavailable this resolves immediately and objects pass through.
-  await preloadWorklets(engine.ctx);
+  // ONE AudioContext for the life of the page. Disposing the engine per load would
+  // close it, and with it the user's audio-unlock gesture: switching sample patches
+  // after pressing ▶ left the transport torn down with the ▶/■ buttons still lit, and
+  // ten switches left ten closed contexts behind. clear() drops the old patch and keeps
+  // the context — and build() calls clear() itself, so the load path below is unchanged.
+  if (!engine) {
+    engine = new Engine();
+    // Worklet modules must be added to the context BEFORE any AudioWorkletNode is
+    // created, so preload the DSP worklets before the engine builds the patch. When
+    // worklets are unavailable this resolves immediately and objects pass through.
+    await preloadWorklets(engine.ctx);
+  }
   const report = engine.build(patch);
   // render after build so widget objects can mount their DOM into the graph
   renderGraph(graphEl, patch, report.built);

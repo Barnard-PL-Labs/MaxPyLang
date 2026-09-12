@@ -1,0 +1,98 @@
+/*
+ * The look of a patch itself — boxes, cords, and the HTML widgets mounted inside them.
+ *
+ * This is the half of the styling that belongs to the GRAPH rather than to the page
+ * around it, and it exists as a file because three entry points now render the same
+ * graph: the player (index.html), the Studio (studio.html) and the patcher
+ * (patcher.html). It lived inline in each page's <style>, which meant a change to how a
+ * stub box reads had to be made — identically — in three places, and a slider that
+ * looked right in the Studio could look wrong in the patcher for no reason a reader
+ * could find. Page chrome stays in the page (or in ui/patcher.css); everything a
+ * renderer emits is here.
+ *
+ * Contract with the renderers (ui/graph.ts, ui/patcher.ts): these class names ARE the
+ * interface. `.patch-graph` on the <svg>; `.node` + `.node-stub` on a box group,
+ * `.node-body` / `.node-label` / `.node-caption` inside it; `.widget-host` on the
+ * <foreignObject> and `.max-widget` on the element it wraps. Domain colour is applied
+ * per-element from ui/layout.ts's DOMAIN_COLOR, not from here, because the renderer
+ * already knows the domain and a CSS variable per domain would just be a second copy.
+ *
+ * The theme tokens are read with fallbacks: every entry point that imports this file
+ * defines them on :root, and the fallbacks only matter if some future host forgets —
+ * in which case unreadable text is a worse failure than a slightly-off colour.
+ */
+
+/* ── boxes ── */
+.patch-graph { display: block; }
+.patch-graph .node-body { fill: #23272f; stroke: #3a414c; }
+.patch-graph .node:hover .node-body { stroke: #566173; }
+.patch-graph .node-label {
+  fill: var(--ink, #d6dbe2); font: 11px ui-monospace, Menlo, monospace; dominant-baseline: middle;
+}
+/* An object with no behaviour yet (Tier A): dashed and desaturated, so "recognized but
+   silent" is visible on the canvas rather than only in the coverage line. */
+.patch-graph .node-stub .node-body { fill: #24282f; stroke: #4a3a3a; stroke-dasharray: 4 3; }
+.patch-graph .node-stub .node-label { fill: #8a8f98; }
+.patch-graph .node-caption { fill: var(--dim, #8b93a0); font: 10px ui-monospace, monospace; }
+
+/* ── widgets mounted in the graph ──
+   A <foreignObject> clips to its own box by default; overflow:visible lets a slider
+   thumb and a focus ring reach past the edge the way they do in normal flow. */
+.widget-host { overflow: visible; }
+.max-widget { width: 100%; height: 100%; margin: 0; }
+
+input[type=range].max-widget {
+  -webkit-appearance: none; appearance: none; background: transparent; cursor: pointer;
+}
+input[type=range].max-widget::-webkit-slider-runnable-track {
+  height: 6px; border-radius: 3px; background: #363d47;
+}
+input[type=range].max-widget::-moz-range-track { height: 6px; border-radius: 3px; background: #363d47; }
+/* Kept as separate rules per engine: a selector list containing a pseudo-element one
+   browser doesn't know is invalid as a whole, so merging these would style neither. */
+input[type=range].max-widget::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 16px; height: 16px; margin-top: -5px;
+  border-radius: 50%; background: var(--control, #5aa9e6); border: 2px solid #1a1d22;
+  box-shadow: 0 1px 3px #0007;
+}
+input[type=range].max-widget::-moz-range-thumb {
+  width: 16px; height: 16px; border-radius: 50%; background: var(--control, #5aa9e6);
+  border: 2px solid #1a1d22;
+}
+/* Must stay after the .max-widget thumb rules: same specificity, later wins. */
+input[type=range].max-dial::-webkit-slider-thumb { background: var(--signal, #e8b73e); }
+input[type=range].max-dial::-moz-range-thumb { background: var(--signal, #e8b73e); }
+
+input[type=number].max-widget {
+  background: #1a1d22; color: var(--ink, #d6dbe2); border: 1px solid #39404b;
+  border-radius: 4px; font: 12px ui-monospace, monospace; padding: 2px 4px;
+}
+
+/* ── composite widgets ──
+   incdec / rslider / kslider / nslider build a small DOM tree rather than a single
+   control, so they need their own layout. These rules came from the player's inline
+   copy, which was the only one that ever had them: the first extraction took the
+   Studio's copy, so until now a kslider or an incdec rendered unstyled everywhere
+   except index.html — a row of default buttons with no keyboard. */
+.max-incdec, .max-rslider, .max-kslider, .max-nslider { display: flex; gap: 2px; height: 100%; }
+.max-rslider { flex-direction: column; }
+.max-incdec { flex-direction: column; }
+.max-incdec button {
+  flex: 1; padding: 0; font-size: 8px; line-height: 1; border-radius: 3px; min-width: 22px;
+}
+.max-kslider { gap: 1px; }
+.max-kslider .max-key {
+  flex: 1; padding: 0; background: #eef1f4; border: 1px solid #333; border-radius: 0 0 3px 3px;
+  min-width: 12px;
+}
+/* The black keys of one octave, by position. */
+.max-kslider .max-key:nth-child(2), .max-kslider .max-key:nth-child(4),
+.max-kslider .max-key:nth-child(7), .max-kslider .max-key:nth-child(9),
+.max-kslider .max-key:nth-child(11) { background: #2a2e35; }
+.max-kslider .max-key:active { background: var(--control, #5aa9e6); }
+
+/* NOT carried over from the player's inline copy, deliberately: `stroke-width: 1` on
+   .node-body (the SVG default) and `accent-color` on .max-dial (inert — the rule above
+   sets appearance:none, which switches the UA's accent off). Both were dead weight, and
+   leaving them out is what makes this file the single definition rather than the union
+   of three historical ones. */

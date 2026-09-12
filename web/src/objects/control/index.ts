@@ -170,24 +170,77 @@ register('scale', (args) => {
 });
 
 // ── Value stores & UI-ish objects ────────────────────────────────────────────
+//
+// THE FIVE CLICK-ME BOXES. `number`, `flonum`, `toggle`, `button`/`bng` and `message`
+// are the objects a Max tutorial reaches for first, and every one of them is a thing
+// you operate with the mouse. They lived here as message behaviour with no `el`, which
+// meant the canvas drew them with a solid border, the status line counted them as
+// playable, and clicking one in run mode did nothing at all — the click landed on the
+// <text> element rendering the word "toggle". The canonical first patch,
+// `toggle -> metro 500 -> button`, could not be started by hand.
+//
+// They stay in this file rather than moving to objects/ui/ because a second register()
+// of the same name in another module would win or lose by import.meta.glob order, which
+// is not something to decide a widget on. The DOM half follows objects/ui/'s idiom
+// exactly: every document access is guarded, so headless builds still get `el`
+// undefined and the message behaviour below is unchanged and still unit-tested.
+
+const hasDOM = () => typeof document !== 'undefined';
+
+/** Shared skin for the click-me boxes: fills its box, and is obviously pressable. */
+function widgetDiv(css: string): HTMLElement {
+  const el = document.createElement('div');
+  el.style.cssText =
+    'width:100%;height:100%;box-sizing:border-box;cursor:pointer;' +
+    'display:flex;align-items:center;justify-content:center;' + css;
+  return el;
+}
 
 // int/i, float/f, number, flonum : store a value. A number at the left inlet stores
 // AND outputs it; a bang outputs the stored value; the right inlet stores silently.
-function makeStore(coerce: (x: number) => number) {
+//
+// `widget` separates the two halves of this family: `number`/`flonum` are Max's UI
+// boxes and get a field you can type into, while `int`/`float` are ordinary object
+// boxes and must NOT — giving them one would put an editable control on a box Max
+// draws as text.
+function makeStore(coerce: (x: number) => number, widget = false) {
   return (args: Atom[]): MaxNode => {
     const o = makeOutlets();
     let val = coerce(num(args[0], 0));
+    let field: HTMLInputElement | undefined;
+
+    /** The one value-set path, shared by the inlets and (when present) the field. */
+    const setVal = (n: number, emit: boolean) => {
+      val = coerce(n);
+      if (field && field.value !== String(val)) field.value = String(val);
+      if (emit) o.emit(0, [val]);
+    };
+
+    if (widget && hasDOM()) {
+      field = document.createElement('input');
+      field.type = 'number';
+      // flonum accepts decimals; number is integer-coerced anyway, but `any` keeps the
+      // browser from rejecting a typed "1.5" before coerce() ever sees it.
+      field.step = 'any';
+      field.value = String(val);
+      field.addEventListener('input', () => {
+        const n = Number(field!.value);
+        if (Number.isFinite(n)) setVal(n, true);
+      });
+    }
+
     return {
       signalIns: [],
       signalOuts: [],
       controlIns: [
         (m) => {
           if (isBang(m)) o.emit(0, [val]);
-          else { const n = firstNum(m); if (n !== undefined) { val = coerce(n); o.emit(0, [val]); } }
+          else { const n = firstNum(m); if (n !== undefined) setVal(n, true); }
         },
-        (m) => { const n = firstNum(m); if (n !== undefined) val = coerce(n); },
+        (m) => { const n = firstNum(m); if (n !== undefined) setVal(n, false); },
       ],
       onControlOut: o.onControlOut,
+      el: field,
     };
   };
 }
@@ -195,48 +248,107 @@ register('int', makeStore(Math.trunc));
 register('i', makeStore(Math.trunc));
 register('float', makeStore((x) => x));
 register('f', makeStore((x) => x));
-register('number', makeStore(Math.trunc));
-register('flonum', makeStore((x) => x));
+register('number', makeStore(Math.trunc, true));
+register('flonum', makeStore((x) => x, true));
 
 // toggle : bang flips its 0/1 state; a number sets it (nonzero -> 1). Outputs state.
+// Clicking the widget is the same flip, through the same path.
 register('toggle', () => {
   const o = makeOutlets();
   let state = 0;
+  let el: HTMLElement | undefined;
+
+  const paint = () => { if (el) el.textContent = state ? '✕' : ''; };
+  const setState = (n: number, emit: boolean) => {
+    state = n !== 0 ? 1 : 0;
+    paint();
+    if (emit) o.emit(0, [state]);
+  };
+
+  if (hasDOM()) {
+    el = widgetDiv('background:#1a1d22;border:1px solid #39404b;border-radius:3px;' +
+      'color:#e6e9ef;font:15px ui-monospace,Menlo,monospace;line-height:1;user-select:none;');
+    el.addEventListener('click', () => setState(state ? 0 : 1, true));
+    paint();
+  }
+
   return {
     signalIns: [],
     signalOuts: [],
     controlIns: [(m) => {
-      if (isBang(m)) state = state ? 0 : 1;
-      else { const n = firstNum(m); if (n !== undefined) state = n !== 0 ? 1 : 0; }
-      o.emit(0, [state]);
+      if (isBang(m)) setState(state ? 0 : 1, true);
+      else { const n = firstNum(m); if (n !== undefined) setState(n, true); }
     }],
     onControlOut: o.onControlOut,
+    el,
   } satisfies MaxNode;
 });
 
-// button/bng : any input produces a bang.
+// button/bng : any input produces a bang. Clicking the widget produces one too, and
+// flashes so the bang is visible — a bang with no feedback is indistinguishable from a
+// dead patch, which is exactly the confusion this object exists to resolve.
 function makeButton(): MaxNode {
   const o = makeOutlets();
+  let el: HTMLElement | undefined;
+  let fade: ReturnType<typeof setTimeout> | undefined;
+
+  const bang = () => {
+    if (el) {
+      el.style.background = '#e6e9ef';
+      clearTimeout(fade);
+      fade = setTimeout(() => { if (el) el.style.background = '#1a1d22'; }, 90);
+    }
+    o.emit(0, BANG);
+  };
+
+  if (hasDOM()) {
+    el = widgetDiv('background:#1a1d22;border:1px solid #39404b;border-radius:50%;');
+    el.addEventListener('click', bang);
+  }
+
   return {
     signalIns: [],
     signalOuts: [],
-    controlIns: [() => o.emit(0, BANG)],
+    controlIns: [bang],
     onControlOut: o.onControlOut,
+    // The flash timer outlives the box otherwise, and would write to a detached element.
+    dispose: () => { clearTimeout(fade); fade = undefined; },
+    el,
   };
 }
 register('button', makeButton);
 register('bng', makeButton);
 
 // message : on any trigger, output its stored content as a message (list of atoms).
+// Clicking it does the same, which is what a message box is FOR.
+//
+// Unlike the controls above, this widget draws the box itself — border, background and
+// its own contents — because a message box IS its text. ui/layout.ts sizes it from that
+// text and the two renderers suppress their caption for it; see SELF_LABELLED there.
 register('message', (args) => {
   const o = makeOutlets();
+  let el: HTMLElement | undefined;
+
+  const send = () => o.emit(0, args.length ? (args as Msg) : BANG);
+
+  if (hasDOM()) {
+    el = widgetDiv(
+      'justify-content:flex-start;padding:0 6px;background:#23272f;' +
+      'border:1px solid #3a414c;border-radius:4px;color:#e6e9ef;' +
+      'font:11px ui-monospace,Menlo,monospace;white-space:nowrap;overflow:hidden;',
+    );
+    el.textContent = args.join(' ');
+    el.addEventListener('click', send);
+  }
+
   return {
     signalIns: [],
     signalOuts: [],
     controlIns: [(m) => {
       if (!isTrigger(m) && m.length === 0) return;
-      o.emit(0, args.length ? (args as Msg) : BANG);
+      send();
     }],
     onControlOut: o.onControlOut,
+    el,
   } satisfies MaxNode;
 });

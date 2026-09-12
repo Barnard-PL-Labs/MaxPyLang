@@ -49,27 +49,14 @@
       }
       .hint { font-size: 11px; color: #6b7280; }
 
-      /* graph nodes + widgets (shared look with the player) */
-      .patch-graph { display: block; }
-      .patch-graph .node-body { fill: #23272f; stroke: #3a414c; }
-      .patch-graph .node:hover .node-body { stroke: #566173; }
-      .patch-graph .node-label { fill: var(--ink); font: 11px ui-monospace, Menlo, monospace; dominant-baseline: middle; }
-      .patch-graph .node-stub .node-body { fill: #24282f; stroke: #4a3a3a; stroke-dasharray: 4 3; }
-      .patch-graph .node-stub .node-label { fill: #8a8f98; }
-      .patch-graph .node-caption { fill: var(--dim); font: 10px ui-monospace, monospace; }
-      .widget-host { overflow: visible; }
-      .max-widget { width: 100%; height: 100%; margin: 0; }
-      input[type=range].max-widget { -webkit-appearance: none; appearance: none; background: transparent; cursor: pointer; }
-      input[type=range].max-widget::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: #363d47; }
-      input[type=range].max-widget::-moz-range-track { height: 6px; border-radius: 3px; background: #363d47; }
-      input[type=range].max-widget::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; margin-top: -5px; border-radius: 50%; background: var(--control); border: 2px solid #1a1d22; }
-      input[type=range].max-widget::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--control); border: 2px solid #1a1d22; }
-      input[type=range].max-dial::-webkit-slider-thumb { background: var(--signal); }
-      input[type=range].max-dial::-moz-range-thumb { background: var(--signal); }
-      input[type=number].max-widget { background: #1a1d22; color: var(--ink); border: 1px solid #39404b; border-radius: 4px; font: 12px ui-monospace, monospace; }
+      /* Boxes, cords and mounted widgets live in src/ui/patch.css, imported by
+         src/studio.ts and shared with the player and the patcher. */
     </style>
-    <script type="module" crossorigin src="/MaxPyLang/app/assets/studio-CVXzBNby.js"></script>
-    <link rel="modulepreload" crossorigin href="/MaxPyLang/app/assets/selftest-Bewit-YS.js">
+    <script type="module" crossorigin src="/MaxPyLang/app/assets/studio-D-lYaHYy.js"></script>
+    <link rel="modulepreload" crossorigin href="/MaxPyLang/app/assets/engine-Bbh0OC4G.js">
+    <link rel="modulepreload" crossorigin href="/MaxPyLang/app/assets/selftest-C3YSB-xu.js">
+    <link rel="modulepreload" crossorigin href="/MaxPyLang/app/assets/catalog-YSb5Ez_d.js">
+    <link rel="stylesheet" crossorigin href="/MaxPyLang/app/assets/engine-EuCKCpRm.css">
   </head>
   <body>
     <header>
@@ -80,6 +67,7 @@
       <button id="selftest" disabled>✓ Self-test</button>
       <span class="hint">edit Python → run → press ▶ → drag the widgets</span>
       <span class="spacer"></span>
+      <a class="nav" href="./patcher.html">✛ Open in Patcher</a>
       <a class="nav" href="./index.html">→ Player</a>
     </header>
     <main>

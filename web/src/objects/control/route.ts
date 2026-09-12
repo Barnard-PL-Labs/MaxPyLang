@@ -2,7 +2,8 @@
 // name (no cord) via runtime/buses, or synchronise several inlets. Same contract as
 // control/index.ts — self-registering via top-level register(...) calls, one
 // makeOutlets() per object with outlets, controlIns[i] handlers receiving a Msg, an
-// onControlOut fan-out, and a dispose() wherever a bus subscription is allocated.
+// onControlOut fan-out returning an unsubscribe thunk, and a dispose() wherever a bus
+// subscription is allocated.
 //
 // Batch "route": send (s) receive (r) forward buddy
 //   • send/receive are the classic named message pair — send broadcasts on a name,
@@ -33,7 +34,9 @@ function makeSend(args: Atom[]): MaxNode {
     signalIns: [],
     signalOuts: [],
     controlIns: [(m) => { if (name && m.length) buses.send(name, m); }],
-    onControlOut: () => {},
+    // No outlets (send only speaks over the bus), so there is no listener list here:
+    // the subscription is a noop and so is its unsubscribe thunk.
+    onControlOut: () => () => {},
   };
 }
 register('send', makeSend);
@@ -85,7 +88,8 @@ register('forward', (args): MaxNode => {
         if (target && m.length) buses.send(target, m);
       },
     ],
-    onControlOut: () => {},
+    // Outlet-less like send — nothing to subscribe to, nothing to unsubscribe.
+    onControlOut: () => () => {},
   };
 });
 

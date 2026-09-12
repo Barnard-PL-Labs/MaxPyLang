@@ -49,8 +49,13 @@ export interface MaxNode {
   signalOuts: (AudioNode | undefined)[];
   /** Handler invoked when a control message arrives at inlet i (undefined = ignored). */
   controlIns?: (((m: Msg) => void) | undefined)[];
-  /** Register a listener for messages leaving outlet i. */
-  onControlOut?: (outlet: number, cb: (m: Msg) => void) => void;
+  /**
+   * Register a listener for messages leaving outlet i. Returns a thunk that removes
+   * exactly that one registration, so a single control cord can be cut from a live
+   * patch without rebuilding (and silencing) the engine. `void` is still accepted so
+   * a node whose control outlets never emit can stay a one-liner.
+   */
+  onControlOut?: (outlet: number, cb: (m: Msg) => void) => (() => void) | void;
   /** Video source for outlet i — a jit_matrix cord pulls frames from here. */
   videoOuts?: (VideoSource | undefined)[];
   /** Video sink for inlet i — receives each frame pushed along a jit_matrix cord. */
@@ -151,7 +156,8 @@ function makeStub(entry: ManifestEntry): Factory {
     if (firstSig >= 0 && signalOuts[firstSig] && inNode && 'connect' in inNode) {
       (inNode as AudioNode).connect(signalOuts[firstSig] as AudioNode);
     }
-    return { signalIns, signalOuts, controlIns, onControlOut: () => {} };
+    // A stub's control outlets exist but never emit, so the unsubscribe thunk is a noop.
+    return { signalIns, signalOuts, controlIns, onControlOut: () => () => {} };
   };
 }
 

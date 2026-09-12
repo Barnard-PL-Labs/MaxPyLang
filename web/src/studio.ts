@@ -3,6 +3,7 @@
 // path as main.ts; only the source is now live Python instead of a bundled file.
 
 import './objects'; // registers all objects (real + stubs)
+import './ui/patch.css'; // box/cord/widget styling, shared with the player and the patcher
 import { parseMaxPat } from './parser/maxpat';
 import { renderGraph } from './ui/graph';
 import { Engine } from './engine/engine';
@@ -100,9 +101,17 @@ async function loadPatch(json: unknown): Promise<void> {
     return;
   }
   lastJson = json;
-  if (engine) await engine.dispose();
-  engine = new Engine();
-  await preloadWorklets(engine.ctx);
+  // One AudioContext for the life of the page. Disposing the engine per Run would
+  // close it, and a closed context throws away the user's audio-unlock gesture — the
+  // next Run would be silent until they clicked again. clear() drops the old patch
+  // and leaves the context (and whatever it was playing) alone.
+  if (engine) engine.clear();
+  else {
+    engine = new Engine();
+    // Worklet modules attach to a context once, and must be there before any
+    // AudioWorkletNode is built — so this runs with the context, not with the patch.
+    await preloadWorklets(engine.ctx);
+  }
   const report = engine.build(patch);
   renderGraph(graphEl, patch, report.built);
 

@@ -1,0 +1,2194 @@
+[
+ {
+  "text": "combine",
+  "numinlets": 1,
+  "numoutlets": 2,
+  "outlettype": [
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "combine a b",
+  "numinlets": 2,
+  "numoutlets": 2,
+  "outlettype": [
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "combine a b c d",
+  "numinlets": 4,
+  "numoutlets": 2,
+  "outlettype": [
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "pack",
+  "numinlets": 2,
+  "numoutlets": 1,
+  "outlettype": [
+   ""
+  ]
+ },
+ {
+  "text": "pack 0 0",
+  "numinlets": 2,
+  "numoutlets": 1,
+  "outlettype": [
+   ""
+  ]
+ },
+ {
+  "text": "pack 1 2 3",
+  "numinlets": 3,
+  "numoutlets": 1,
+  "outlettype": [
+   ""
+  ]
+ },
+ {
+  "text": "pack f f",
+  "numinlets": 2,
+  "numoutlets": 1,
+  "outlettype": [
+   ""
+  ]
+ },
+ {
+  "text": "pack i i i i",
+  "numinlets": 4,
+  "numoutlets": 1,
+  "outlettype": [
+   ""
+  ]
+ },
+ {
+  "text": "pak",
+  "numinlets": 2,
+  "numoutlets": 1,
+  "outlettype": [
+   ""
+  ]
+ },
+ {
+  "text": "pak 0 0",
+  "numinlets": 2,
+  "numoutlets": 1,
+  "outlettype": [
+   ""
+  ]
+ },
+ {
+  "text": "pak 1 2 3 4",
+  "numinlets": 4,
+  "numoutlets": 1,
+  "outlettype": [
+   ""
+  ]
+ },
+ {
+  "text": "route",
+  "numinlets": 2,
+  "numoutlets": 2,
+  "outlettype": [
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "route 1",
+  "numinlets": 2,
+  "numoutlets": 2,
+  "outlettype": [
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "route a b c",
+  "numinlets": 4,
+  "numoutlets": 4,
+  "outlettype": [
+   "",
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "route 1 2 3 4",
+  "numinlets": 5,
+  "numoutlets": 5,
+  "outlettype": [
+   "",
+   "",
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "routepass",
+  "numinlets": 2,
+  "numoutlets": 2,
+  "outlettype": [
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "routepass a b",
+  "numinlets": 3,
+  "numoutlets": 3,
+  "outlettype": [
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "routepass 1 2 3",
+  "numinlets": 4,
+  "numoutlets": 4,
+  "outlettype": [
+   "",
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "switch",
+  "numinlets": 3,
+  "numoutlets": 1,
+  "outlettype": [
+   ""
+  ]
+ },
+ {
+  "text": "switch 1",
+  "numinlets": null,
+  "numoutlets": null,
+  "outlettype": null,
+  "error": "IndexError: list index out of range"
+ },
+ {
+  "text": "switch 1 1",
+  "numinlets": 3,
+  "numoutlets": 1,
+  "outlettype": [
+   ""
+  ]
+ },
+ {
+  "text": "switch 1 2 3",
+  "numinlets": 4,
+  "numoutlets": 1,
+  "outlettype": [
+   ""
+  ]
+ },
+ {
+  "text": "switch 1 2 3 4",
+  "numinlets": 5,
+  "numoutlets": 1,
+  "outlettype": [
+   ""
+  ]
+ },
+ {
+  "text": "trigger",
+  "numinlets": 1,
+  "numoutlets": 2,
+  "outlettype": [
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "trigger b f",
+  "numinlets": 1,
+  "numoutlets": 2,
+  "outlettype": [
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "trigger 1 2 3",
+  "numinlets": 1,
+  "numoutlets": 3,
+  "outlettype": [
+   "int",
+   "int",
+   "int"
+  ]
+ },
+ {
+  "text": "t",
+  "numinlets": 1,
+  "numoutlets": 2,
+  "outlettype": [
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "t b f",
+  "numinlets": 1,
+  "numoutlets": 2,
+  "outlettype": [
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "t b b b b",
+  "numinlets": 1,
+  "numoutlets": 4,
+  "outlettype": [
+   "bang",
+   "bang",
+   "bang",
+   "bang"
+  ]
+ },
+ {
+  "text": "t i",
+  "numinlets": 1,
+  "numoutlets": 1,
+  "outlettype": [
+   "int"
+  ]
+ },
+ {
+  "text": "t 0",
+  "numinlets": 1,
+  "numoutlets": 1,
+  "outlettype": [
+   "int"
+  ]
+ },
+ {
+  "text": "t b f s l",
+  "numinlets": 1,
+  "numoutlets": 4,
+  "outlettype": [
+   "bang",
+   "float",
+   "",
+   "l"
+  ]
+ },
+ {
+  "text": "t 1.5",
+  "numinlets": 1,
+  "numoutlets": 1,
+  "outlettype": [
+   "int"
+  ]
+ },
+ {
+  "text": "unpack",
+  "numinlets": 1,
+  "numoutlets": 2,
+  "outlettype": [
+   "int",
+   "int"
+  ]
+ },
+ {
+  "text": "unpack 1 2",
+  "numinlets": 1,
+  "numoutlets": 2,
+  "outlettype": [
+   "int",
+   "int"
+  ]
+ },
+ {
+  "text": "unpack 1 2 3",
+  "numinlets": 1,
+  "numoutlets": 3,
+  "outlettype": [
+   "int",
+   "int",
+   "int"
+  ]
+ },
+ {
+  "text": "unpack i i",
+  "numinlets": 1,
+  "numoutlets": 2,
+  "outlettype": [
+   "int",
+   "int"
+  ]
+ },
+ {
+  "text": "unpack f f",
+  "numinlets": 1,
+  "numoutlets": 2,
+  "outlettype": [
+   "int",
+   "int"
+  ]
+ },
+ {
+  "text": "unpack 0. 0.",
+  "numinlets": 1,
+  "numoutlets": 2,
+  "outlettype": [
+   "int",
+   "int"
+  ]
+ },
+ {
+  "text": "unpack a b c d",
+  "numinlets": 1,
+  "numoutlets": 4,
+  "outlettype": [
+   "",
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "unpack i f s",
+  "numinlets": 1,
+  "numoutlets": 3,
+  "outlettype": [
+   "int",
+   "float",
+   ""
+  ]
+ },
+ {
+  "text": "select",
+  "numinlets": 0,
+  "numoutlets": 0,
+  "outlettype": null
+ },
+ {
+  "text": "select 1",
+  "numinlets": 2,
+  "numoutlets": 2,
+  "outlettype": [
+   "bang",
+   ""
+  ]
+ },
+ {
+  "text": "select 1 2",
+  "numinlets": 3,
+  "numoutlets": 3,
+  "outlettype": [
+   "bang",
+   "bang",
+   ""
+  ]
+ },
+ {
+  "text": "select 1 2 3",
+  "numinlets": 4,
+  "numoutlets": 4,
+  "outlettype": [
+   "bang",
+   "bang",
+   "bang",
+   ""
+  ]
+ },
+ {
+  "text": "sel 1 2",
+  "numinlets": 3,
+  "numoutlets": 3,
+  "outlettype": [
+   "bang",
+   "bang",
+   ""
+  ]
+ },
+ {
+  "text": "select foo",
+  "numinlets": 0,
+  "numoutlets": 0,
+  "outlettype": null
+ },
+ {
+  "text": "bangbang",
+  "numinlets": 1,
+  "numoutlets": 2,
+  "outlettype": [
+   "bang",
+   "bang"
+  ]
+ },
+ {
+  "text": "bangbang 1",
+  "numinlets": 1,
+  "numoutlets": 1,
+  "outlettype": [
+   "bang"
+  ]
+ },
+ {
+  "text": "bangbang 2",
+  "numinlets": 1,
+  "numoutlets": 2,
+  "outlettype": [
+   "bang",
+   "bang"
+  ]
+ },
+ {
+  "text": "bangbang 4",
+  "numinlets": 1,
+  "numoutlets": 4,
+  "outlettype": [
+   "bang",
+   "bang",
+   "bang",
+   "bang"
+  ]
+ },
+ {
+  "text": "b 3",
+  "numinlets": 1,
+  "numoutlets": 3,
+  "outlettype": [
+   "bang",
+   "bang",
+   "bang"
+  ]
+ },
+ {
+  "text": "bondo",
+  "numinlets": 2,
+  "numoutlets": 2,
+  "outlettype": [
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "bondo 1",
+  "numinlets": 1,
+  "numoutlets": 1,
+  "outlettype": [
+   ""
+  ]
+ },
+ {
+  "text": "bondo 3",
+  "numinlets": 3,
+  "numoutlets": 3,
+  "outlettype": [
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "bondo 4 250",
+  "numinlets": 4,
+  "numoutlets": 4,
+  "outlettype": [
+   "",
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "bucket",
+  "numinlets": 1,
+  "numoutlets": 1,
+  "outlettype": [
+   ""
+  ]
+ },
+ {
+  "text": "bucket 1",
+  "numinlets": 1,
+  "numoutlets": 1,
+  "outlettype": [
+   ""
+  ]
+ },
+ {
+  "text": "bucket 4",
+  "numinlets": 1,
+  "numoutlets": 4,
+  "outlettype": [
+   "",
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "bucket 3 1",
+  "numinlets": 1,
+  "numoutlets": 3,
+  "outlettype": [
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "buddy",
+  "numinlets": 2,
+  "numoutlets": 2,
+  "outlettype": [
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "buddy 1",
+  "numinlets": 2,
+  "numoutlets": 2,
+  "outlettype": [
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "buddy 2",
+  "numinlets": 2,
+  "numoutlets": 2,
+  "outlettype": [
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "buddy 3",
+  "numinlets": 3,
+  "numoutlets": 3,
+  "outlettype": [
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "buddy 5",
+  "numinlets": 5,
+  "numoutlets": 5,
+  "outlettype": [
+   "",
+   "",
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "cycle",
+  "numinlets": 1,
+  "numoutlets": 1,
+  "outlettype": [
+   ""
+  ]
+ },
+ {
+  "text": "cycle 1",
+  "numinlets": 1,
+  "numoutlets": 1,
+  "outlettype": [
+   ""
+  ]
+ },
+ {
+  "text": "cycle 4",
+  "numinlets": 1,
+  "numoutlets": 4,
+  "outlettype": [
+   "",
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "cycle 3 1",
+  "numinlets": 1,
+  "numoutlets": 3,
+  "outlettype": [
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "decode",
+  "numinlets": 3,
+  "numoutlets": 1,
+  "outlettype": [
+   "int"
+  ]
+ },
+ {
+  "text": "decode 1",
+  "numinlets": 3,
+  "numoutlets": 1,
+  "outlettype": [
+   "int"
+  ]
+ },
+ {
+  "text": "decode 4",
+  "numinlets": 3,
+  "numoutlets": 4,
+  "outlettype": [
+   "int",
+   "int",
+   "int",
+   "int"
+  ]
+ },
+ {
+  "text": "funnel",
+  "numinlets": 2,
+  "numoutlets": 1,
+  "outlettype": [
+   "list"
+  ]
+ },
+ {
+  "text": "funnel 1",
+  "numinlets": 1,
+  "numoutlets": 1,
+  "outlettype": [
+   "list"
+  ]
+ },
+ {
+  "text": "funnel 2",
+  "numinlets": 2,
+  "numoutlets": 1,
+  "outlettype": [
+   "list"
+  ]
+ },
+ {
+  "text": "funnel 5",
+  "numinlets": 5,
+  "numoutlets": 1,
+  "outlettype": [
+   "list"
+  ]
+ },
+ {
+  "text": "funnel 3 1",
+  "numinlets": 3,
+  "numoutlets": 1,
+  "outlettype": [
+   "list"
+  ]
+ },
+ {
+  "text": "gate",
+  "numinlets": 2,
+  "numoutlets": 1,
+  "outlettype": [
+   ""
+  ]
+ },
+ {
+  "text": "gate 1",
+  "numinlets": 2,
+  "numoutlets": 1,
+  "outlettype": [
+   ""
+  ]
+ },
+ {
+  "text": "gate 2",
+  "numinlets": 2,
+  "numoutlets": 2,
+  "outlettype": [
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "gate 4",
+  "numinlets": 2,
+  "numoutlets": 4,
+  "outlettype": [
+   "",
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "gate 2.7",
+  "numinlets": 2,
+  "numoutlets": 2,
+  "outlettype": [
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "gate 3 1",
+  "numinlets": 2,
+  "numoutlets": 3,
+  "outlettype": [
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "grab",
+  "numinlets": 1,
+  "numoutlets": 2,
+  "outlettype": [
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "grab 1",
+  "numinlets": 1,
+  "numoutlets": 2,
+  "outlettype": [
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "grab 3",
+  "numinlets": 1,
+  "numoutlets": 4,
+  "outlettype": [
+   "",
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "grab 2 name",
+  "numinlets": 1,
+  "numoutlets": 3,
+  "outlettype": [
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "mpeformat",
+  "numinlets": 0,
+  "numoutlets": 0,
+  "outlettype": null
+ },
+ {
+  "text": "mpeformat 1",
+  "numinlets": 14,
+  "numoutlets": 2,
+  "outlettype": [
+   "int",
+   "mpeevent"
+  ]
+ },
+ {
+  "text": "mpeformat 15",
+  "numinlets": 16,
+  "numoutlets": 2,
+  "outlettype": [
+   "int",
+   "mpeevent"
+  ]
+ },
+ {
+  "text": "mpeformat 16",
+  "numinlets": 17,
+  "numoutlets": 2,
+  "outlettype": [
+   "int",
+   "mpeevent"
+  ]
+ },
+ {
+  "text": "router",
+  "numinlets": 0,
+  "numoutlets": 0,
+  "outlettype": null
+ },
+ {
+  "text": "router 1 1",
+  "numinlets": 2,
+  "numoutlets": 2,
+  "outlettype": [
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "router 2 2",
+  "numinlets": 3,
+  "numoutlets": 3,
+  "outlettype": [
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "router 3 4",
+  "numinlets": 4,
+  "numoutlets": 5,
+  "outlettype": [
+   "",
+   "",
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "spray",
+  "numinlets": 1,
+  "numoutlets": 2,
+  "outlettype": [
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "spray 1",
+  "numinlets": 1,
+  "numoutlets": 1,
+  "outlettype": [
+   ""
+  ]
+ },
+ {
+  "text": "spray 4",
+  "numinlets": 1,
+  "numoutlets": 4,
+  "outlettype": [
+   "",
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "spray 3 1",
+  "numinlets": 1,
+  "numoutlets": 3,
+  "outlettype": [
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "unjoin",
+  "numinlets": 0,
+  "numoutlets": 0,
+  "outlettype": null
+ },
+ {
+  "text": "unjoin 1",
+  "numinlets": 1,
+  "numoutlets": 3,
+  "outlettype": [
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "unjoin 2",
+  "numinlets": 1,
+  "numoutlets": 3,
+  "outlettype": [
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "unjoin 4",
+  "numinlets": 1,
+  "numoutlets": 5,
+  "outlettype": [
+   "",
+   "",
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "js",
+  "numinlets": 1,
+  "numoutlets": 1,
+  "outlettype": [
+   ""
+  ]
+ },
+ {
+  "text": "js foo.js",
+  "numinlets": 1,
+  "numoutlets": 1,
+  "outlettype": [
+   ""
+  ]
+ },
+ {
+  "text": "js foo.js 2 3",
+  "numinlets": 3,
+  "numoutlets": 2,
+  "outlettype": [
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "js foo.js 3 4",
+  "numinlets": 4,
+  "numoutlets": 3,
+  "outlettype": [
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "pvar",
+  "numinlets": 1,
+  "numoutlets": 1,
+  "outlettype": [
+   ""
+  ]
+ },
+ {
+  "text": "pvar name",
+  "numinlets": 1,
+  "numoutlets": 1,
+  "outlettype": [
+   ""
+  ]
+ },
+ {
+  "text": "pvar name 3",
+  "numinlets": 1,
+  "numoutlets": 3,
+  "outlettype": [
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "pvar 4",
+  "numinlets": 1,
+  "numoutlets": 4,
+  "outlettype": [
+   "",
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "2d.wave~",
+  "numinlets": 0,
+  "numoutlets": 0,
+  "outlettype": null
+ },
+ {
+  "text": "2d.wave~ buf",
+  "numinlets": 4,
+  "numoutlets": 1,
+  "outlettype": [
+   "signal"
+  ]
+ },
+ {
+  "text": "2d.wave~ buf 0 1 0",
+  "numinlets": 4,
+  "numoutlets": 1,
+  "outlettype": [
+   "signal"
+  ]
+ },
+ {
+  "text": "2d.wave~ buf 0 1 1",
+  "numinlets": 4,
+  "numoutlets": 1,
+  "outlettype": [
+   "signal"
+  ]
+ },
+ {
+  "text": "2d.wave~ buf 0 1 2",
+  "numinlets": 4,
+  "numoutlets": 2,
+  "outlettype": [
+   "signal",
+   "signal"
+  ]
+ },
+ {
+  "text": "2d.wave~ buf 0 1 3",
+  "numinlets": 4,
+  "numoutlets": 2,
+  "outlettype": [
+   "signal",
+   "signal"
+  ]
+ },
+ {
+  "text": "2d.wave~ buf 0 1 4",
+  "numinlets": 4,
+  "numoutlets": 4,
+  "outlettype": [
+   "signal",
+   "signal",
+   "signal",
+   "signal"
+  ]
+ },
+ {
+  "text": "2d.wave~ buf 0 1 5",
+  "numinlets": 4,
+  "numoutlets": 4,
+  "outlettype": [
+   "signal",
+   "signal",
+   "signal",
+   "signal"
+  ]
+ },
+ {
+  "text": "mc.2d.wave~",
+  "numinlets": 0,
+  "numoutlets": 0,
+  "outlettype": null
+ },
+ {
+  "text": "mc.2d.wave~ buf",
+  "numinlets": 4,
+  "numoutlets": 1,
+  "outlettype": [
+   "multichannelsignal"
+  ]
+ },
+ {
+  "text": "mc.2d.wave~ buf 0 1 2",
+  "numinlets": 4,
+  "numoutlets": 2,
+  "outlettype": [
+   "multichannelsignal",
+   "multichannelsignal"
+  ]
+ },
+ {
+  "text": "mc.2d.wave~ buf 0 1 3",
+  "numinlets": 4,
+  "numoutlets": 2,
+  "outlettype": [
+   "multichannelsignal",
+   "multichannelsignal"
+  ]
+ },
+ {
+  "text": "mc.2d.wave~ buf 0 1 4",
+  "numinlets": 4,
+  "numoutlets": 4,
+  "outlettype": [
+   "multichannelsignal",
+   "multichannelsignal",
+   "multichannelsignal",
+   "multichannelsignal"
+  ]
+ },
+ {
+  "text": "gate~",
+  "numinlets": 2,
+  "numoutlets": 1,
+  "outlettype": [
+   "signal"
+  ]
+ },
+ {
+  "text": "gate~ 1",
+  "numinlets": 2,
+  "numoutlets": 1,
+  "outlettype": [
+   "signal"
+  ]
+ },
+ {
+  "text": "gate~ 4",
+  "numinlets": 2,
+  "numoutlets": 4,
+  "outlettype": [
+   "signal",
+   "signal",
+   "signal",
+   "signal"
+  ]
+ },
+ {
+  "text": "gate~ 3 1",
+  "numinlets": 2,
+  "numoutlets": 3,
+  "outlettype": [
+   "signal",
+   "signal",
+   "signal"
+  ]
+ },
+ {
+  "text": "mc.gate~",
+  "numinlets": 2,
+  "numoutlets": 1,
+  "outlettype": [
+   "multichannelsignal"
+  ]
+ },
+ {
+  "text": "mc.gate~ 1",
+  "numinlets": 2,
+  "numoutlets": 1,
+  "outlettype": [
+   "multichannelsignal"
+  ]
+ },
+ {
+  "text": "mc.gate~ 4",
+  "numinlets": 2,
+  "numoutlets": 4,
+  "outlettype": [
+   "multichannelsignal",
+   "multichannelsignal",
+   "multichannelsignal",
+   "multichannelsignal"
+  ]
+ },
+ {
+  "text": "mc.combine~",
+  "numinlets": 2,
+  "numoutlets": 1,
+  "outlettype": [
+   "multichannelsignal"
+  ]
+ },
+ {
+  "text": "mc.combine~ 1",
+  "numinlets": 1,
+  "numoutlets": 1,
+  "outlettype": [
+   "multichannelsignal"
+  ]
+ },
+ {
+  "text": "mc.combine~ 4",
+  "numinlets": 4,
+  "numoutlets": 1,
+  "outlettype": [
+   "multichannelsignal"
+  ]
+ },
+ {
+  "text": "mc.route",
+  "numinlets": 2,
+  "numoutlets": 2,
+  "outlettype": [
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "mc.route 1",
+  "numinlets": 2,
+  "numoutlets": 1,
+  "outlettype": [
+   ""
+  ]
+ },
+ {
+  "text": "mc.route 4",
+  "numinlets": 2,
+  "numoutlets": 4,
+  "outlettype": [
+   "",
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "mc.sig~",
+  "numinlets": 1,
+  "numoutlets": 1,
+  "outlettype": [
+   "multichannelsignal"
+  ]
+ },
+ {
+  "text": "mc.sig~ 1",
+  "numinlets": 1,
+  "numoutlets": 1,
+  "outlettype": [
+   "multichannelsignal"
+  ]
+ },
+ {
+  "text": "mc.sig~ 1 2",
+  "numinlets": 2,
+  "numoutlets": 2,
+  "outlettype": [
+   "multichannelsignal",
+   "multichannelsignal"
+  ]
+ },
+ {
+  "text": "mc.sig~ 1 2 3",
+  "numinlets": 3,
+  "numoutlets": 3,
+  "outlettype": [
+   "multichannelsignal",
+   "multichannelsignal",
+   "multichannelsignal"
+  ]
+ },
+ {
+  "text": "mc.transpose~",
+  "numinlets": 2,
+  "numoutlets": 2,
+  "outlettype": [
+   "multichannelsignal",
+   "multichannelsignal"
+  ]
+ },
+ {
+  "text": "mc.transpose~ 1 1",
+  "numinlets": 1,
+  "numoutlets": 1,
+  "outlettype": [
+   "multichannelsignal"
+  ]
+ },
+ {
+  "text": "mc.transpose~ 2 4",
+  "numinlets": 2,
+  "numoutlets": 4,
+  "outlettype": [
+   "multichannelsignal",
+   "multichannelsignal",
+   "multichannelsignal",
+   "multichannelsignal"
+  ]
+ },
+ {
+  "text": "mc.transpose~ 3 2",
+  "numinlets": 3,
+  "numoutlets": 2,
+  "outlettype": [
+   "multichannelsignal",
+   "multichannelsignal"
+  ]
+ },
+ {
+  "text": "mc.unpack~",
+  "numinlets": 0,
+  "numoutlets": 0,
+  "outlettype": null
+ },
+ {
+  "text": "mc.unpack~ 1",
+  "numinlets": 1,
+  "numoutlets": 1,
+  "outlettype": [
+   "signal"
+  ]
+ },
+ {
+  "text": "mc.unpack~ 2",
+  "numinlets": 1,
+  "numoutlets": 2,
+  "outlettype": [
+   "signal",
+   "signal"
+  ]
+ },
+ {
+  "text": "mc.unpack~ 4",
+  "numinlets": 1,
+  "numoutlets": 4,
+  "outlettype": [
+   "signal",
+   "signal",
+   "signal",
+   "signal"
+  ]
+ },
+ {
+  "text": "sfrecord~",
+  "numinlets": 1,
+  "numoutlets": 1,
+  "outlettype": [
+   "signal"
+  ]
+ },
+ {
+  "text": "sfrecord~ 1",
+  "numinlets": 1,
+  "numoutlets": 1,
+  "outlettype": [
+   "signal"
+  ]
+ },
+ {
+  "text": "sfrecord~ 4",
+  "numinlets": 4,
+  "numoutlets": 1,
+  "outlettype": [
+   "signal"
+  ]
+ },
+ {
+  "text": "sfrecord~ 2 8192",
+  "numinlets": 2,
+  "numoutlets": 1,
+  "outlettype": [
+   "signal"
+  ]
+ },
+ {
+  "text": "wave~",
+  "numinlets": 0,
+  "numoutlets": 0,
+  "outlettype": null
+ },
+ {
+  "text": "wave~ buf",
+  "numinlets": 3,
+  "numoutlets": 1,
+  "outlettype": [
+   "signal"
+  ]
+ },
+ {
+  "text": "wave~ buf 0 100 1",
+  "numinlets": 3,
+  "numoutlets": 1,
+  "outlettype": [
+   "signal"
+  ]
+ },
+ {
+  "text": "wave~ buf 0 100 2",
+  "numinlets": 3,
+  "numoutlets": 2,
+  "outlettype": [
+   "signal",
+   "signal"
+  ]
+ },
+ {
+  "text": "wave~ buf 0 100 4",
+  "numinlets": 3,
+  "numoutlets": 4,
+  "outlettype": [
+   "signal",
+   "signal",
+   "signal",
+   "signal"
+  ]
+ },
+ {
+  "text": "mc.wave~",
+  "numinlets": 0,
+  "numoutlets": 0,
+  "outlettype": null
+ },
+ {
+  "text": "mc.wave~ buf",
+  "numinlets": 3,
+  "numoutlets": 1,
+  "outlettype": [
+   "multichannelsignal"
+  ]
+ },
+ {
+  "text": "mc.wave~ buf 0 100 2",
+  "numinlets": 3,
+  "numoutlets": 2,
+  "outlettype": [
+   "multichannelsignal",
+   "multichannelsignal"
+  ]
+ },
+ {
+  "text": "mc.wave~ buf 0 100 4",
+  "numinlets": 3,
+  "numoutlets": 4,
+  "outlettype": [
+   "multichannelsignal",
+   "multichannelsignal",
+   "multichannelsignal",
+   "multichannelsignal"
+  ]
+ },
+ {
+  "text": "record~",
+  "numinlets": 0,
+  "numoutlets": 0,
+  "outlettype": null
+ },
+ {
+  "text": "record~ buf",
+  "numinlets": 3,
+  "numoutlets": 1,
+  "outlettype": [
+   "signal"
+  ]
+ },
+ {
+  "text": "record~ buf 0",
+  "numinlets": null,
+  "numoutlets": null,
+  "outlettype": null,
+  "error": "IndexError: list index out of range"
+ },
+ {
+  "text": "record~ buf 1",
+  "numinlets": 3,
+  "numoutlets": 1,
+  "outlettype": [
+   "signal"
+  ]
+ },
+ {
+  "text": "record~ buf 2",
+  "numinlets": 4,
+  "numoutlets": 1,
+  "outlettype": [
+   "signal"
+  ]
+ },
+ {
+  "text": "matrix~",
+  "numinlets": 0,
+  "numoutlets": 0,
+  "outlettype": null
+ },
+ {
+  "text": "matrix~ 2 2",
+  "numinlets": 2,
+  "numoutlets": 3,
+  "outlettype": [
+   "signal",
+   "signal",
+   ""
+  ]
+ },
+ {
+  "text": "matrix~ 2 4",
+  "numinlets": 2,
+  "numoutlets": 5,
+  "outlettype": [
+   "signal",
+   "signal",
+   "signal",
+   "signal",
+   ""
+  ]
+ },
+ {
+  "text": "matrix~ 4 2",
+  "numinlets": 4,
+  "numoutlets": 3,
+  "outlettype": [
+   "signal",
+   "signal",
+   ""
+  ]
+ },
+ {
+  "text": "matrix~ 4 4",
+  "numinlets": 4,
+  "numoutlets": 5,
+  "outlettype": [
+   "signal",
+   "signal",
+   "signal",
+   "signal",
+   ""
+  ]
+ },
+ {
+  "text": "matrix~ 2 2 0.5",
+  "numinlets": 2,
+  "numoutlets": 3,
+  "outlettype": [
+   "signal",
+   "signal",
+   ""
+  ]
+ },
+ {
+  "text": "mc.matrix~",
+  "numinlets": 0,
+  "numoutlets": 0,
+  "outlettype": null
+ },
+ {
+  "text": "mc.matrix~ 2 2",
+  "numinlets": 2,
+  "numoutlets": 4,
+  "outlettype": [
+   "multichannelsignal",
+   "multichannelsignal",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "mc.matrix~ 2 4",
+  "numinlets": 2,
+  "numoutlets": 6,
+  "outlettype": [
+   "multichannelsignal",
+   "multichannelsignal",
+   "multichannelsignal",
+   "multichannelsignal",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "mc.matrix~ 4 4",
+  "numinlets": 4,
+  "numoutlets": 6,
+  "outlettype": [
+   "multichannelsignal",
+   "multichannelsignal",
+   "multichannelsignal",
+   "multichannelsignal",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "sfplay~",
+  "numinlets": 2,
+  "numoutlets": 2,
+  "outlettype": [
+   "signal",
+   "bang"
+  ]
+ },
+ {
+  "text": "sfplay~ 1",
+  "numinlets": 2,
+  "numoutlets": 2,
+  "outlettype": [
+   "signal",
+   "bang"
+  ]
+ },
+ {
+  "text": "sfplay~ 2",
+  "numinlets": 2,
+  "numoutlets": 2,
+  "outlettype": [
+   "signal",
+   "bang"
+  ]
+ },
+ {
+  "text": "sfplay~ 1 0 1",
+  "numinlets": 2,
+  "numoutlets": 3,
+  "outlettype": [
+   "signal",
+   "signal",
+   "bang"
+  ]
+ },
+ {
+  "text": "sfplay~ 1 0 2",
+  "numinlets": 2,
+  "numoutlets": 4,
+  "outlettype": [
+   "signal",
+   "signal",
+   "signal",
+   "bang"
+  ]
+ },
+ {
+  "text": "sfplay~ 4 0 2",
+  "numinlets": 2,
+  "numoutlets": 7,
+  "outlettype": [
+   "signal",
+   "signal",
+   "signal",
+   "signal",
+   "signal",
+   "signal",
+   "bang"
+  ]
+ },
+ {
+  "text": "sfplay~ sfl 2 4096 0",
+  "numinlets": 2,
+  "numoutlets": 4,
+  "outlettype": [
+   "signal",
+   "signal",
+   "signal",
+   "bang"
+  ]
+ },
+ {
+  "text": "mc.sfplay~",
+  "numinlets": 2,
+  "numoutlets": 2,
+  "outlettype": [
+   "multichannelsignal",
+   "bang"
+  ]
+ },
+ {
+  "text": "mc.sfplay~ 1 2 1",
+  "numinlets": 2,
+  "numoutlets": 3,
+  "outlettype": [
+   "multichannelsignal",
+   "signal",
+   "bang"
+  ]
+ },
+ {
+  "text": "mc.sfplay~ 1 2 2",
+  "numinlets": 2,
+  "numoutlets": 4,
+  "outlettype": [
+   "multichannelsignal",
+   "signal",
+   "signal",
+   "bang"
+  ]
+ },
+ {
+  "text": "mc.sfplay~ 1 2 3",
+  "numinlets": 2,
+  "numoutlets": 4,
+  "outlettype": [
+   "multichannelsignal",
+   "signal",
+   "signal",
+   "bang"
+  ]
+ },
+ {
+  "text": "mc.sfplay~ sfl 2 4096",
+  "numinlets": 2,
+  "numoutlets": 2,
+  "outlettype": [
+   "multichannelsignal",
+   "bang"
+  ]
+ },
+ {
+  "text": "mc.targetlist",
+  "numinlets": 2,
+  "numoutlets": 2,
+  "outlettype": [
+   "setvalue",
+   "int"
+  ]
+ },
+ {
+  "text": "mc.targetlist 1 2",
+  "numinlets": 2,
+  "numoutlets": 2,
+  "outlettype": [
+   "setvalue",
+   "int"
+  ]
+ },
+ {
+  "text": "mc.targetlist a 1 2 3 4",
+  "numinlets": 4,
+  "numoutlets": 2,
+  "outlettype": [
+   "setvalue",
+   "int"
+  ]
+ },
+ {
+  "text": "mc.targetlist a 1 2 3 4 5",
+  "numinlets": 5,
+  "numoutlets": 2,
+  "outlettype": [
+   "setvalue",
+   "int"
+  ]
+ },
+ {
+  "text": "vst~",
+  "numinlets": 2,
+  "numoutlets": 8,
+  "outlettype": [
+   "signal",
+   "signal",
+   "",
+   "list",
+   "int",
+   "",
+   "",
+   ""
+  ],
+  "save": [
+   "#N",
+   "vst~",
+   "loaduniqueid",
+   0,
+   ";"
+  ]
+ },
+ {
+  "text": "vst~ 1",
+  "numinlets": 2,
+  "numoutlets": 8,
+  "outlettype": [
+   "signal",
+   "signal",
+   "",
+   "list",
+   "int",
+   "",
+   "",
+   ""
+  ],
+  "save": [
+   "#N",
+   "vst~",
+   "loaduniqueid",
+   0,
+   1,
+   ";"
+  ]
+ },
+ {
+  "text": "vst~ 2",
+  "numinlets": 2,
+  "numoutlets": 8,
+  "outlettype": [
+   "signal",
+   "signal",
+   "",
+   "list",
+   "int",
+   "",
+   "",
+   ""
+  ],
+  "save": [
+   "#N",
+   "vst~",
+   "loaduniqueid",
+   0,
+   2,
+   ";"
+  ]
+ },
+ {
+  "text": "vst~ 3",
+  "numinlets": 2,
+  "numoutlets": 9,
+  "outlettype": [
+   "signal",
+   "signal",
+   "signal",
+   "",
+   "list",
+   "int",
+   "",
+   "",
+   ""
+  ],
+  "save": [
+   "#N",
+   "vst~",
+   "loaduniqueid",
+   0,
+   3,
+   ";"
+  ]
+ },
+ {
+  "text": "vst~ 8",
+  "numinlets": 2,
+  "numoutlets": 14,
+  "outlettype": [
+   "signal",
+   "signal",
+   "signal",
+   "signal",
+   "signal",
+   "signal",
+   "signal",
+   "signal",
+   "",
+   "list",
+   "int",
+   "",
+   "",
+   ""
+  ],
+  "save": [
+   "#N",
+   "vst~",
+   "loaduniqueid",
+   0,
+   8,
+   ";"
+  ]
+ },
+ {
+  "text": "vst~ 2 plug.vst",
+  "numinlets": 2,
+  "numoutlets": 8,
+  "outlettype": [
+   "signal",
+   "signal",
+   "",
+   "list",
+   "int",
+   "",
+   "",
+   ""
+  ],
+  "save": [
+   "#N",
+   "vst~",
+   "loaduniqueid",
+   0,
+   2,
+   "plug.vst",
+   ";"
+  ]
+ },
+ {
+  "text": "mc.vst~",
+  "numinlets": 2,
+  "numoutlets": 9,
+  "outlettype": [
+   "multichannelsignal",
+   "multichannelsignal",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "mc.vst~ 1",
+  "numinlets": 2,
+  "numoutlets": 9,
+  "outlettype": [
+   "multichannelsignal",
+   "multichannelsignal",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "mc.vst~ 2",
+  "numinlets": 2,
+  "numoutlets": 9,
+  "outlettype": [
+   "multichannelsignal",
+   "multichannelsignal",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "mc.vst~ 4",
+  "numinlets": 2,
+  "numoutlets": 11,
+  "outlettype": [
+   "multichannelsignal",
+   "multichannelsignal",
+   "multichannelsignal",
+   "multichannelsignal",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "mc.vst~ 2 plug.vst",
+  "numinlets": 2,
+  "numoutlets": 9,
+  "outlettype": [
+   "multichannelsignal",
+   "multichannelsignal",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   ""
+  ]
+ },
+ {
+  "text": "jit.pack",
+  "numinlets": 4,
+  "numoutlets": 2,
+  "outlettype": [
+   "jit_matrix",
+   ""
+  ]
+ },
+ {
+  "text": "jit.pack 1",
+  "numinlets": 3,
+  "numoutlets": 2,
+  "outlettype": [
+   "jit_matrix",
+   ""
+  ]
+ },
+ {
+  "text": "jit.pack 2",
+  "numinlets": 2,
+  "numoutlets": 2,
+  "outlettype": [
+   "jit_matrix",
+   ""
+  ]
+ },
+ {
+  "text": "jit.pack 4",
+  "numinlets": 4,
+  "numoutlets": 2,
+  "outlettype": [
+   "jit_matrix",
+   ""
+  ]
+ },
+ {
+  "text": "jit.pack 5",
+  "numinlets": 5,
+  "numoutlets": 2,
+  "outlettype": [
+   "jit_matrix",
+   ""
+  ]
+ },
+ {
+  "text": "jit.pack foo",
+  "numinlets": null,
+  "numoutlets": null,
+  "outlettype": null,
+  "error": "ValueError: invalid literal for int() with base 10: 'foo'"
+ },
+ {
+  "text": "jit.unpack",
+  "numinlets": 1,
+  "numoutlets": 5,
+  "outlettype": [
+   "jit_matrix",
+   "jit_matrix",
+   "jit_matrix",
+   "jit_matrix",
+   ""
+  ]
+ },
+ {
+  "text": "jit.unpack 2",
+  "numinlets": 1,
+  "numoutlets": 4,
+  "outlettype": [
+   "jit_matrix",
+   "jit_matrix",
+   ""
+  ]
+ },
+ {
+  "text": "jit.unpack 4",
+  "numinlets": 1,
+  "numoutlets": 5,
+  "outlettype": [
+   "jit_matrix",
+   "jit_matrix",
+   "jit_matrix",
+   "jit_matrix",
+   ""
+  ]
+ },
+ {
+  "text": "jit.unpack 5",
+  "numinlets": 1,
+  "numoutlets": 6,
+  "outlettype": [
+   "jit_matrix",
+   "jit_matrix",
+   "jit_matrix",
+   "jit_matrix",
+   "jit_matrix",
+   ""
+  ]
+ },
+ {
+  "text": "jit.unpack 8",
+  "numinlets": 1,
+  "numoutlets": 9,
+  "outlettype": [
+   "jit_matrix",
+   "jit_matrix",
+   "jit_matrix",
+   "jit_matrix",
+   "jit_matrix",
+   "jit_matrix",
+   "jit_matrix",
+   "jit_matrix",
+   ""
+  ]
+ },
+ {
+  "text": "jit.unpack foo",
+  "numinlets": null,
+  "numoutlets": null,
+  "outlettype": null,
+  "error": "ValueError: invalid literal for int() with base 10: 'foo'"
+ },
+ {
+  "text": "cycle~ 440",
+  "numinlets": 2,
+  "numoutlets": 1,
+  "outlettype": [
+   "signal"
+  ]
+ },
+ {
+  "text": "*~ 0.2",
+  "numinlets": 2,
+  "numoutlets": 1,
+  "outlettype": [
+   "signal"
+  ]
+ },
+ {
+  "text": "+ 5",
+  "numinlets": 2,
+  "numoutlets": 1,
+  "outlettype": [
+   "int"
+  ]
+ },
+ {
+  "text": "metro 500",
+  "numinlets": 2,
+  "numoutlets": 1,
+  "outlettype": [
+   "bang"
+  ]
+ },
+ {
+  "text": "loadbang",
+  "numinlets": 1,
+  "numoutlets": 1,
+  "outlettype": [
+   "bang"
+  ]
+ },
+ {
+  "text": "print hello",
+  "numinlets": 1,
+  "numoutlets": 0,
+  "outlettype": null
+ },
+ {
+  "text": "ezdac~",
+  "numinlets": 2,
+  "numoutlets": 0,
+  "outlettype": null
+ },
+ {
+  "text": "jit.grab",
+  "numinlets": 1,
+  "numoutlets": 2,
+  "outlettype": [
+   "jit_matrix",
+   ""
+  ]
+ },
+ {
+  "text": "scale 0 127 0. 1.",
+  "numinlets": 6,
+  "numoutlets": 1,
+  "outlettype": [
+   ""
+  ]
+ },
+ {
+  "text": "cycle~ @frequency 440",
+  "numinlets": 2,
+  "numoutlets": 1,
+  "outlettype": [
+   "signal"
+  ]
+ },
+ {
+  "text": "unpack 1 2 3 @foo bar",
+  "numinlets": 1,
+  "numoutlets": 3,
+  "outlettype": [
+   "int",
+   "int",
+   "int"
+  ]
+ },
+ {
+  "text": "zzz.not.an.object 1 2",
+  "numinlets": 0,
+  "numoutlets": 0,
+  "outlettype": null
+ }
+]

@@ -7,6 +7,7 @@
 import { num, register, type MaxNode } from '../../engine/registry';
 import { firstNum } from '../../runtime/atoms';
 import { makeOutlets } from '../../runtime/outlets';
+import { stopSource, unwire } from './lifecycle';
 
 // cycle~ : sine oscillator. inlet 0 sets frequency (signal or float), outlet 0 is audio.
 register('cycle~', (args, { ctx }) => {
@@ -16,6 +17,7 @@ register('cycle~', (args, { ctx }) => {
     signalIns: [osc.frequency],
     signalOuts: [osc],
     controlIns: [(m) => { const n = firstNum(m); if (n !== undefined) osc.frequency.value = n; }],
+    dispose: () => stopSource(osc),
   } satisfies MaxNode;
 });
 
@@ -33,6 +35,7 @@ register('phasor~', (args, { ctx }) => {
     signalIns: [saw.frequency],
     signalOuts: [half],
     controlIns: [(m) => { const n = firstNum(m); if (n !== undefined) saw.frequency.value = n; }],
+    dispose: () => { stopSource(saw); stopSource(offset); unwire(half); },
   } satisfies MaxNode;
 });
 
@@ -58,6 +61,7 @@ function makeAdder(sign: 1 | -1) {
       signalIns: [pass, offset.offset],
       signalOuts: [pass],
       controlIns: [undefined, (m) => { const n = firstNum(m); if (n !== undefined) offset.offset.value = sign * n; }],
+      dispose: () => { stopSource(offset); unwire(pass); },
     };
   };
 }
@@ -120,5 +124,12 @@ register('ezdac~', (_args, { ctx }) => {
   const right = new GainNode(ctx, { gain: 1 });
   left.connect(merger, 0, 0);
   right.connect(merger, 0, 1);
-  return { signalIns: [left, right], signalOuts: [] } satisfies MaxNode;
+  return {
+    signalIns: [left, right],
+    signalOuts: [],
+    // The ONLY object in the patch wired to ctx.destination, and therefore the only one
+    // that is audible with no cord attached. Without this a cleared patch's dac stayed
+    // connected to the speakers for the life of the page.
+    dispose: () => { unwire(merger); unwire(left); unwire(right); },
+  } satisfies MaxNode;
 });
