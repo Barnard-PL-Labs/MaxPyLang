@@ -304,10 +304,35 @@ function setPaletteOpen(open: boolean): void {
   writePref('palette.open', String(open));
 }
 
-function setInspectorPinned(pinned: boolean): void {
+function setInspectorPinned(pinned: boolean, persist = true): void {
   document.body.dataset.inspector = pinned ? 'pinned' : 'hidden';
   inspectorPin.setAttribute('aria-pressed', String(pinned));
-  writePref('inspector.pinned', String(pinned));
+  // Opening the pane because something got selected must not rewrite the user's stored
+  // preference — otherwise one click on a box permanently changes a setting they chose.
+  if (persist) writePref('inspector.pinned', String(pinned));
+}
+
+/**
+ * Whether the pane currently on screen was opened by a selection rather than by the user.
+ * Only an auto-opened pane is auto-closed again: someone who pinned it deliberately keeps
+ * it, empty, rather than watching it flap shut every time they click the background.
+ */
+let inspectorAutoShown = false;
+
+/** Show the inspector for a new selection, if it is not already up. */
+function revealInspector(): void {
+  // Below 900px the pane is a scrimmed overlay ON TOP of the canvas. Auto-raising that on
+  // every click would cover the patch the user just clicked in, so there it stays manual.
+  if (compact.matches || document.body.dataset.inspector === 'pinned') return;
+  inspectorAutoShown = true;
+  setInspectorPinned(true, false);
+}
+
+/** Put an auto-opened inspector away once nothing is selected. */
+function retractInspector(): void {
+  if (!inspectorAutoShown) return;
+  inspectorAutoShown = false;
+  setInspectorPinned(false, false);
 }
 
 function setOverlay(which: 'palette' | 'inspector', on: boolean): void {
@@ -331,6 +356,9 @@ function togglePalette(): void {
 }
 
 function toggleInspector(): void {
+  // Touching the toggle is the user taking over: from here the pane stays where they put
+  // it, and clearing the selection no longer folds it away.
+  inspectorAutoShown = false;
   if (compact.matches) {
     setOverlay('inspector', !document.body.classList.contains('overlay-inspector'));
   } else {
@@ -554,16 +582,23 @@ function showSelection(ids: ReadonlySet<string>): void {
   if (!inspector) return;
   if (ids.size === 0 || !doc) {
     inspector.hide();
+    retractInspector();
     return;
   }
   if (ids.size > 1) {
     inspector.showMulti([...ids]);
+    revealInspector();
     return;
   }
   const id = [...ids][0];
   const node = doc.node(id);
-  if (node) inspector.show(node, lastBuilt.get(id));
-  else inspector.hide();
+  if (node) {
+    inspector.show(node, lastBuilt.get(id));
+    revealInspector();
+  } else {
+    inspector.hide();
+    retractInspector();
+  }
 }
 
 function refreshInspector(): void {
