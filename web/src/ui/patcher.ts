@@ -44,7 +44,7 @@ import type { PatchDoc } from '../doc/patch-doc';
 import { isSupported } from '../engine/registry';
 import type { Domain, IREdge, IRNode } from '../ir/types';
 import {
-  boxSize, cordPath, DOMAIN_COLOR, inletPoint, nodeDomain, outletPoint, portHitRect,
+  boxSize, cordPath, DOMAIN_COLOR, domainColor, inletPoint, nodeDomain, outletPoint, portHitRect,
   portNubRect, SELF_LABELLED, type LaidBox, type Point,
 } from './layout';
 
@@ -541,7 +541,7 @@ export class PatcherView {
     if (o.kind === 'cord') {
       const domain = o.domain ?? 'control';
       node.setAttribute('d', cordPath(o.from, o.to));
-      node.setAttribute('stroke', DOMAIN_COLOR[domain] ?? NEUTRAL);
+      node.setAttribute('stroke', domainColor(domain));
       node.setAttribute('stroke-width', String(CORD_W[domain] ?? 1.6));
       // A refused drop still tracks the pointer — it just says so, rather than vanishing.
       node.setAttribute('stroke-dasharray', o.invalid ? '5 4' : 'none');
@@ -554,8 +554,9 @@ export class PatcherView {
       node.setAttribute('y', String(y));
       node.setAttribute('width', String(Math.abs(o.w)));
       node.setAttribute('height', String(Math.abs(o.h)));
-      node.setAttribute('fill', 'rgba(90, 169, 230, 0.12)');
-      node.setAttribute('stroke', DOMAIN_COLOR.control ?? NEUTRAL);
+      node.setAttribute('fill', getComputedStyle(document.documentElement)
+        .getPropertyValue('--marquee-fill').trim() || 'rgba(90, 169, 230, 0.12)');
+      node.setAttribute('stroke', domainColor('control'));
       node.setAttribute('stroke-dasharray', '4 3');
     }
   }
@@ -844,12 +845,16 @@ export class PatcherView {
     const local: LaidBox = { ...view.lb, x: 0, y: 0 };
     const node = view.node;
     const frag = document.createDocumentFragment();
-    const add = (dir: 'in' | 'out', index: number, count: number, color: string) => {
+    const add = (dir: 'in' | 'out', index: number, count: number, domain: string) => {
       const kind = dir === 'in' ? 'inlet' : 'outlet';
       const nub = portNubRect(local, kind, index, count);
       const n = el('rect', {
         class: 'port-nub',
-        x: nub.x, y: nub.y, width: nub.width, height: nub.height, fill: color,
+        'data-domain': domain,
+        x: nub.x, y: nub.y, width: nub.width, height: nub.height,
+        // A presentation attribute, so a nub is visible with no stylesheet; the rule in
+        // ui/patcher.css outranks it and is what actually paints, per theme.
+        fill: DOMAIN_COLOR[domain] ?? NEUTRAL,
       });
       n.style.pointerEvents = 'none'; // the nub is paint; the hit rect below is the target
       const hit = portHitRect(local, kind, index, count);
@@ -868,9 +873,11 @@ export class PatcherView {
       frag.append(n, r);
     };
 
-    for (let i = 0; i < node.numInlets; i++) add('in', i, node.numInlets, NEUTRAL);
+    // An inlet has no domain of its own until something is wired to it, so it stays
+    // neutral; an outlet is coloured by what it emits, which is what the cord will be.
+    for (let i = 0; i < node.numInlets; i++) add('in', i, node.numInlets, 'neutral');
     for (let i = 0; i < node.numOutlets; i++) {
-      add('out', i, node.numOutlets, DOMAIN_COLOR[node.outletDomains[i] ?? 'control'] ?? NEUTRAL);
+      add('out', i, node.numOutlets, node.outletDomains[i] ?? 'control');
     }
     view.ports.replaceChildren(frag);
   }

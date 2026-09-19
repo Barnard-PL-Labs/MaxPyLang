@@ -129,22 +129,22 @@ const CSS = `
    anywhere else would be a puzzle nobody should have to solve twice. */
 .insp, .insp * { box-sizing: border-box; }
 .insp { display: flex; flex-direction: column; gap: 11px;
-  font: 12px/1.5 system-ui, -apple-system, sans-serif; color: var(--ink, #d6dbe2); }
+  font: 12px/1.5 system-ui, -apple-system, sans-serif; color: var(--ink, var(--ink)); }
 .insp-head { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
 .insp-class { font: 650 13px ui-monospace, Menlo, monospace; word-break: break-all; }
 .insp-chip { font-size: 9px; letter-spacing: .07em; text-transform: uppercase; padding: 1px 5px;
-  border: 1px solid var(--line, #2c313a); border-radius: 999px; color: var(--dim, #8b93a0); }
+  border: 1px solid var(--line, var(--line)); border-radius: 999px; color: var(--dim, var(--dim)); }
 .insp-badge { font-size: 9px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
   padding: 1px 6px; border-radius: 999px; border: 1px solid currentColor; }
-.insp-badge.is-playable { color: var(--go, #4bd08a); background: rgba(75, 208, 138, .12); }
-.insp-badge.is-stub { color: var(--signal, #e8b73e); background: rgba(232, 183, 62, .12); }
-.insp-badge.is-unknown { color: var(--err, #e8736b); background: rgba(232, 115, 107, .12); }
-.insp-alias { font-size: 11px; color: var(--dim, #8b93a0); }
+.insp-badge.is-playable { color: var(--go, var(--go)); background: rgba(75, 208, 138, .12); }
+.insp-badge.is-stub { color: var(--signal, var(--signal)); background: rgba(232, 183, 62, .12); }
+.insp-badge.is-unknown { color: var(--err, var(--err)); background: rgba(232, 115, 107, .12); }
+.insp-alias { font-size: 11px; color: var(--dim, var(--dim)); }
 .insp-digest { margin: 0; font-size: 12px; }
-.insp-desc { margin: 0; font-size: 11px; line-height: 1.5; color: var(--dim, #8b93a0); }
-.insp-sec { border-top: 1px solid var(--line, #2c313a); padding-top: 9px; }
+.insp-desc { margin: 0; font-size: 11px; line-height: 1.5; color: var(--dim, var(--dim)); }
+.insp-sec { border-top: 1px solid var(--line, var(--line)); padding-top: 9px; }
 .insp-sec-title { margin: 0 0 6px; font-size: 9px; font-weight: 700; letter-spacing: .08em;
-  text-transform: uppercase; color: var(--dim, #8b93a0); }
+  text-transform: uppercase; color: var(--dim, var(--dim)); }
 .insp-row { display: grid; grid-template-columns: 1fr 104px; gap: 6px; align-items: center;
   margin-bottom: 4px; }
 .insp-row.wide { grid-template-columns: 1fr; }
@@ -155,40 +155,40 @@ const CSS = `
 .insp-arg-label { display: flex; align-items: baseline; gap: 2px; min-width: 0; font-size: 11px; }
 .insp-arg-label .insp-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .insp-arg-label .insp-req, .insp-arg-label .insp-opt { flex: 0 0 auto; }
-.insp-req { color: var(--err, #e8736b); margin-left: 2px; }
-.insp-opt { color: var(--dim, #8b93a0); }
-.insp-input { width: 100%; min-width: 0; background: #15171b; color: var(--ink, #d6dbe2);
-  border: 1px solid #39404b; border-radius: 4px; padding: 3px 5px;
+.insp-req { color: var(--err, var(--err)); margin-left: 2px; }
+.insp-opt { color: var(--dim, var(--dim)); }
+.insp-input { width: 100%; min-width: 0; background: var(--sunken); color: var(--ink, var(--ink));
+  border: 1px solid var(--btn-border); border-radius: 4px; padding: 3px 5px;
   font: 11px ui-monospace, Menlo, monospace; }
-.insp-input:focus { outline: none; border-color: var(--control, #5aa9e6); }
-.insp-input[readonly] { color: var(--dim, #8b93a0); border-style: dashed; }
+.insp-input:focus { outline: none; border-color: var(--control, var(--control)); }
+.insp-input[readonly] { color: var(--dim, var(--dim)); border-style: dashed; }
 .insp-input.mono-wide { font-size: 12px; }
 .insp-check { display: flex; align-items: center; gap: 5px; min-width: 0; }
 .insp-check input { flex: 0 0 auto; margin: 0; }
-.insp-extra { font: 11px ui-monospace, Menlo, monospace; color: var(--dim, #8b93a0);
+.insp-extra { font: 11px ui-monospace, Menlo, monospace; color: var(--dim, var(--dim));
   word-break: break-all; }
-.insp-note { margin: 4px 0 0; font-size: 10px; color: var(--signal, #e8b73e); }
-.insp-empty { margin: 0; font-size: 11px; color: #6b7280; }
+.insp-note { margin: 4px 0 0; font-size: 10px; color: var(--signal, var(--signal)); }
+.insp-empty { margin: 0; font-size: 11px; color: var(--faint); }
 .insp-attrs summary { cursor: pointer; font-size: 9px; font-weight: 700; letter-spacing: .08em;
-  text-transform: uppercase; color: var(--dim, #8b93a0); }
+  text-transform: uppercase; color: var(--dim, var(--dim)); }
 .insp-attrs[open] summary { margin-bottom: 6px; }
 .insp-attr-list { max-height: 260px; overflow: auto; }
 .insp-io { width: 100%; border-collapse: collapse; font-size: 11px; }
 .insp-io td { padding: 2px 4px 2px 0; vertical-align: top; }
-.insp-io td.i { width: 14px; color: var(--dim, #8b93a0); font-variant-numeric: tabular-nums; }
+.insp-io td.i { width: 14px; color: var(--dim, var(--dim)); font-variant-numeric: tabular-nums; }
 .insp-io td.d { width: 12px; }
-.insp-io td.t { color: var(--dim, #8b93a0); white-space: nowrap; }
+.insp-io td.t { color: var(--dim, var(--dim)); white-space: nowrap; }
 .insp-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; }
-.insp-dot.signal { background: var(--signal, #e8b73e); }
-.insp-dot.control { background: var(--control, #5aa9e6); }
-.insp-dot.video { background: var(--video, #a882e6); }
-.insp-foot { margin: 0; padding-top: 8px; border-top: 1px solid var(--line, #2c313a);
-  font-size: 10px; line-height: 1.45; color: #6b7280; }
+.insp-dot.signal { background: var(--signal, var(--signal)); }
+.insp-dot.control { background: var(--control, var(--control)); }
+.insp-dot.video { background: var(--video, var(--video)); }
+.insp-foot { margin: 0; padding-top: 8px; border-top: 1px solid var(--line, var(--line));
+  font-size: 10px; line-height: 1.45; color: var(--faint); }
 .insp-multi-count { font: 650 13px system-ui, sans-serif; }
 .insp-align { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
-.insp-align button { background: #262b33; color: var(--ink, #d6dbe2); border: 1px solid #39404b;
+.insp-align button { background: var(--btn-bg); color: var(--ink, var(--ink)); border: 1px solid var(--btn-border);
   border-radius: 5px; padding: 4px 0; font-size: 11px; cursor: pointer; }
-.insp-align button:hover:not(:disabled) { background: #2f3540; border-color: #4a5361; }
+.insp-align button:hover:not(:disabled) { background: var(--btn-bg-hover); border-color: var(--btn-border-hover); }
 .insp-align button:disabled { opacity: .4; cursor: default; }
 `;
 

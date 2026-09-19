@@ -14,10 +14,51 @@
 
 import type { IRNode, IRPatch } from '../ir/types';
 
+/**
+ * Fallback domain colours: the dark theme's values, used when there is no document to
+ * read a theme from (the headless test suite) or before the stylesheet has applied.
+ * Prefer domainColor() — these are the floor, not the source of truth.
+ */
 export const DOMAIN_COLOR: Record<string, string> = {
   signal: '#e8b73e', // amber — audio, like Max signal cords
   control: '#5aa9e6', // blue — control/message
   video: '#a882e6', // purple — jitter
+};
+
+/**
+ * The live colour of a domain, read from the theme.
+ *
+ * Most of the canvas is painted by CSS rules in ui/patcher.css, which outrank the
+ * presentation attributes the renderer writes and therefore follow a theme switch for
+ * free. Two things cannot work that way: the rubber cord and the marquee are drawn by the
+ * gesture code, which owns their stroke because it encodes a VERDICT (refused is red and
+ * dashed, warned is dashed in its own domain colour) that CSS has no way to know. Those
+ * read their colour from here instead, so a light theme's darker amber reaches them too.
+ *
+ * Values are read per call and not cached: this runs a handful of times per gesture, and
+ * a cache would have to be invalidated on a theme switch — a bug waiting to happen for
+ * no measurable gain.
+ */
+export function domainColor(domain: string): string {
+  const fallback = FALLBACK_COLOR[domain] ?? NEUTRAL_COLOR;
+  if (typeof document === 'undefined' || !document.documentElement) return fallback;
+  const token = domain === 'err' ? '--err' : `--${domain}`;
+  const v = getComputedStyle(document.documentElement).getPropertyValue(token).trim();
+  return v || fallback;
+}
+
+/** The colour of a port that has no domain of its own — an inlet, or an unknown box. */
+export const NEUTRAL_COLOR = '#7a828c';
+
+/**
+ * Fallbacks for every token domainColor() can be asked for, not just the three cord
+ * domains: 'err' paints a refused cord and has no entry in DOMAIN_COLOR, and falling
+ * through to neutral grey would make a refusal look like an ordinary inlet.
+ */
+const FALLBACK_COLOR: Record<string, string> = {
+  ...DOMAIN_COLOR,
+  err: '#e8736b',
+  neutral: NEUTRAL_COLOR,
 };
 
 // Usable on-screen sizes for interactive widgets (their Max box is far too small).

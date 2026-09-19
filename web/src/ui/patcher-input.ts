@@ -50,6 +50,7 @@ import type { MaxNode } from '../engine/registry';
 import { canConnect, loadObjDocs, type Verdict } from '../ir/connect';
 import type { Domain, IRNode } from '../ir/types';
 import { nodeToBox } from '../parser/write-maxpat';
+import { domainColor } from './layout';
 import { openBoxEditor, type BoxEditorHandle } from './box-editor';
 import type { Point } from './layout';
 import type { PatcherMode, PatcherView, PortHit } from './patcher';
@@ -67,7 +68,7 @@ const NUDGE_BIG = 10;
 const CLONE_OFFSET = 24;
 const ZOOM_STEP = 0.002;
 
-const ERR_COLOR = '#e8736b';
+
 
 /** The single-letter box shortcuts. '' is an empty object box you then type into. */
 const NEW_BOX: Readonly<Record<string, string>> = {
@@ -578,7 +579,9 @@ export class Interaction {
     if (!path) return;
     path.classList.toggle('refused', refused);
     path.classList.toggle('warn', warned);
-    if (refused) path.setAttribute('stroke', ERR_COLOR);
+    // Read from the theme, not frozen: var() is not legal in a presentation attribute,
+    // and a refused cord has to stay legible in both light and dark.
+    if (refused) path.setAttribute('stroke', domainColor('err'));
   }
 
   // ───────────────────────────────────────────────────────────────────────────

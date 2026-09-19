@@ -22,11 +22,48 @@
  *    entirely in CSS where the media queries already live.
  */
 
+/* ══ THEME ═══════════════════════════════════════════════════════════════════
+   LIGHT IS THE DEFAULT, because this is a Max clone and Max's patcher is a light grey
+   field of near-white boxes with black text. A dark canvas is the thing that most makes
+   this read as "some web app" rather than as Max, before a single object is placed.
+
+   Every colour in this file, in ui/patch.css, and in the panes that build their own CSS
+   (ui/palette.ts, ui/box-editor.ts, ui/inspector.ts) comes from one of these tokens.
+   Adding a raw hex anywhere is how a theme rots: it will look right in whichever mode it
+   was written in and wrong in the other, and nothing will catch it.
+
+   The canvas tokens matter more than they look. ui/patcher.ts writes `fill` and `stroke`
+   on box bodies, cords and ports as PRESENTATION attributes, so the canvas stays legible
+   with no stylesheet at all — and any CSS rule outranks a presentation attribute, so the
+   rules further down are what actually paint, and switching themes needs no re-render.
+
+   Signal and control keep their Max meanings (signal amber, control blue), but not their
+   values: #e8b73e on white is about 1.8:1 and unreadable. The light theme darkens both
+   to the same hues at usable contrast. */
 :root {
-  /* The shared dark theme. Same tokens, same values, as index.html and studio.html. */
-  --bg: #16181c; --panel: #1d2027; --line: #2c313a;
-  --ink: #d6dbe2; --dim: #8b93a0;
-  --signal: #e8b73e; --control: #5aa9e6; --video: #a882e6; --go: #4bd08a; --err: #e8736b;
+  --bg: #e1e1e1;            /* the patcher field */
+  --panel: #ececec;         /* header, panes, drawer chrome */
+  --sunken: #f8f8f8;        /* inputs, console, anything recessed */
+  --line: #bdbdbd;
+  --ink: #1b1b1b; --dim: #5a5a5a; --faint: #8a8a8a;
+
+  --btn-bg: #f5f5f5; --btn-border: #b5b5b5;
+  --btn-bg-hover: #ffffff; --btn-border-hover: #8f8f8f;
+
+  --box-fill: #fbfbfb; --box-stroke: #9b9b9b; --box-ink: #101010;
+  --stub-fill: #efefef; --stub-stroke: #b08a8a; --stub-ink: #6f6f6f;
+  --unknown-stroke: #c2554e;
+  --grid-dot: #cbcbcb;
+  --track: #c9c9c9;          /* slider/range groove in a mounted widget */
+  --row-active: #d9e6f6;     /* the highlighted row in the palette and the completion list */
+  --marquee-fill: rgba(31, 111, 208, .12);
+
+  --signal: #a8760a; --control: #1f6fd0; --video: #6b46c1;
+  --go: #1a7f4b; --err: #c0392b;
+  --go-tint: #dff3e7; --go-ink: #12613a;
+  --control-tint: #e3eefb; --control-ink: #10447e;
+  --warn-tint: #fcf0d9; --warn-ink: #7a5610;
+  --err-tint: #fbe6e3;
 
   --palette-w: 230px;
   --inspector-w: 280px;
@@ -34,6 +71,64 @@
   --canvas-min: 420px;
   --head-h: 34px;
 }
+
+/* The dark theme, kept whole — these are the values the app shipped with, and the ones
+   the engine's own graph view (ui/patch.css) was designed against. Opt in with the
+   header toggle; index.html stamps data-theme before first paint so the choice never
+   flashes. Only colours belong here: a metric that differs between themes is a bug. */
+:root[data-theme='dark'] {
+  --bg: #16181c; --panel: #1d2027; --sunken: #101216; --line: #2c313a;
+  --ink: #d6dbe2; --dim: #8b93a0; --faint: #6b7280;
+
+  --btn-bg: #262b33; --btn-border: #39404b;
+  --btn-bg-hover: #2f3540; --btn-border-hover: #4a5361;
+
+  --box-fill: #23272f; --box-stroke: #3a414c; --box-ink: #d6dbe2;
+  --stub-fill: #24282f; --stub-stroke: #4a3a3a; --stub-ink: #8a8f98;
+  --unknown-stroke: #c2554e;
+  --grid-dot: #23272f;
+  --track: #363d47;
+  --row-active: #2f3a47;
+  --marquee-fill: rgba(90, 169, 230, .12);
+
+  --signal: #e8b73e; --control: #5aa9e6; --video: #a882e6;
+  --go: #4bd08a; --err: #e8736b;
+  --go-tint: #1f3d31; --go-ink: #9fe3c1;
+  --control-tint: #22303c; --control-ink: #d6ecfb;
+  --warn-tint: #33281c; --warn-ink: #f0d9ae;
+  --err-tint: #1c1417;
+}
+
+/* ══ CANVAS COLOUR ═══════════════════════════════════════════════════════════
+   These rules are the ones that actually paint the patch. ui/patcher.ts sets the same
+   properties as presentation attributes so the canvas survives with no stylesheet, and
+   every rule here outranks those — which is why a theme switch repaints everything
+   without the renderer being told anything happened. Geometry stays in the renderer;
+   only colour lives here. */
+.patcher .box-body { fill: var(--box-fill); stroke: var(--box-stroke); }
+.patcher .box-label { fill: var(--box-ink); }
+.patcher .node-stub .box-body { fill: var(--stub-fill); stroke: var(--stub-stroke); }
+.patcher .node-stub .box-label { fill: var(--stub-ink); }
+.patcher .box-unknown .box-body { stroke: var(--unknown-stroke); }
+
+/* Domain colour, one source. The cord line, the box's accent bar and an outlet's nub all
+   mean "this port carries audio / messages / frames", so they are all keyed off the same
+   three tokens rather than off three copies of the same hex. */
+.patcher .cord[data-domain='signal'] .cord-line { stroke: var(--signal); }
+.patcher .cord[data-domain='control'] .cord-line { stroke: var(--control); }
+.patcher .cord[data-domain='video'] .cord-line { stroke: var(--video); }
+.patcher .box-signal .box-accent { fill: var(--signal); }
+.patcher .box-control .box-accent { fill: var(--control); }
+.patcher .box-video .box-accent { fill: var(--video); }
+.patcher .box-sink .box-accent { fill: var(--faint); }
+.patcher .port-nub[data-domain='signal'] { fill: var(--signal); }
+.patcher .port-nub[data-domain='control'] { fill: var(--control); }
+.patcher .port-nub[data-domain='video'] { fill: var(--video); }
+.patcher .port-nub[data-domain='neutral'] { fill: var(--faint); }
+
+/* The caption over a mounted widget — a slider has no text of its own, so this is the
+   only thing naming it. Dimmer than a box label: it annotates, it is not the object. */
+.patcher .box-caption { fill: var(--dim); }
 
 * { box-sizing: border-box; }
 
@@ -70,9 +165,9 @@ body.patcher-page {
 }
 
 #patcher-header button {
-  background: #262b33;
+  background: var(--btn-bg);
   color: var(--ink);
-  border: 1px solid #39404b;
+  border: 1px solid var(--btn-border);
   border-radius: 6px;
   padding: 5px 10px;
   font-size: 13px;
@@ -80,25 +175,25 @@ body.patcher-page {
   cursor: pointer;
   transition: background .12s, border-color .12s, color .12s;
 }
-#patcher-header button:hover:not(:disabled) { background: #2f3540; border-color: #4a5361; }
+#patcher-header button:hover:not(:disabled) { background: var(--btn-bg-hover); border-color: var(--btn-border-hover); }
 #patcher-header button:disabled { opacity: .4; cursor: default; }
-#start { border-color: var(--go); color: #cdf6e3; }
-#start:hover:not(:disabled) { background: #1f3d31; }
-#start.is-live { background: #1f3d31; border-color: var(--go); }
+#start { border-color: var(--go); color: var(--go-ink); }
+#start:hover:not(:disabled) { background: var(--go-tint); }
+#start.is-live { background: var(--go-tint); border-color: var(--go); }
 
 /* The examples menu. Given the buttons' look rather than a look of its own, so a row of
    controls that do the same kind of thing reads as one row. */
 #patcher-header select {
-  background: #262b33;
+  background: var(--btn-bg);
   color: var(--ink);
-  border: 1px solid #39404b;
+  border: 1px solid var(--btn-border);
   border-radius: 6px;
   padding: 5px 8px;
   font-size: 13px;
   max-width: 230px;
   cursor: pointer;
 }
-#patcher-header select:hover { background: #2f3540; border-color: #4a5361; }
+#patcher-header select:hover { background: var(--btn-bg-hover); border-color: var(--btn-border-hover); }
 
 .bar-sep { width: 1px; align-self: stretch; background: var(--line); margin: 0 3px; }
 .bar-spacer { flex: 1 1 auto; }
@@ -111,16 +206,16 @@ a.nav:hover { color: var(--ink); }
    Segmented rather than a toggle: "am I editing or playing?" is the question a Max
    newcomer most reliably gets wrong, and a control that shows both states at once
    answers it without having to be read. */
-.seg { display: flex; border: 1px solid #39404b; border-radius: 6px; overflow: hidden; }
+.seg { display: flex; border: 1px solid var(--btn-border); border-radius: 6px; overflow: hidden; }
 #patcher-header .seg-btn {
   border: 0;
   border-radius: 0;
-  background: #20242b;
+  background: var(--sunken);
   color: var(--dim);
   padding: 5px 11px;
 }
-#patcher-header .seg-btn + .seg-btn { border-left: 1px solid #39404b; }
-#patcher-header .seg-btn[aria-pressed='true'] { background: #323944; color: var(--ink); }
+#patcher-header .seg-btn + .seg-btn { border-left: 1px solid var(--btn-border); }
+#patcher-header .seg-btn[aria-pressed='true'] { background: var(--line); color: var(--ink); }
 #patcher-header #mode-edit[aria-pressed='true'] { box-shadow: inset 0 -2px 0 var(--control); }
 #patcher-header #mode-run[aria-pressed='true'] { box-shadow: inset 0 -2px 0 var(--go); }
 
@@ -178,7 +273,7 @@ body:has(#patcher-canvas.mode-run) .mode-glyph { color: var(--go); }
   padding: 4px 6px;
   cursor: pointer;
 }
-.pane-btn:hover { background: #262b33; border-color: #39404b; color: var(--ink); }
+.pane-btn:hover { background: var(--btn-bg); border-color: var(--btn-border); color: var(--ink); }
 .pane-btn[aria-pressed='false'] { opacity: .45; }
 
 .pane-body { flex: 1; min-height: 0; overflow: auto; padding: 10px; }
@@ -186,7 +281,7 @@ body:has(#patcher-canvas.mode-run) .mode-glyph { color: var(--go); }
   margin: 0;
   font-size: 12px;
   line-height: 1.55;
-  color: #6b7280;
+  color: var(--faint);
 }
 
 /* Collapsed to a rail: the head shrinks to just its toggle, everything else goes. */
@@ -215,18 +310,18 @@ body[data-inspector='hidden'] #inspector { display: none; }
   gap: 10px;
   max-width: min(560px, calc(100% - 24px));
   padding: 6px 8px 6px 12px;
-  border: 1px solid #3c4552;
+  border: 1px solid var(--line);
   border-radius: 7px;
-  background: #232a34;
+  background: var(--panel);
   color: var(--ink);
   font-size: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, .45);
 }
 .restore-bar[hidden] { display: none; }
 .restore-bar button {
-  background: #2d3540;
+  background: var(--btn-bg);
   color: var(--ink);
-  border: 1px solid #4a5361;
+  border: 1px solid var(--btn-border-hover);
   border-radius: 5px;
   padding: 3px 9px;
   font: inherit;
@@ -234,9 +329,9 @@ body[data-inspector='hidden'] #inspector { display: none; }
   cursor: pointer;
   white-space: nowrap;
 }
-.restore-bar button:hover { background: #39424f; }
+.restore-bar button:hover { background: var(--btn-bg-hover); }
 .restore-bar .restore-x { border-color: transparent; background: transparent; color: var(--dim); padding: 3px 6px; }
-.restore-bar .restore-x:hover { color: var(--ink); background: #2d3540; }
+.restore-bar .restore-x:hover { color: var(--ink); background: var(--btn-bg); }
 
 /* ══ canvas ══════════════════════════════════════════════════════════════════ */
 
@@ -250,7 +345,7 @@ body[data-inspector='hidden'] #inspector { display: none; }
   overflow: hidden;
   outline: none;
   background:
-    radial-gradient(circle at 1px 1px, #23272f 1px, transparent 0) 0 0 / 22px 22px,
+    radial-gradient(circle at 1px 1px, var(--grid-dot) 1px, transparent 0) 0 0 / 22px 22px,
     var(--bg);
 }
 #patcher-canvas > svg { display: block; width: 100%; height: 100%; }
@@ -366,16 +461,16 @@ body[data-drawer='closed'] #drawer-grip { pointer-events: none; }
 body[data-drawer='open'] .drawer-btn .chev { transform: rotate(90deg); }
 .kbd {
   font: 11px ui-monospace, monospace;
-  color: #6b7280;
-  border: 1px solid #333a45;
+  color: var(--faint);
+  border: 1px solid var(--line);
   border-radius: 4px;
   padding: 0 4px;
 }
 
 .status { font-size: 12px; color: var(--dim); }
-.status.ok { color: #9fe3c1; }
+.status.ok { color: var(--go-ink); }
 .status.error { color: var(--err); }
-.doc-meta { font: 11px ui-monospace, monospace; color: #6b7280; }
+.doc-meta { font: 11px ui-monospace, monospace; color: var(--faint); }
 
 /* Two columns: the Python editor takes the room, the console takes a fixed strip on the
    right. The editor is appended AFTER the console (patcher/python-pane.ts mounts into
@@ -392,14 +487,14 @@ body[data-drawer='open'] .drawer-body { display: flex; flex-direction: row; }
   overflow: auto;
   margin: 0;
   padding: 8px 12px;
-  background: #101216;
+  background: var(--sunken);
   border-left: 1px solid var(--line);
   font: 12px/1.5 ui-monospace, monospace;
   color: var(--dim);
   white-space: pre-wrap;
 }
 .console .log-error { color: var(--err); }
-.console .log-ok { color: #9fe3c1; }
+.console .log-ok { color: var(--go-ink); }
 
 /* ══ the Python pane ══════════════════════════════════════════════════════════
    patcher/python-pane.ts builds this chrome inside #drawer-body and sets only the four
@@ -416,8 +511,8 @@ body[data-drawer='open'] .drawer-body { display: flex; flex-direction: row; }
   border-bottom: 1px solid var(--line);
 }
 .py-run {
-  background: #262b33;
-  color: #d6ecfb;
+  background: var(--btn-bg);
+  color: var(--control-ink);
   border: 1px solid var(--control);
   border-radius: 6px;
   padding: 4px 10px;
@@ -425,7 +520,7 @@ body[data-drawer='open'] .drawer-body { display: flex; flex-direction: row; }
   font-size: 12px;
   cursor: pointer;
 }
-.py-run:hover:not(:disabled) { background: #22303c; }
+.py-run:hover:not(:disabled) { background: var(--control-tint); }
 .py-run:disabled { opacity: .45; cursor: default; }
 .py-state { font-size: 11px; color: var(--dim); }
 
@@ -441,13 +536,13 @@ body[data-drawer='open'] .drawer-body { display: flex; flex-direction: row; }
   border-bottom: 1px solid var(--line);
   font-size: 12px;
 }
-.py-notice[data-tone='info'] { background: #1b2430; color: #b9c6d4; }
-.py-notice[data-tone='warn'] { background: #33281c; color: #f0d9ae; }
+.py-notice[data-tone='info'] { background: var(--control-tint); color: var(--control-ink); }
+.py-notice[data-tone='warn'] { background: var(--warn-tint); color: var(--warn-ink); }
 .py-notice-text { flex: 1 1 auto; min-width: 140px; }
 .py-notice-btn {
-  background: #262b33;
+  background: var(--btn-bg);
   color: var(--ink);
-  border: 1px solid #4a5361;
+  border: 1px solid var(--btn-border-hover);
   border-radius: 5px;
   padding: 3px 9px;
   font: inherit;
@@ -455,10 +550,10 @@ body[data-drawer='open'] .drawer-body { display: flex; flex-direction: row; }
   cursor: pointer;
   white-space: nowrap;
 }
-.py-notice-btn:hover { background: #2f3540; }
-.py-notice-btn.primary { border-color: var(--control); color: #d6ecfb; }
+.py-notice-btn:hover { background: var(--btn-bg-hover); }
+.py-notice-btn.primary { border-color: var(--control); color: var(--control-ink); }
 
-.py-editor { background: #14161a; }
+.py-editor { background: var(--sunken); }
 .py-editor .cm-editor { height: 100%; font: 13px/1.55 ui-monospace, "SF Mono", Menlo, monospace; }
 .py-editor .cm-editor.cm-focused { outline: none; }
 .py-editor .cm-scroller { overflow: auto; }
@@ -472,7 +567,7 @@ body[data-drawer='open'] .drawer-body { display: flex; flex-direction: row; }
   margin: 0;
   padding: 6px 10px;
   border-top: 1px solid var(--line);
-  background: #1c1417;
+  background: var(--err-tint);
   color: var(--err);
   font: 11px/1.5 ui-monospace, monospace;
   white-space: pre-wrap;
@@ -543,10 +638,10 @@ body[data-drawer='open'] .drawer-body { display: flex; flex-direction: row; }
   z-index: 60;
   max-width: 280px;
   padding: 5px 8px;
-  border: 1px solid var(--line, #2c313a);
+  border: 1px solid var(--line, var(--line));
   border-radius: 5px;
-  background: #101216;
-  color: var(--ink, #d6dbe2);
+  background: var(--sunken);
+  color: var(--ink, var(--ink));
   font: 11px ui-monospace, Menlo, monospace;
   line-height: 1.45;
   white-space: pre-line;

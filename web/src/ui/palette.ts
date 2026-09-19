@@ -152,7 +152,7 @@ const DOT_COLOR: Record<PrimaryDomain, string> = {
   signal: DOMAIN_COLOR.signal,
   control: DOMAIN_COLOR.control,
   video: DOMAIN_COLOR.video,
-  sink: '#6b7280',
+  sink: 'var(--faint)',
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -164,7 +164,7 @@ const CSS = `
 .palette {
   display: flex; flex-direction: column; height: 100%; min-height: 0;
   font: 12px/1.2 system-ui, -apple-system, sans-serif;
-  color: var(--ink, #d6dbe2);
+  color: var(--ink, var(--ink));
 }
 /* The pane this mounts into pads its content and scrolls it, and both are wrong for a
    virtualized list: the scrollbar would float in the middle of a 10px gutter, and an
@@ -174,22 +174,22 @@ const CSS = `
 
 .palette-head {
   flex: 0 0 auto; display: flex; align-items: center; gap: 6px;
-  padding: 8px; border-bottom: 1px solid var(--line, #2c313a);
+  padding: 8px; border-bottom: 1px solid var(--line, var(--line));
 }
 .palette-search {
   flex: 1 1 auto; min-width: 0; font: inherit; color: inherit;
-  background: var(--bg, #16181c); border: 1px solid #39404b; border-radius: 5px;
+  background: var(--bg, var(--sunken)); border: 1px solid var(--btn-border); border-radius: 5px;
   padding: 5px 7px;
 }
-.palette-search:focus { outline: none; border-color: var(--control, #5aa9e6); }
+.palette-search:focus { outline: none; border-color: var(--control, var(--control)); }
 .palette-only {
   flex: 0 0 auto; font: inherit; cursor: pointer; white-space: nowrap;
-  color: var(--dim, #8b93a0); background: #262b33;
-  border: 1px solid #39404b; border-radius: 5px; padding: 5px 7px;
+  color: var(--dim, var(--dim)); background: var(--btn-bg);
+  border: 1px solid var(--btn-border); border-radius: 5px; padding: 5px 7px;
 }
-.palette-only:hover { border-color: #4a5361; color: var(--ink, #d6dbe2); }
+.palette-only:hover { border-color: var(--btn-border-hover); color: var(--ink, var(--ink)); }
 .palette-only[aria-pressed='true'] {
-  background: #1f3d31; border-color: var(--go, #4bd08a); color: #cdf6e3;
+  background: var(--go-tint); border-color: var(--go, var(--go)); color: var(--go-ink);
 }
 
 .palette-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; }
@@ -201,36 +201,36 @@ const CSS = `
   height: ${ROW_H}px; padding: 0 8px;
   white-space: nowrap; cursor: pointer; user-select: none; -webkit-user-select: none;
 }
-.palette-row:hover { background: #262b33; }
-.palette-row.is-active { background: #2f3a47; }
+.palette-row:hover { background: var(--btn-bg); }
+.palette-row.is-active { background: var(--row-active); }
 .palette-name { flex: 0 0 auto; }
 /* min-width:0 is what actually lets the signature shrink: a flex item's default minimum
    is its content size, so a nowrap signature would push the row arbitrarily wide. */
 .palette-sig {
-  flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: #6b7280;
+  flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--faint);
 }
 .palette-dot { flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%; }
-.palette-tier { flex: 0 0 auto; width: 7px; height: 7px; border-radius: 2px; background: var(--go, #4bd08a); }
+.palette-tier { flex: 0 0 auto; width: 7px; height: 7px; border-radius: 2px; background: var(--go, var(--go)); }
 
 /* Tier A: recognized, correctly shaped, silent. The dashed marker and the desaturation
    are the canvas's own stub vocabulary (ui/patch.css .node-stub), repeated here. */
-.palette-row.is-stub { color: #8a8f98; }
+.palette-row.is-stub { color: var(--stub-ink); }
 .palette-row.is-stub .palette-dot { opacity: .4; }
-.palette-row.is-stub .palette-tier { background: none; border: 1px dashed #8a6a6a; }
+.palette-row.is-stub .palette-tier { background: none; border: 1px dashed var(--stub-stroke); }
 
 .palette-group {
-  color: var(--dim, #8b93a0); background: #1a1d23;
+  color: var(--dim, var(--dim)); background: var(--sunken);
   font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
 }
 .palette-group[data-level='2'] { background: transparent; padding-left: 18px; }
-.palette-twisty { flex: 0 0 auto; width: 9px; color: #6b7280; }
+.palette-twisty { flex: 0 0 auto; width: 9px; color: var(--faint); }
 .palette-glabel { flex: 0 0 auto; }
-.palette-count { margin-left: auto; color: #6b7280; font-variant-numeric: tabular-nums; }
+.palette-count { margin-left: auto; color: var(--faint); font-variant-numeric: tabular-nums; }
 
-.palette-empty { padding: 12px 10px; color: #6b7280; line-height: 1.5; }
+.palette-empty { padding: 12px 10px; color: var(--faint); line-height: 1.5; }
 .palette-foot {
-  flex: 0 0 auto; padding: 6px 8px; border-top: 1px solid var(--line, #2c313a);
-  color: #6b7280; font-size: 11px; font-variant-numeric: tabular-nums;
+  flex: 0 0 auto; padding: 6px 8px; border-top: 1px solid var(--line, var(--line));
+  color: var(--faint); font-size: 11px; font-variant-numeric: tabular-nums;
 }
 `;
 

@@ -24,16 +24,16 @@
 
 /* ── boxes ── */
 .patch-graph { display: block; }
-.patch-graph .node-body { fill: #23272f; stroke: #3a414c; }
-.patch-graph .node:hover .node-body { stroke: #566173; }
+.patch-graph .node-body { fill: var(--box-fill); stroke: var(--box-stroke); }
+.patch-graph .node:hover .node-body { stroke: var(--btn-border-hover); }
 .patch-graph .node-label {
-  fill: var(--ink, #d6dbe2); font: 11px ui-monospace, Menlo, monospace; dominant-baseline: middle;
+  fill: var(--ink, var(--ink)); font: 11px ui-monospace, Menlo, monospace; dominant-baseline: middle;
 }
 /* An object with no behaviour yet (Tier A): dashed and desaturated, so "recognized but
    silent" is visible on the canvas rather than only in the coverage line. */
-.patch-graph .node-stub .node-body { fill: #24282f; stroke: #4a3a3a; stroke-dasharray: 4 3; }
-.patch-graph .node-stub .node-label { fill: #8a8f98; }
-.patch-graph .node-caption { fill: var(--dim, #8b93a0); font: 10px ui-monospace, monospace; }
+.patch-graph .node-stub .node-body { fill: var(--stub-fill); stroke: var(--stub-stroke); stroke-dasharray: 4 3; }
+.patch-graph .node-stub .node-label { fill: var(--stub-ink); }
+.patch-graph .node-caption { fill: var(--dim, var(--dim)); font: 10px ui-monospace, monospace; }
 
 /* ── widgets mounted in the graph ──
    A <foreignObject> clips to its own box by default; overflow:visible lets a slider
@@ -45,26 +45,26 @@ input[type=range].max-widget {
   -webkit-appearance: none; appearance: none; background: transparent; cursor: pointer;
 }
 input[type=range].max-widget::-webkit-slider-runnable-track {
-  height: 6px; border-radius: 3px; background: #363d47;
+  height: 6px; border-radius: 3px; background: var(--track);
 }
-input[type=range].max-widget::-moz-range-track { height: 6px; border-radius: 3px; background: #363d47; }
+input[type=range].max-widget::-moz-range-track { height: 6px; border-radius: 3px; background: var(--track); }
 /* Kept as separate rules per engine: a selector list containing a pseudo-element one
    browser doesn't know is invalid as a whole, so merging these would style neither. */
 input[type=range].max-widget::-webkit-slider-thumb {
   -webkit-appearance: none; appearance: none; width: 16px; height: 16px; margin-top: -5px;
-  border-radius: 50%; background: var(--control, #5aa9e6); border: 2px solid #1a1d22;
+  border-radius: 50%; background: var(--control, var(--control)); border: 2px solid var(--sunken);
   box-shadow: 0 1px 3px #0007;
 }
 input[type=range].max-widget::-moz-range-thumb {
-  width: 16px; height: 16px; border-radius: 50%; background: var(--control, #5aa9e6);
-  border: 2px solid #1a1d22;
+  width: 16px; height: 16px; border-radius: 50%; background: var(--control, var(--control));
+  border: 2px solid var(--sunken);
 }
 /* Must stay after the .max-widget thumb rules: same specificity, later wins. */
-input[type=range].max-dial::-webkit-slider-thumb { background: var(--signal, #e8b73e); }
-input[type=range].max-dial::-moz-range-thumb { background: var(--signal, #e8b73e); }
+input[type=range].max-dial::-webkit-slider-thumb { background: var(--signal, var(--signal)); }
+input[type=range].max-dial::-moz-range-thumb { background: var(--signal, var(--signal)); }
 
 input[type=number].max-widget {
-  background: #1a1d22; color: var(--ink, #d6dbe2); border: 1px solid #39404b;
+  background: var(--sunken); color: var(--ink, var(--ink)); border: 1px solid var(--btn-border);
   border-radius: 4px; font: 12px ui-monospace, monospace; padding: 2px 4px;
 }
 
@@ -89,7 +89,7 @@ input[type=number].max-widget {
 .max-kslider .max-key:nth-child(2), .max-kslider .max-key:nth-child(4),
 .max-kslider .max-key:nth-child(7), .max-kslider .max-key:nth-child(9),
 .max-kslider .max-key:nth-child(11) { background: #2a2e35; }
-.max-kslider .max-key:active { background: var(--control, #5aa9e6); }
+.max-kslider .max-key:active { background: var(--control, var(--control)); }
 
 /* NOT carried over from the player's inline copy, deliberately: `stroke-width: 1` on
    .node-body (the SVG default) and `accent-color` on .max-dial (inert — the rule above

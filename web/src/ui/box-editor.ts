@@ -153,8 +153,8 @@ export function openBoxEditor(opts: BoxEditorOptions): BoxEditorHandle {
   const input = h(
     'input',
     `width:100%;height:100%;box-sizing:border-box;margin:0;padding:0 ${3 * scale}px;` +
-      `font:${font}px ui-monospace, Menlo, monospace;color:#e6e9ef;background:#1b1f26;` +
-      `border:1px solid #5aa9e6;border-radius:3px;outline:none;`,
+      `font:${font}px ui-monospace, Menlo, monospace;color:var(--ink);background:var(--sunken);` +
+      `border:1px solid var(--control);border-radius:3px;outline:none;`,
     'box-input'
   );
   input.type = 'text';
@@ -169,9 +169,9 @@ export function openBoxEditor(opts: BoxEditorOptions): BoxEditorHandle {
   const panel = h(
     'div',
     'position:fixed;z-index:1000;max-height:236px;overflow:auto;padding:3px;' +
-      'background:#1d2027;border:1px solid #39404b;border-radius:5px;' +
+      'background:var(--panel);border:1px solid var(--btn-border);border-radius:5px;' +
       'box-shadow:0 6px 18px rgba(0,0,0,.45);font:11px ui-monospace, Menlo, monospace;' +
-      'color:#d6dbe2;display:none;',
+      'color:var(--ink);display:none;',
     'box-complete'
   );
   document.body.appendChild(panel);
@@ -210,7 +210,7 @@ export function openBoxEditor(opts: BoxEditorOptions): BoxEditorHandle {
   function paintHighlight(): void {
     const items = panel.querySelectorAll<HTMLElement>('[data-name]');
     items.forEach((node, i) => {
-      node.style.background = i === highlight ? '#2f3a47' : 'transparent';
+      node.style.background = i === highlight ? 'var(--row-active)' : 'transparent';
       node.setAttribute('aria-selected', String(i === highlight));
     });
   }
@@ -238,7 +238,7 @@ export function openBoxEditor(opts: BoxEditorOptions): BoxEditorHandle {
         const row = h(
           'div',
           'display:flex;align-items:center;gap:6px;padding:2px 6px;border-radius:3px;' +
-            `cursor:pointer;white-space:nowrap;color:${stub ? '#8a8f98' : '#d6dbe2'};`,
+            `cursor:pointer;white-space:nowrap;color:${stub ? 'var(--stub-ink)' : 'var(--ink)'};`,
           stub ? 'box-complete-row tier-a' : 'box-complete-row'
         );
         row.setAttribute('data-name', o.name);
@@ -247,7 +247,7 @@ export function openBoxEditor(opts: BoxEditorOptions): BoxEditorHandle {
         const mark = h(
           'span',
           'flex:0 0 auto;width:7px;height:7px;border-radius:2px;' +
-            (stub ? 'border:1px dashed #8a6a6a;' : 'background:#4bd08a;'),
+            (stub ? 'border:1px dashed var(--stub-stroke);' : 'background:var(--go);'),
           'tier-mark'
         );
         const name = h('span', 'flex:0 0 auto;', 'name');
@@ -257,7 +257,7 @@ export function openBoxEditor(opts: BoxEditorOptions): BoxEditorHandle {
         // arbitrarily wide no matter what overflow said.
         const sig = h(
           'span',
-          'flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;color:#6b7280;',
+          'flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;color:var(--faint);',
           'sig',
         );
         sig.textContent = o.argSignature;
@@ -285,14 +285,14 @@ export function openBoxEditor(opts: BoxEditorOptions): BoxEditorHandle {
       'padding:3px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;',
       'box-signature',
     );
-    const head = h('span', 'color:#8b93a0;', 'sig-name');
+    const head = h('span', 'color:var(--dim);', 'sig-name');
     head.textContent = `${info.name} `;
     line.appendChild(head);
     info.argSignature.split(' ').forEach((part, i) => {
       const on = i === argIndex;
       const span = h(
         'span',
-        on ? 'color:#e6e9ef;font-weight:600;' : 'color:#6b7280;',
+        on ? 'color:var(--ink);font-weight:600;' : 'color:var(--faint);',
         on ? 'sig-arg current' : 'sig-arg'
       );
       span.textContent = i === 0 ? part : ` ${part}`;

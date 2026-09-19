@@ -35,8 +35,20 @@
       stylesheet loads in dev (in a build Vite emits a <link> into this <head>).
     -->
     <style>
-      html, body { height: 100%; margin: 0; background: #16181c; }
+      html, body { height: 100%; margin: 0; background: #e1e1e1; }
+      html[data-theme='dark'], html[data-theme='dark'] body { background: #16181c; }
     </style>
+    <!-- Before first paint, not in main.ts: the module is deferred, so restoring the
+         theme there would show one frame of the default first. A saved choice wins; with
+         none saved the default is LIGHT, because Max's patcher is light — the system's
+         prefers-color-scheme is deliberately NOT consulted, since "looks like Max" is
+         the point and a dark OS should not silently change what this app is. -->
+    <script>
+      try {
+        var t = localStorage.getItem('maxpy.patcher.theme');
+        if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+      } catch (e) { /* private mode — the default stands */ }
+    </script>
   </head>
   <body class="patcher-page" data-palette="open" data-inspector="pinned" data-drawer="closed">
     <header id="patcher-header">
@@ -105,6 +117,9 @@
       </div>
 
       <span class="bar-spacer"></span>
+      <!-- Theme. Light is the default and the Max-like one; dark is the app's original
+           look, kept because a lot of people patch at night. -->
+      <button id="theme-toggle" type="button" title="Switch between the light (Max-like) and dark themes">🌙</button>
       <nav>
         <a class="nav" href="https://github.com/barnard-pl-labs/MaxPyLang" target="_blank" rel="noopener">MaxPyLang on GitHub ↗</a>
       </nav>

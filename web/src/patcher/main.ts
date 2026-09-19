@@ -187,6 +187,7 @@ const zoomFitBtn = el<HTMLButtonElement>('zoom-fit');
 
 const paletteToggle = el<HTMLButtonElement>('palette-toggle');
 const inspectorPin = el<HTMLButtonElement>('inspector-pin');
+const themeToggle = el<HTMLButtonElement>('theme-toggle');
 const scrimEl = el('overlay-scrim');
 
 const drawerToggle = el<HTMLButtonElement>('drawer-toggle');
@@ -297,6 +298,35 @@ function setMode(next: PatcherMode): void {
 
 const narrow = matchMedia('(max-width: 1279px)');
 const compact = matchMedia('(max-width: 900px)');
+
+/**
+ * Theme. LIGHT IS THE DEFAULT because Max's patcher is light, and looking like Max is
+ * the point of this app; the system's prefers-color-scheme is deliberately not consulted.
+ *
+ * The attribute lives on <html>, not <body>, so the inline script in index.html can stamp
+ * it before the stylesheet resolves and neither theme ever flashes the other. Everything
+ * downstream is CSS: ui/patcher.css redefines its tokens under :root[data-theme='dark'],
+ * and the canvas repaints without the renderer being told anything happened, because a
+ * CSS rule outranks the presentation attributes ui/patcher.ts writes.
+ */
+type Theme = 'light' | 'dark';
+
+function currentTheme(): Theme {
+  return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+}
+
+function setTheme(theme: Theme, persist = true): void {
+  if (theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+  else document.documentElement.removeAttribute('data-theme');
+  // The glyph shows what you get by pressing it, not what you are in — the same way the
+  // mode switch names the destination.
+  themeToggle.textContent = theme === 'dark' ? '☀' : '🌙';
+  themeToggle.setAttribute(
+    'title',
+    theme === 'dark' ? 'Switch to the light (Max-like) theme' : 'Switch to the dark theme'
+  );
+  if (persist) writePref('theme', theme);
+}
 
 function setPaletteOpen(open: boolean): void {
   document.body.dataset.palette = open ? 'open' : 'closed';
@@ -1106,6 +1136,7 @@ canvasEl.addEventListener('patcher:zoom', () => updateZoom());
 
 paletteToggle.addEventListener('click', togglePalette);
 inspectorPin.addEventListener('click', toggleInspector);
+themeToggle.addEventListener('click', () => setTheme(currentTheme() === 'dark' ? 'light' : 'dark'));
 scrimEl.addEventListener('pointerdown', closeOverlays);
 // A floating pane belongs to a narrow window. Growing back out of one must not leave it
 // stuck over a canvas that now has room for a real column.
@@ -1181,6 +1212,10 @@ function openPaletteAndSearch(): void {
 }
 
 // ── restore the persisted layout, before the first paint of anything below ──
+// The theme attribute is already on <html> — index.html's inline script stamped it before
+// first paint. This only brings the toggle's own glyph and title into agreement with it,
+// and must not persist: writing here would turn "never chose" into "chose light".
+setTheme(currentTheme(), false);
 setPaletteOpen(readPref('palette.open') !== 'false');
 setInspectorPinned(readPref('inspector.pinned') !== 'false');
 setDrawerHeight(Number(readPref('drawer.height')) || DRAWER_DEFAULT, false);
