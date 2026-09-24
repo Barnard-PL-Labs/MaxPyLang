@@ -20,6 +20,7 @@
 
 import { outletDomain } from '../ir/domain';
 import { parseBoxText } from '../ir/objectspec';
+import { reconcileSubpatcherPorts } from '../ir/subpatcher';
 import type { ArgValue, Domain, IREdge, IRNode, IRPatch } from '../ir/types';
 
 /** Max maxclass values whose class name comes from `text` rather than the maxclass. */
@@ -77,6 +78,10 @@ export function parseMaxPat(json: unknown): IRPatch {
       attrs,
       raw: box as Record<string, unknown>,
     };
+    // A `p` / `patcher` box's ports are its embedded patch's inlet/outlet objects; the
+    // saved counts are a cache of that and are kept unless they are too few. See
+    // ir/subpatcher.ts for why that direction and not the other.
+    reconcileSubpatcherPorts(node);
     nodes.push(node);
     byId.set(node.id, node);
   }

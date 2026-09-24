@@ -82,13 +82,26 @@ const KNOWN_OUTLET_DIVERGENCES = [
 describe('boxspecs.json', () => {
   it('covers every canonical object exactly once, with no alias duplication', () => {
     const canonical = Object.keys(MANIFEST).filter((n) => !MANIFEST[n].aliasOf);
-    expect(Object.keys(BOXSPECS).length).toBe(1004);
+    expect(Object.keys(BOXSPECS).length).toBe(1005);
     expect(Object.keys(BOXSPECS).sort()).toEqual(canonical.sort());
   });
 
   it('every key is a manifest object', () => {
     const orphans = Object.keys(BOXSPECS).filter((n) => !(n in MANIFEST));
     expect(orphans).toEqual([]);
+  });
+
+  it('marks exactly the web-only supplement, and keeps the manifest schema unchanged', () => {
+    // scripts/gen-manifest.mjs's SUPPLEMENT: what the engine plays that OBJ_INFO lacks.
+    const specs = BOXSPECS as Record<string, BoxSpec & { webOnly?: boolean; webAliases?: string[] }>;
+    expect(Object.keys(specs).filter((n) => specs[n].webOnly)).toEqual(['live.gain~']);
+    expect(Object.keys(specs).filter((n) => specs[n].webAliases)).toEqual(['patcher']);
+    expect(specs.patcher.webAliases).toEqual(['p']);
+    expect(MANIFEST.p.aliasOf).toBe('patcher');
+    const keys = new Set(Object.values(MANIFEST).flatMap((e) => Object.keys(e)));
+    expect([...keys].sort()).toEqual(
+      ['aliasOf', 'aliases', 'args', 'maxclass', 'numInlets', 'numOutlets', 'outletDomains', 'pkg'],
+    );
   });
 
   it('carries arity rules for exactly the 46 argument-dependent objects', () => {

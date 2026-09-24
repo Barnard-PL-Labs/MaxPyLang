@@ -304,17 +304,11 @@ describe('setBoxText', () => {
   });
 
   itWithSpecs('renames a subpatcher without severing it from the patch', async () => {
-    // `p` is Max's own abbreviation for `patcher`; its real arity comes from the nested
-    // patcher's inlet/outlet objects, which this IR does not model, so it is permanently
-    // an unrecognized name here. Renaming a subpatch is about the most ordinary edit
-    // there is, and it must not silently break the audio path.
-    //
-    // Note for whoever closes the catalog gap: adding `p` -> `patcher` to
-    // maxpylang/data/OBJ_INFO/obj_aliases.json alone will fail this test rather than fix
-    // it. The manifest gives `patcher` 0 inlets and 0 outlets (as it does `send` and
-    // `value`), so the box would become KNOWN-but-portless, walk straight past the
-    // unresolved-name guard in setBoxText, and lose its cords exactly as before. A
-    // subpatcher's arity has to come from recursing into the nested patcher.
+    // `p` is Max's own abbreviation for `patcher`, and it is now a KNOWN name — but the
+    // catalog's arity for it is maxpylang's stock 0/0, which would walk straight past
+    // setBoxText's unresolved-name guard and cut every cord. The ports have to come from
+    // the nested patcher's inlet/outlet objects (ir/subpatcher.ts). Renaming a subpatch
+    // is about the most ordinary edit there is, and it must not break the audio path.
     const raw = load('examples/variable-osc-synth/additive-bottom.maxpat');
     const doc = await PatchDoc.open(parseMaxPat(raw));
     const sub = [...doc.nodes()].find((n) => n.text === 'p delay')!;
