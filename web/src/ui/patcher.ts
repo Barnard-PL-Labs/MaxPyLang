@@ -624,6 +624,9 @@ export class PatcherView {
         case 'set-rect':
           stale = !this.moveBox(op.id, op.to) || stale;
           break;
+        // An edit inside a subpatcher changes the box it lives in only as a set-box
+        // would: its ports may have moved. What is inside is drawn by another view.
+        case 'sub':
         case 'set-box': {
           const view = this.boxes.get(op.id);
           const node = this.doc.node(op.id);

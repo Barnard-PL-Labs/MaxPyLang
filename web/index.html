@@ -147,10 +147,18 @@
       <!-- CANVAS. `patcher` + exactly one of `mode-edit` / `mode-run` live here and
            nowhere else; ui/patcher.css hangs the whole mode behaviour off them. The
            renderer appends its <svg> as a child. -->
-      <div
-        id="patcher-canvas" class="patcher mode-edit"
-        tabindex="0" role="application" aria-label="Patch canvas"
-      ></div>
+      <div id="canvas-col">
+        <!-- SUBPATCHER PATH — shown only while a `p` box is open on the canvas. Each
+             crumb but the last goes back up to that level; src/patcher/main.ts fills it. -->
+        <nav id="subpatch-bar" class="subpatch-bar" aria-label="Subpatcher path" hidden>
+          <button id="subpatch-back" type="button" title="Back to the parent patch (Esc)">‹ Back</button>
+          <ol id="subpatch-crumbs" class="subpatch-crumbs"></ol>
+        </nav>
+        <div
+          id="patcher-canvas" class="patcher mode-edit"
+          tabindex="0" role="application" aria-label="Patch canvas"
+        ></div>
+      </div>
 
       <!-- INSPECTOR — src/ui/inspector.ts takes this over, placeholder and all. -->
       <aside id="inspector" class="pane pane-right" aria-label="Inspector">

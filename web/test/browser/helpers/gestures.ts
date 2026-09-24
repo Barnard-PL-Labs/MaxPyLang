@@ -28,7 +28,7 @@
 import '../../../src/objects'; // side effect: real factories, so catalog tiers are real
 import { PatchDoc } from '../../../src/doc/patch-doc';
 import { loadObjDocs } from '../../../src/ir/connect';
-import { Interaction } from '../../../src/ui/patcher-input';
+import { Interaction, type InteractionHost } from '../../../src/ui/patcher-input';
 import { PatcherView } from '../../../src/ui/patcher';
 
 export interface ClientPoint {
@@ -72,8 +72,15 @@ const HOST_H = 460;
  * outlets, and objdocs (loadObjDocs), so canConnect can tell a video inlet from a
  * signal one. Both are cached module-side, so only the first mount pays for them.
  */
-export async function mountPatcher(): Promise<Mounted> {
-  const doc = await PatchDoc.create();
+export async function mountPatcher(
+  opts: {
+    /** Mount this document instead of a fresh empty one. */
+    doc?: PatchDoc;
+    /** Extra InteractionHost hooks (onOpenSubpatch, onBack, built). */
+    hooks?: Partial<Pick<InteractionHost, 'onOpenSubpatch' | 'onBack' | 'built'>>;
+  } = {}
+): Promise<Mounted> {
+  const doc = opts.doc ?? (await PatchDoc.create());
   await loadObjDocs();
 
   const host = document.createElement('div');
@@ -85,7 +92,7 @@ export async function mountPatcher(): Promise<Mounted> {
   const widgets = new Map<string, HTMLElement>();
   const view = new PatcherView(host, { doc, widgetFor: (id) => widgets.get(id) });
   const status: string[] = [];
-  const input = new Interaction({ doc, view, onStatus: (m) => status.push(m) });
+  const input = new Interaction({ doc, view, onStatus: (m) => status.push(m), ...opts.hooks });
 
   return {
     doc,
@@ -201,7 +208,7 @@ export function click(m: Mounted, at: ClientPoint, mods: Mods = {}): void {
   up(m, at, mods);
 }
 
-export function dblclick(m: Mounted, at: ClientPoint): void {
+export function dblclick(m: Mounted, at: ClientPoint, mods: Mods = {}): void {
   const hit = document.elementFromPoint(at.clientX, at.clientY);
   const target = hit && m.svg.contains(hit) ? hit : m.svg;
   target.dispatchEvent(
@@ -210,6 +217,9 @@ export function dblclick(m: Mounted, at: ClientPoint): void {
       clientY: at.clientY,
       bubbles: true,
       cancelable: true,
+      metaKey: mods.metaKey === true,
+      ctrlKey: mods.ctrlKey === true,
+      shiftKey: mods.shiftKey === true,
     })
   );
 }

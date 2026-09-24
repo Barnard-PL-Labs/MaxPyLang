@@ -36,6 +36,16 @@
 //     ui/sync.ts sits between the pane and the document and is given a GETTER for the
 //     document precisely because the document is replaced underneath it.
 //
+//   • THE LEVEL STACK. The canvas can show the inside of a `p`/`patcher` box instead of
+//     the top document (openSubpatch). `doc` stays the TOP document throughout — Save,
+//     Share, autosave, the self-test and the Python drawer all act on it, and so see an
+//     edit made inside a subpatcher, because PatchDoc.openSubpatch() writes each one
+//     back into the box as it happens. What changes is which document the VIEW, the
+//     gesture controller, the palette and the inspector edit (`here().doc`), and which
+//     engine's nodes the view mounts widgets from: the nested Engine the `p` box runs its
+//     patch on, so a number box inside a playing subpatcher is the live one. Nothing is
+//     rebuilt on the way in or out, which is what keeps the patch sounding throughout.
+//
 // The renderer is attached through a factory rather than constructed inline:
 // useRenderer() is called whenever the document is REPLACED (open/new), and the shell
 // destroys the previous view — and the gesture controller bound to its <svg> — first.
@@ -58,6 +68,7 @@ import type { Op } from '../doc/ops';
 import { PatchDoc } from '../doc/patch-doc';
 import { Engine, type BuildReport } from '../engine/engine';
 import { isSupported, type MaxNode } from '../engine/registry';
+import { isSubpatcher } from '../doc/subpatcher';
 import { renderTone } from '../engine/selftest';
 import { parseMaxPat } from '../parser/maxpat';
 import { addSampleFile } from '../objects/audio/samples';
@@ -68,7 +79,7 @@ import { clearAutosave, installAutosave, loadAutosave } from '../ui/autosave';
 import { installCanvasDrop, openMaxpat, PickerCancelled, saveMaxpat } from '../ui/file-io';
 import { Inspector } from '../ui/inspector';
 import { Palette } from '../ui/palette';
-import { PatcherView } from '../ui/patcher';
+import { PatcherView, type Viewport } from '../ui/patcher';
 import { Interaction, ownsKeyboard } from '../ui/patcher-input';
 import {
   buildPermalink,
@@ -113,8 +124,19 @@ export type ViewFactory = (
 ) => PatcherView;
 
 export interface PatcherShell {
-  /** The current document. Replaced by newPatch()/loadPatch(), never mutated here. */
+  /**
+   * The current TOP-LEVEL document. Replaced by newPatch()/loadPatch(), never mutated
+   * here — and still the top one while a subpatcher is open on the canvas.
+   */
   readonly doc: PatchDoc | null;
+  /** The document the canvas is showing: `doc`, or the inside of an open subpatcher. */
+  readonly viewDoc: PatchDoc | null;
+  /** Box ids from the top document down to the open subpatcher; [] at the top level. */
+  readonly subpatchPath: readonly string[];
+  /** Show the inside of the `p`/`patcher` box `id` of the document on the canvas. */
+  openSubpatch(id: string): boolean;
+  /** Go up `levels` subpatchers (default one). False when already at the top. */
+  back(levels?: number): boolean;
   /** The page's single Engine. Null only before the first load completes. */
   readonly engine: Engine | null;
   /** #patcher-canvas — carries `patcher mode-edit|mode-run`. The view mounts INSIDE it. */
@@ -161,6 +183,9 @@ const canvasEl = el('patcher-canvas');
 const statusEl = el('status');
 const consoleEl = el('console');
 const docMetaEl = el('doc-meta');
+const subpatchBar = el('subpatch-bar');
+const subpatchCrumbs = el('subpatch-crumbs');
+const subpatchBackBtn = el<HTMLButtonElement>('subpatch-back');
 
 const modeEditBtn = el<HTMLButtonElement>('mode-edit');
 const modeRunBtn = el<HTMLButtonElement>('mode-run');
@@ -256,10 +281,13 @@ function updateDocMeta(): void {
     docMetaEl.textContent = '';
     return;
   }
+  // The counts describe what is on the canvas; the revision is the top document's,
+  // because that is the one that saves.
+  const shown = here()?.doc ?? doc;
   let playable = 0;
-  for (const node of doc.nodes()) if (isSupported(node.className)) playable++;
+  for (const node of shown.nodes()) if (isSupported(node.className)) playable++;
   docMetaEl.textContent =
-    `${doc.nodeCount} boxes · ${doc.edgeCount} cords · ${playable} playable` +
+    `${shown.nodeCount} boxes · ${shown.edgeCount} cords · ${playable} playable` +
     ` · rev ${doc.revision}`;
 }
 
@@ -468,6 +496,27 @@ let lastBuilt: Map<string, MaxNode> = new Map();
 let currentName = 'Untitled.maxpat';
 
 /**
+ * One document the canvas can show. levels[0] is the top document; each further entry
+ * is the inside of a `p` box of the one before it, opened with PatchDoc.openSubpatch().
+ */
+interface Level {
+  doc: PatchDoc;
+  /** The box in the previous level this is the inside of. Absent for the top level. */
+  boxId?: string;
+  /** The breadcrumb: the file name, then each box's text. */
+  label: string;
+  /** Where this level's canvas was looking when a subpatcher was opened from it. */
+  viewport?: Viewport;
+  /** Stop watching the parent for the box going away. */
+  unwatch?: () => void;
+}
+
+let levels: Level[] = [];
+
+/** The level on the canvas, or undefined before the first document. */
+const here = (): Level | undefined => levels[levels.length - 1];
+
+/**
  * The file this document came from, when the browser gave us a handle for it.
  *
  * This is what makes ⌘S re-save in place rather than drop `fm_synth (7).maxpat` into
@@ -549,7 +598,14 @@ function scheduleRebuild(): void {
  */
 function touchesWidgets(ops: readonly Op[]): boolean {
   return ops.some(
-    (op) => op.t === 'add-node' || op.t === 'set-box' || op.t === 'remove-node' || op.t === 'renumber'
+    (op) =>
+      op.t === 'add-node' ||
+      op.t === 'set-box' ||
+      op.t === 'remove-node' ||
+      op.t === 'renumber' ||
+      // An edit inside a subpatcher mounts widgets only if the canvas is showing it; a
+      // refresh is cheap either way (it touches only boxes whose element changed).
+      (op.t === 'sub' && touchesWidgets(op.ops))
   );
 }
 
@@ -604,8 +660,9 @@ function toPatch(at: { clientX: number; clientY: number }): { x: number; y: numb
  * written to the file and a dropped box should not arrive at x = 213.60000000000002.
  */
 function placeObject(name: string, at: { x: number; y: number }): void {
-  if (!doc) return;
-  const node = doc.addBox(name, Math.round(at.x), Math.round(at.y));
+  const target = here()?.doc;
+  if (!target) return;
+  const node = target.addBox(name, Math.round(at.x), Math.round(at.y));
   view?.select([node.id]);
   status(`Placed ${name}`);
 }
@@ -624,9 +681,9 @@ function showSelection(ids: ReadonlySet<string>): void {
     return;
   }
   const id = [...ids][0];
-  const node = doc.node(id);
+  const node = here()?.doc.node(id);
   if (node) {
-    inspector.show(node, lastBuilt.get(id));
+    inspector.show(node, builtHere().get(id));
     revealInspector();
   } else {
     inspector.hide();
@@ -705,30 +762,35 @@ function unmountView(): void {
   view = null;
 }
 
-function mountView(): void {
+function mountView(restore?: Viewport): void {
   unmountView();
-  if (!viewFactory || !doc) {
+  renderCrumbs();
+  const level = here();
+  if (!viewFactory || !level) {
     updateZoom();
     return;
   }
-  view = viewFactory(canvasEl, doc, lastBuilt);
+  view = viewFactory(canvasEl, level.doc, builtHere());
   view.setMode(mode);
-  view.fit();
+  if (restore) view.setViewport(restore);
+  else view.fit();
   // The controller is bound to the view, not to the shell, and is therefore rebuilt
   // with it. `built` is a thunk rather than the map itself: today Engine.build() hands
   // back the engine's own live Map, so a captured reference would happen to stay
   // correct — but that is the engine's implementation detail, and reading `lastBuilt`
   // through a closure costs nothing and stays right if it ever stops being true.
   input = new Interaction({
-    doc,
+    doc: level.doc,
     view,
     onStatus: (message) => status(message),
-    built: () => lastBuilt,
+    built: () => builtHere() as Map<string, MaxNode>,
+    onOpenSubpatch: (id) => void openSubpatch(id),
+    onBack: () => back(),
   });
   // What an inlet MEANS, after a dwell. Independent of the controller on purpose: it
   // consumes no event and touches no document, so it can be attached and detached with
   // the view and nothing else has to know it exists.
-  detachTips = attachPortTips({ svg: view.svg, doc: () => doc });
+  detachTips = attachPortTips({ svg: view.svg, doc: () => here()?.doc ?? null });
   updateZoom();
   // A new view starts with nothing selected; say so, rather than leaving the inspector
   // showing a box from the document that was just replaced.
@@ -754,6 +816,10 @@ async function adopt(next: PatchDoc, name: string): Promise<void> {
   // after its load; every other path genuinely has no handle.
   fileHandle = undefined;
 
+  // Opening anything returns the canvas to the top level: the subpatchers open on the
+  // old document belong to it, and stop following it here.
+  closeLevels(0);
+  levels = [{ doc: next, label: name }];
   doc = next;
   currentName = name;
   const eng = await audioEngine();
@@ -771,6 +837,120 @@ async function adopt(next: PatchDoc, name: string): Promise<void> {
   // document swap is not a reason to overwrite it.
   if (sync?.owner === 'canvas') sync.adopt();
   reportBuild(name, report);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Subpatchers: the canvas showing the inside of a `p` box. See the module header.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * The live nodes of the engine running the level on the canvas: the page engine at the
+ * top, the nested Engine of each `p` box on the way down otherwise.
+ *
+ * Resolved on every call, from the top, rather than captured when the level was
+ * opened: the nested engine belongs to the `p` box's node, and anything that
+ * re-instantiates that node (a rebuild) makes a new one. An empty map when the box never
+ * built — the canvas still shows and edits the inside, it just has no widgets to mount.
+ */
+function builtHere(): ReadonlyMap<string, MaxNode> {
+  if (levels.length <= 1) return lastBuilt;
+  let nodes: ReadonlyMap<string, MaxNode> = lastBuilt;
+  for (const level of levels.slice(1)) {
+    const inner = nodes.get(level.boxId ?? '')?.subpatch?.engine;
+    if (!inner) return new Map();
+    nodes = inner.built;
+  }
+  return nodes;
+}
+
+/** Drop every level deeper than `depth`, innermost first. Touches no view. */
+function closeLevels(depth: number): void {
+  while (levels.length > depth + 1) {
+    const level = levels.pop()!;
+    level.unwatch?.();
+    level.doc.close();
+  }
+}
+
+/**
+ * Show the inside of the `p`/`patcher` box `id` of the document on the canvas.
+ *
+ * Nothing about the audio changes: the engine is not rebuilt and the box's nested engine
+ * keeps running; only the view and its gesture controller are swapped for ones over the
+ * subpatcher's document. The parent's viewport is kept so Back lands where the user was.
+ */
+function openSubpatch(id: string): boolean {
+  const parent = here();
+  const node = parent?.doc.node(id);
+  if (!parent || !node || !isSubpatcher(node)) return false;
+  parent.viewport = view?.viewport;
+  const child = parent.doc.openSubpatch(id);
+  const level: Level = { doc: child, boxId: id, label: node.text.trim() || node.className };
+  // The box can go away underneath an open subpatcher — a Python ▶ Run replaces the
+  // whole document (adopt() handles that), but the box can also be retyped or deleted
+  // at its own level by an undo reaching past the subpatcher. The inside is then no
+  // longer anything's, so the canvas returns to the level that still exists.
+  level.unwatch = parent.doc.on((ops) => {
+    const gone = ops.some(
+      (op) =>
+        (op.t === 'remove-node' && op.node.id === id) ||
+        (op.t === 'set-box' && op.id === id) ||
+        op.t === 'renumber'
+    );
+    const at = levels.indexOf(level);
+    if (gone && at > 0) {
+      const keep = levels[at - 1];
+      closeLevels(at - 1);
+      mountView(keep.viewport);
+      status(`${level.label} is no longer in the patch — back in ${keep.label}.`, 'info');
+    }
+  });
+  levels.push(level);
+  mountView();
+  view?.svg.focus();
+  updateDocMeta();
+  status(`Opened ${level.label} — Esc or ‹ Back to return.`);
+  return true;
+}
+
+/** Go up `count` levels (at most to the top). False when already at the top. */
+function back(count = 1): boolean {
+  if (levels.length <= 1) return false;
+  const depth = Math.max(0, levels.length - 1 - count);
+  const keep = levels[depth];
+  closeLevels(depth);
+  mountView(keep.viewport);
+  view?.svg.focus();
+  updateDocMeta();
+  status(`Back in ${depth === 0 ? currentName : keep.label}.`);
+  return true;
+}
+
+/** The breadcrumb bar: hidden at the top level, one crumb per level below it. */
+function renderCrumbs(): void {
+  subpatchBar.hidden = levels.length <= 1;
+  subpatchCrumbs.replaceChildren();
+  if (levels.length <= 1) return;
+  levels.forEach((level, i) => {
+    const li = document.createElement('li');
+    const last = i === levels.length - 1;
+    const label = i === 0 ? currentName : level.label;
+    if (last) {
+      const span = document.createElement('span');
+      span.textContent = label;
+      span.setAttribute('aria-current', 'page');
+      li.appendChild(span);
+    } else {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = label;
+      button.dataset.depth = String(i);
+      button.title = i === 0 ? 'Back to the top-level patch' : `Back to ${label}`;
+      button.addEventListener('click', () => back(levels.length - 1 - i));
+      li.appendChild(button);
+    }
+    subpatchCrumbs.appendChild(li);
+  });
 }
 
 async function newPatch(): Promise<void> {
@@ -1192,6 +1372,15 @@ samplesSelect.addEventListener('change', () => {
   );
 });
 
+subpatchBackBtn.addEventListener('click', () => void back());
+// Escape leaves a subpatcher from anywhere on the page that is not a text field — the
+// canvas's own controller handles it first when it has focus (it may have a gesture to
+// abandon instead), and marks the event handled when it went back.
+window.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape' || e.defaultPrevented || ownsKeyboard(e.target)) return;
+  if (back()) e.preventDefault();
+});
+
 restoreFreshBtn.addEventListener('click', () => {
   clearAutosave();
   restoreBar.hidden = true;
@@ -1274,13 +1463,17 @@ palette = new Palette(el('palette-body'), {
 });
 
 inspector = new Inspector(el('inspector-body'), {
-  onEdit: (id, text) => doc?.setBoxText(id, text),
+  // The inspector edits whatever the canvas is showing: inside an open subpatcher, the
+  // selected box is one of ITS boxes, and the edit is written back from there.
+  onEdit: (id, text) => here()?.doc.setBoxText(id, text),
   // The pane thinks in absolute positions and the document moves by deltas; nothing
   // else can move a box from a text field, so the translation lives here.
   onMove: (id, x, y) => {
-    const node = doc?.node(id);
-    if (node) doc?.moveNodes([id], x - node.rect[0], y - node.rect[1]);
+    const target = here()?.doc;
+    const node = target?.node(id);
+    if (node) target?.moveNodes([id], x - node.rect[0], y - node.rect[1]);
   },
+  onOpen: (id) => void openSubpatch(id),
   // onAlign is deliberately absent: there is no align command anywhere in the app yet,
   // and Inspector renders the six buttons only when it is given one — so the
   // multi-selection panel says what it can do instead of offering six dead buttons.
@@ -1323,6 +1516,14 @@ export const shell: PatcherShell = {
   get doc() {
     return doc;
   },
+  get viewDoc() {
+    return here()?.doc ?? null;
+  },
+  get subpatchPath() {
+    return levels.slice(1).map((l) => l.boxId ?? '');
+  },
+  openSubpatch,
+  back,
   get engine() {
     return engine;
   },
@@ -1382,7 +1583,7 @@ shell.useRenderer(
   (host, patch) =>
     new PatcherView(host, {
       doc: patch,
-      widgetFor: (id) => lastBuilt.get(id)?.el,
+      widgetFor: (id) => builtHere().get(id)?.el,
       // The inspector is a view of the selection, and the selection lives in the
       // renderer. This is the only place it changes without a document transaction —
       // clicking a box edits nothing — so it is the only place that can say so.

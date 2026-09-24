@@ -5,7 +5,9 @@
 //     object, with correct inlet/outlet counts + domains, no behavior, never throws.
 // A patch therefore never contains an "unknown" object — only implemented vs stubbed.
 
+import type { Op } from '../doc/ops';
 import type { ArgValue, IRNode } from '../ir/types';
+import type { Engine } from './engine';
 import type { Msg } from '../runtime/atoms';
 import manifest from '../generated/manifest.json';
 
@@ -76,6 +78,17 @@ export interface MaxNode {
   stop?: () => void;
   /** Patch reload / teardown: cancel timers, unsubscribe from buses, etc. */
   dispose?: () => void;
+  /**
+   * A `p`/`patcher` box's inside (objects/control/subpatch.ts): the nested Engine that
+   * runs the embedded patch — which is what a canvas showing that patch mounts widgets
+   * from — and the hook Engine.applyOps() forwards a `sub` op's inner ops to, so an
+   * edit inside the subpatcher reaches the running audio without rebuilding the box.
+   */
+  subpatch?: {
+    readonly engine: Engine;
+    /** Follow the inner edit `ops`; `next` is the box as it now stands. */
+    apply(ops: readonly Op[], next: IRNode): void;
+  };
 }
 
 export type Factory = (args: ArgValue[], build: BuildContext) => MaxNode;

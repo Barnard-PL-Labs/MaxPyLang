@@ -221,6 +221,15 @@ export class Engine {
   }
 
   /**
+   * Every live node by box id — the same Map a BuildReport's `built` is, kept current by
+   * the incremental path. For a view that has to find widgets in an engine it did not
+   * build (a subpatcher's nested one).
+   */
+  get built(): ReadonlyMap<string, MaxNode> {
+    return this.nodes;
+  }
+
+  /**
    * The edgeKey of every cord the engine is actually carrying — its half of
    * doc.edges(). Exists so the invariant the incremental path rests on ("the engine's
    * cords are exactly the document's cords, after any op list") is observable from
@@ -392,7 +401,7 @@ export class Engine {
    * exists: moving a box is the most frequent edit in the editor and it must cost the
    * audio graph nothing at all.
    */
-  applyOps(ops: readonly Op[], doc: PatchDoc): void {
+  applyOps(ops: readonly Op[], doc: Pick<PatchDoc, 'node'>): void {
     for (const op of ops) {
       switch (op.t) {
         case 'set-rect':
@@ -416,6 +425,12 @@ export class Engine {
           break;
         case 'renumber':
           this.rekey(op.map, op.edgeMap);
+          break;
+        case 'sub':
+          // An edit inside a subpatcher: the box is NOT re-instantiated — its nested
+          // engine follows the inner ops, so the inside keeps playing while it is edited.
+          // Any cords the edit invalidated out here arrive as their own ops around this.
+          this.nodes.get(op.id)?.subpatch?.apply(op.ops, op.to);
           break;
       }
     }
@@ -480,7 +495,7 @@ export class Engine {
   }
 
   /** Build a box the engine is missing but the document has. See applyOps(). */
-  private ensureNode(id: string, doc: PatchDoc): void {
+  private ensureNode(id: string, doc: Pick<PatchDoc, 'node'>): void {
     if (this.nodes.has(id)) return;
     const ir = doc.node(id);
     if (ir) this.addNode(ir);

@@ -341,9 +341,78 @@ body[data-inspector='hidden'] #inspector { display: none; }
 
 /* ══ canvas ══════════════════════════════════════════════════════════════════ */
 
-#patcher-canvas {
+/* The canvas and the subpatcher path above it. The column takes the canvas's old place
+   in the body's row, so the panes and every responsive rule see one flexible middle. */
+#canvas-col {
   flex: 1 1 auto;
   min-width: var(--canvas-min);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── the subpatcher path ──
+   A row, not a floating notice like the restore bar: while it is up, everything on the
+   canvas belongs to the subpatcher it names, and it must never cover a box of it. */
+.subpatch-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 3px 8px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--dim);
+  overflow: hidden;
+}
+.subpatch-bar[hidden] { display: none; }
+.subpatch-bar > button {
+  flex: 0 0 auto;
+  background: var(--btn-bg);
+  color: var(--ink);
+  border: 1px solid var(--btn-border);
+  border-radius: 5px;
+  padding: 2px 9px;
+  font: inherit;
+  cursor: pointer;
+}
+.subpatch-bar > button:hover { background: var(--btn-bg-hover); border-color: var(--btn-border-hover); }
+.subpatch-crumbs {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.subpatch-crumbs li { display: flex; align-items: center; min-width: 0; }
+.subpatch-crumbs li + li::before { content: '›'; padding: 0 7px; color: var(--faint); }
+.subpatch-crumbs button {
+  background: none;
+  border: 0;
+  padding: 1px 3px;
+  border-radius: 4px;
+  color: var(--control);
+  font: inherit;
+  cursor: pointer;
+}
+.subpatch-crumbs button:hover { background: var(--control-tint); color: var(--control-ink); }
+.subpatch-crumbs [aria-current='page'] {
+  color: var(--ink);
+  font-weight: 600;
+  font-family: ui-monospace, Menlo, monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#patcher-canvas {
+  flex: 1 1 auto;
+  min-width: 0;
   min-height: 0;
   position: relative;
   /* The renderer pans and zooms a single <g> transform, so the host never scrolls —
@@ -608,7 +677,7 @@ body[data-drawer='open'] .drawer-body { display: flex; flex-direction: row; }
    drops its min-width so the page never scrolls sideways. */
 @media (max-width: 900px) {
   #palette, #inspector { display: none; }
-  #patcher-canvas { min-width: 0; }
+  #canvas-col { min-width: 0; }
 
   body.overlay-palette #palette,
   body.overlay-inspector #inspector {

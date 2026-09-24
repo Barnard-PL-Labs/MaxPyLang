@@ -43,6 +43,7 @@ import { edgeKey } from '../engine/engine';
 import { boxSpecs, loadBoxSpecs, resolveBox, specToNode } from '../ir/objectspec';
 import type { IREdge, IRNode, IRPatch } from '../ir/types';
 import { invert, type Op, type Rect } from './ops';
+import { innerPatch, isSubpatcher, writeBack } from './subpatcher';
 
 /** Where an op list came from. The engine treats all three alike; a UI may not. */
 export type DocSource = 'apply' | 'undo' | 'redo';
@@ -77,6 +78,17 @@ function moveKey(ids: readonly string[]): string {
   return `move:${[...ids].sort().join(',')}`;
 }
 
+/** A coalesce key recorded on behalf of the subpatcher in box `id`. */
+function subKey(id: string, key: string): string {
+  return `sub:${id}|${key}`;
+}
+
+/** Does this op list reach the subpatcher at `path` (box ids, outermost first)? */
+function reaches(ops: readonly Op[], path: readonly string[]): boolean {
+  if (path.length === 0) return true;
+  return ops.some((op) => op.t === 'sub' && op.id === path[0] && reaches(op.ops, path.slice(1)));
+}
+
 /**
  * Fold a later drag step into an earlier one: keep the ORIGINAL `from` and the LATEST
  * `to`, so 20 merged steps still undo to where the box started.
@@ -87,6 +99,26 @@ function moveKey(ids: readonly string[]): string {
 function mergeMoves(prev: readonly Op[], next: readonly Op[]): Op[] {
   const merged = [...prev];
   for (const op of next) {
+    if (op.t === 'sub') {
+      // A drag INSIDE a subpatcher reaches this document as one `sub` per frame. Folded
+      // into the previous `sub` for the same box only when that is the LAST op so far:
+      // a port change brackets its `sub` with this box's cords coming off and going back
+      // on, and hoisting a later `sub` above those would replay the cords against the
+      // wrong port layout on undo.
+      const last = merged[merged.length - 1];
+      if (last && last.t === 'sub' && last.id === op.id) {
+        merged[merged.length - 1] = {
+          t: 'sub',
+          id: op.id,
+          from: last.from,
+          to: op.to,
+          ops: mergeMoves(last.ops, op.ops),
+        };
+      } else {
+        merged.push(op);
+      }
+      continue;
+    }
     if (op.t !== 'set-rect') {
       merged.push(op);
       continue;
@@ -142,6 +174,14 @@ export class PatchDoc {
   private mergeRequest: { label?: string } | undefined;
 
   private readonly tx: Tx;
+
+  /**
+   * Set on a document opened with openSubpatch(): the document that owns the box this one
+   * is the inside of. Null for a top-level document. See openSubpatch().
+   */
+  private upstream: { parent: PatchDoc; id: string; detach: () => void } | null = null;
+  /** >0 while this document's own commit is being written into its parent. */
+  private forwarding = 0;
 
   private constructor(header?: Record<string, unknown>) {
     this.header = { ...(header ?? {}) };
@@ -358,6 +398,24 @@ export class PatchDoc {
     const merge = this.mergeRequest;
     this.mergeRequest = undefined;
 
+    if (this.upstream) {
+      // A subpatcher's document keeps no undo stack of its own: the edit becomes ONE
+      // `sub` op in its parent's transaction (and so, recursively, one entry on the top
+      // document's stack), and only then is it announced here. Parent first is the
+      // order that works: the engine listens to the TOP document, so by the time this
+      // document's view hears about a new box, the nested engine has already built it
+      // and widgetFor() has a widget to hand back.
+      this.rev++;
+      this.forwarding++;
+      try {
+        this.upstream.parent.acceptSub(this.upstream.id, this, ops, this.pendingLabel, request, merge);
+      } finally {
+        this.forwarding--;
+      }
+      this.emit(ops, 'apply');
+      return;
+    }
+
     const top = this.undoStack[this.undoStack.length - 1];
     if (top && (merge !== undefined || (request !== undefined && this.coalesceKey === request))) {
       top.ops = mergeMoves(top.ops, ops);
@@ -525,7 +583,10 @@ export class PatchDoc {
    * pointerup — the only moment that knows a gesture is over.
    */
   endCoalesce(): void {
-    this.coalesceKey = undefined;
+    // The run being ended lives on the stack that recorded it, which for a subpatcher
+    // is the top document's.
+    if (this.upstream) this.root().endCoalesce();
+    else this.coalesceKey = undefined;
   }
 
   /**
@@ -563,6 +624,7 @@ export class PatchDoc {
    */
   rollbackLast(): boolean {
     this.assertIdle('rollbackLast');
+    if (this.upstream) return this.topReaches('undo') && this.root().rollbackLast();
     const entry = this.undoStack.pop();
     if (!entry) return false;
     const inverse = entry.ops.map(invert).reverse();
@@ -583,7 +645,13 @@ export class PatchDoc {
    * own transaction first, and that commit clears the coalesce key.
    */
   beginCoalesce(ids: Iterable<string>): void {
-    this.coalesceKey = moveKey([...ids]);
+    this.setCoalesceKey(moveKey([...ids]));
+  }
+
+  /** Arm a coalesce run on whichever document keeps the undo stack. */
+  private setCoalesceKey(key: string): void {
+    if (this.upstream) this.upstream.parent.setCoalesceKey(subKey(this.upstream.id, key));
+    else this.coalesceKey = key;
   }
 
   /**
@@ -724,25 +792,178 @@ export class PatchDoc {
   }
 
   // ---------------------------------------------------------------------------
+  // subpatchers
+  // ---------------------------------------------------------------------------
+
+  /**
+   * A document for the inside of the `p`/`patcher` box `id`, for editing in place.
+   *
+   * It is a full PatchDoc — addBox, setBoxText, cords, moves, paste, all of it — built
+   * from the box's embedded `patcher` dict, with one difference: it keeps NO undo stack.
+   * Each transaction it commits is written into this document as a single `sub` op (see
+   * ops.ts), carrying the inner ops and the box rewritten to hold the new inner patch.
+   * So the edit is part of this document the moment it is made: Save, Share, autosave
+   * and codegen of the top document all see it, and the engine, which follows the top
+   * document, forwards the inner ops to the nested engine running the box.
+   *
+   * THE UNDO DESIGN, and why it is this one. There is exactly ONE history — the top
+   * document's — and an edit inside a subpatcher is one entry on it. The alternative,
+   * a stack per open subpatcher, gives two histories that can each take back the same
+   * change: undo it inside, close the window, and the parent's stack still holds the
+   * edit (or its reversal as a second edit), and the two drift the moment either is
+   * used without the other. With one history there is nothing to reconcile: undoing
+   * from the parent replays the inverse inner ops into whichever subpatcher document is
+   * open (via the subscription below), exactly as a local undo would, and every entry
+   * is reversible whether or not the subpatcher is open at the time. What would make it
+   * feel wrong — Cmd-Z inside a subpatcher undoing something in the parent the user
+   * cannot see — is ruled out in undo(): inside, only an entry that reaches this
+   * subpatcher is taken back.
+   *
+   * Ids are safe across close-and-reopen for the reason reorder() gives: the child is
+   * rebuilt from the box each time it is opened, so its minting counter restarts from
+   * the live ids, but undo is strictly LIFO — any record naming a box that has since
+   * been deleted is only reachable after every later edit (including any that reused
+   * the name) has been undone.
+   *
+   * Call close() on the result when the view on it goes away.
+   */
+  openSubpatch(id: string): PatchDoc {
+    const node = this.node(id);
+    if (!node || !isSubpatcher(node)) throw new Error(`PatchDoc: ${id} is not a subpatcher box`);
+    const child = PatchDoc.fromIR(innerPatch(node));
+    const detach = this.on((ops, source) => {
+      // An edit the child made itself is already applied there; anything else that
+      // reaches its box — an undo or redo from any level — is replayed into it.
+      if (child.forwarding > 0 && source === 'apply') return;
+      for (const op of ops) if (op.t === 'sub' && op.id === id) child.receive(op.ops, source);
+    });
+    child.upstream = { parent: this, id, detach };
+    return child;
+  }
+
+  /** The box this document is the inside of, or null at the top level. */
+  get subpatchOf(): { parent: PatchDoc; id: string } | null {
+    return this.upstream ? { parent: this.upstream.parent, id: this.upstream.id } : null;
+  }
+
+  /** Stop following the parent. The document stays readable; edits go nowhere. */
+  close(): void {
+    this.upstream?.detach();
+    this.upstream = null;
+  }
+
+  /** The document holding the undo stack. */
+  private root(): PatchDoc {
+    let doc: PatchDoc = this;
+    while (doc.upstream) doc = doc.upstream.parent;
+    return doc;
+  }
+
+  /** Box ids from the root down to this document. */
+  private path(): string[] {
+    const out: string[] = [];
+    for (let doc: PatchDoc = this; doc.upstream; doc = doc.upstream.parent) out.unshift(doc.upstream.id);
+    return out;
+  }
+
+  /** Is the root's next undo (or redo) an edit made in this subpatcher or below it? */
+  private topReaches(which: 'undo' | 'redo'): boolean {
+    const root = this.root();
+    const stack = which === 'undo' ? root.undoStack : root.redoStack;
+    const entry = stack[stack.length - 1];
+    return !!entry && reaches(entry.ops, this.path());
+  }
+
+  /**
+   * One transaction from a subpatcher document, written into this one as a `sub`.
+   *
+   * When the inner inlets/outlets moved, the box's cords come off before the `sub` and
+   * the survivors go back on after it — setBoxText's bracket, for setBoxText's reason:
+   * the engine re-makes the box's port relays in between, so a cord left in place would
+   * stay wired to a relay that no longer exists. A cord on a port the box no longer has
+   * is not re-added, and that is the one way an edit inside a subpatcher removes a cord
+   * out here — which is Max's behaviour when you delete an inlet.
+   */
+  private acceptSub(
+    id: string,
+    child: PatchDoc,
+    ops: readonly Op[],
+    label: string,
+    request: string | undefined,
+    merge: { label?: string } | undefined,
+  ): void {
+    const prev = this.node(id);
+    if (!prev) return;
+    const { node: next, rewire } = writeBack(prev, child.toIR(), ops);
+    if (request !== undefined && this.depth === 0) this.coalesceRequest = subKey(id, request);
+    if (merge !== undefined) this.mergeRequest = merge;
+    this.transact(label, (tx) => {
+      const sub: Op = { t: 'sub', id, from: prev, to: next, ops: [...ops] };
+      if (!rewire) {
+        tx.apply(sub);
+        return;
+      }
+      const survivors: IREdge[] = [];
+      for (const edge of this.edgesOf(id)) {
+        tx.apply({ t: 'remove-edge', edge });
+        const orphaned =
+          (edge.from.id === id && edge.from.outlet >= next.numOutlets) ||
+          (edge.to.id === id && edge.to.inlet >= next.numInlets);
+        if (orphaned) continue;
+        const domain =
+          edge.from.id === id ? (next.outletDomains[edge.from.outlet] ?? 'control') : edge.domain;
+        survivors.push(domain === edge.domain ? edge : { ...edge, domain });
+      }
+      tx.apply(sub);
+      for (const edge of survivors) tx.apply({ t: 'add-edge', edge });
+    });
+  }
+
+  /**
+   * Apply ops that were already recorded elsewhere — an undo or redo on the top
+   * document reaching this subpatcher — and announce them under the same source. No
+   * undo entry: the entry lives where it was recorded.
+   */
+  private receive(ops: readonly Op[], source: DocSource): void {
+    for (const op of ops) this.applyOp(op);
+    this.rev++;
+    this.emit(ops, source);
+  }
+
+  // ---------------------------------------------------------------------------
   // undo / redo
   // ---------------------------------------------------------------------------
 
   get canUndo(): boolean {
+    if (this.upstream) return this.topReaches('undo');
     return this.undoStack.length > 0;
   }
 
   get canRedo(): boolean {
+    if (this.upstream) return this.topReaches('redo');
     return this.redoStack.length > 0;
   }
 
   /** Label of the edit Cmd-Z would take back, for the menu item. */
   get undoLabel(): string | undefined {
+    if (this.upstream) return this.topReaches('undo') ? this.root().undoLabel : undefined;
     return this.undoStack[this.undoStack.length - 1]?.label;
   }
 
-  /** Undo the last edit: its ops inverted, applied in reverse. */
+  /**
+   * Undo the last edit: its ops inverted, applied in reverse.
+   *
+   * Inside a subpatcher, only an edit made in THIS subpatcher (or one nested in it) is
+   * taken back; Cmd-Z there does nothing once those run out, rather than reaching past
+   * them and silently undoing something in a window the user is not looking at. From
+   * the parent, the same edits are ordinary undo steps. See openSubpatch().
+   */
   undo(): void {
     this.assertIdle('undo');
+    if (this.upstream) {
+      if (this.topReaches('undo')) this.root().undo();
+      return;
+    }
     const entry = this.undoStack.pop();
     if (!entry) return;
     const inverse = entry.ops.map(invert).reverse();
@@ -756,6 +977,10 @@ export class PatchDoc {
   /** Redo the last undone edit: its original ops, applied in order. */
   redo(): void {
     this.assertIdle('redo');
+    if (this.upstream) {
+      if (this.topReaches('redo')) this.root().redo();
+      return;
+    }
     const entry = this.redoStack.pop();
     if (!entry) return;
     for (const op of entry.ops) this.applyOp(op);
@@ -892,6 +1117,14 @@ export class PatchDoc {
       case 'renumber':
         this.applyRenumber(op.map);
         return;
+      case 'sub': {
+        // The box's side of it only: its new `patcher` dict and ports. The inner ops are
+        // the business of whoever runs or shows the inside (the engine's nested Engine,
+        // an open subpatcher document), and each of those follows them from the feed.
+        if (!this.live.has(op.id)) return;
+        this.slots.set(op.id, op.to.id === op.id ? op.to : { ...op.to, id: op.id });
+        return;
+      }
     }
     const unreachable: never = op;
     throw new Error(`PatchDoc: unknown op ${JSON.stringify(unreachable)}`);

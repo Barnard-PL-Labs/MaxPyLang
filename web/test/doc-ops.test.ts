@@ -61,6 +61,16 @@ const SAMPLES: { [K in Op['t']]: Extract<Op, { t: K }> } = {
     map: { 'obj-9': 'obj-1', 'obj-4': 'obj-2', 'obj-7': 'obj-3' },
     edgeMap: { 'obj-9:0>obj-4:1': 'obj-1:0>obj-2:1' },
   },
+  'sub': {
+    t: 'sub',
+    id: 'obj-5',
+    from: node('obj-5', 'p inner'),
+    to: node('obj-5', 'p inner'),
+    ops: [
+      { t: 'add-node', node: node('obj-1', 'cycle~ 440') },
+      { t: 'set-rect', id: 'obj-1', from: [0, 0, 40, 22], to: [8, 8, 40, 22] },
+    ],
+  },
 };
 
 const ALL = Object.values(SAMPLES) as Op[];
@@ -70,7 +80,7 @@ describe('invert', () => {
     // Op['t'] drives the SAMPLES type, so a new variant fails to compile above; this
     // guards the other direction — that the sample table wasn't quietly shortened.
     expect(ALL.map((op) => op.t).sort()).toEqual(
-      ['add-edge', 'add-node', 'remove-edge', 'remove-node', 'renumber', 'set-box', 'set-rect'],
+      ['add-edge', 'add-node', 'remove-edge', 'remove-node', 'renumber', 'set-box', 'set-rect', 'sub'],
     );
   });
 
@@ -127,6 +137,19 @@ describe('invert', () => {
       map: { 'obj-1': 'obj-9', 'obj-2': 'obj-4', 'obj-3': 'obj-7' },
       edgeMap: { 'obj-1:0>obj-2:1': 'obj-9:0>obj-4:1' },
     });
+  });
+});
+
+describe('invert: sub', () => {
+  it('swaps the box and undoes the inner edit in reverse order', () => {
+    const inv = invert(SAMPLES['sub']);
+    expect(inv.t).toBe('sub');
+    if (inv.t !== 'sub') return;
+    expect(inv.from).toBe(SAMPLES['sub'].to);
+    expect(inv.to).toBe(SAMPLES['sub'].from);
+    // Exactly what an undo entry of the inner document would replay: the move comes
+    // back first, then the box goes away.
+    expect(inv.ops.map((op) => op.t)).toEqual(['set-rect', 'remove-node']);
   });
 });
 

@@ -44,6 +44,7 @@
 // per document, scoped entirely under `.insp`, and it reads the page's theme tokens
 // (--ink, --line, --go, …) with hard-coded fallbacks so it looks right either way.
 
+import { isSubpatcher } from '../doc/subpatcher';
 import { MANIFEST, isRecognized, isSupported, type MaxNode } from '../engine/registry';
 import { inletDomain, loadObjDocs, objDocFor, objDocs, type ObjDocPort } from '../ir/connect';
 import {
@@ -78,6 +79,12 @@ export interface InspectorOptions {
   onMove?(id: string, x: number, y: number): void;
   /** Align a multi-selection. Without it showMulti() omits the buttons entirely. */
   onAlign?(ids: string[], edge: AlignEdge): void;
+  /**
+   * Open a `p`/`patcher` box onto the canvas. Without it a subpatcher box gets no Open
+   * button — the canvas gestures (run-mode double-click, ⌘-double-click) are then the
+   * only way in, which is fine for a host that has nowhere to open it.
+   */
+  onOpen?(id: string): void;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -190,6 +197,9 @@ const CSS = `
   border-radius: 5px; padding: 4px 0; font-size: 11px; cursor: pointer; }
 .insp-align button:hover:not(:disabled) { background: var(--btn-bg-hover); border-color: var(--btn-border-hover); }
 .insp-align button:disabled { opacity: .4; cursor: default; }
+.insp-open { margin-left: auto; background: var(--btn-bg); color: var(--ink); border: 1px solid var(--btn-border);
+  border-radius: 5px; padding: 2px 9px; font: inherit; font-size: 11px; cursor: pointer; }
+.insp-open:hover { background: var(--btn-bg-hover); border-color: var(--btn-border-hover); }
 `;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -545,6 +555,15 @@ export class Inspector {
 
     if (canonical !== node.className) {
       header.appendChild(h('span', 'insp-alias', `alias of ${canonical}`));
+    }
+    const open = this.opts.onOpen;
+    if (open && isSubpatcher(node)) {
+      const button = h('button', 'insp-open', 'Open ↗');
+      button.type = 'button';
+      button.title = 'Show what is inside this subpatcher (double-click it in 🔒 Run mode, or ⌘-double-click it)';
+      button.dataset.field = 'open-subpatch';
+      button.addEventListener('click', () => open(node.id));
+      header.appendChild(button);
     }
     return header;
   }

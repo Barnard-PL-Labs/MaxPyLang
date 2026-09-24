@@ -65,6 +65,15 @@ export type Rect = IRNode['rect'];
  * identity and exactly what re-exporting edgeKey above exists to prevent. So the
  * document, which computes the new key for every cord anyway, hands it over:
  * `edgeMap[oldKey] === newKey` for every live cord the renumber moves.
+ *
+ * `sub` is an edit made INSIDE the subpatcher in box `id`: `ops` is the inner document's
+ * own op list, and `from`/`to` are the box before and after, with its embedded `patcher`
+ * dict (and, when the inner inlets/outlets changed, its port counts) rewritten to match.
+ * It is recursive — an edit two subpatchers deep is a `sub` holding a `sub` — and it is
+ * both halves of what every op is here: the parent document stores `to` like a set-box,
+ * so a save sees the edit, and the engine forwards `ops` to the nested engine running
+ * that box instead of re-instantiating it, so the subpatcher keeps sounding. See
+ * PatchDoc.openSubpatch for why one undo history holds all of it.
  */
 export type Op =
   | { t: 'add-node'; node: IRNode }
@@ -73,7 +82,8 @@ export type Op =
   | { t: 'set-box'; id: string; from: IRNode; to: IRNode }
   | { t: 'add-edge'; edge: IREdge }
   | { t: 'remove-edge'; edge: IREdge }
-  | { t: 'renumber'; map: Record<string, string>; edgeMap: Record<string, string> };
+  | { t: 'renumber'; map: Record<string, string>; edgeMap: Record<string, string> }
+  | { t: 'sub'; id: string; from: IRNode; to: IRNode; ops: Op[] };
 
 /** Swap every key with its value. Precondition: `map` is a bijection (reorder's is). */
 function invertMap(map: Record<string, string>): Record<string, string> {
@@ -112,6 +122,11 @@ export function invert(op: Op): Op {
       // so the inverse renumber's induced key permutation is literally this one read
       // backwards — no need to re-derive it from a document.
       return { t: 'renumber', map: invertMap(op.map), edgeMap: invertMap(op.edgeMap) };
+    case 'sub':
+      // The inner list is inverted exactly the way an undo entry is — each op inverted,
+      // the order reversed — so undoing an edit inside a subpatcher replays, inside it,
+      // what the subpatcher's own Cmd-Z would have.
+      return { t: 'sub', id: op.id, from: op.to, to: op.from, ops: op.ops.map(invert).reverse() };
   }
   // Exhaustiveness: adding a variant to Op without inverting it fails to compile here,
   // rather than silently producing an undo entry that doesn't undo.

@@ -46,6 +46,7 @@
 // is a `setBoxContent()` on the document; see the note in this task's report.
 
 import type { PatchDoc } from '../doc/patch-doc';
+import { isSubpatcher } from '../doc/subpatcher';
 import type { MaxNode } from '../engine/registry';
 import { canConnect, loadObjDocs, type Verdict } from '../ir/connect';
 import type { Domain, IRNode } from '../ir/types';
@@ -95,6 +96,17 @@ export interface InteractionHost {
    * next build would not be.
    */
   built?(): Map<string, MaxNode> | undefined;
+  /**
+   * Open the `p`/`patcher` box `id` — show its inside on this canvas. Run-mode
+   * double-click, or ⌘/Ctrl-double-click in edit mode (a plain one edits the box's
+   * text, as in Max). Without it neither gesture opens anything.
+   */
+  onOpenSubpatch?(id: string): void;
+  /**
+   * Escape with nothing in progress: leave the subpatcher this canvas is showing.
+   * Returns whether it did — false at the top level, where Escape stays a no-op.
+   */
+  onBack?(): boolean;
 }
 
 type Geom = { x: number; y: number; w: number; h: number };
@@ -720,8 +732,7 @@ export class Interaction {
   // ───────────────────────────────────────────────────────────────────────────
 
   private onDblClick = (e: MouseEvent): void => {
-    if (this.destroyed || this.mode !== 'edit' || this.editor) return;
-    e.preventDefault();
+    if (this.destroyed || this.editor) return;
     const target = e.target as Element | null;
     // Probe the point as well as the target: pointerdown captures the pointer on the
     // <svg>, and Chrome then aims the click and dblclick that follow at the capturing
@@ -729,6 +740,21 @@ export class Interaction {
     // a double-click meant to edit a box used to drop a new empty one on top of it.
     const id =
       target?.closest('[data-box]')?.getAttribute('data-box') ?? this.view.hitBox(e.clientX, e.clientY);
+    // Opening a subpatcher is Max's gesture pair: double-click it when the patch is
+    // locked, ⌘-double-click it while editing (a plain double-click there is still
+    // "edit this box's text", which a `p` needs as much as any box does).
+    if (
+      id &&
+      this.host.onOpenSubpatch &&
+      isSubpatcher(this.doc.node(id)) &&
+      (this.mode === 'run' || e.metaKey || e.ctrlKey)
+    ) {
+      e.preventDefault();
+      this.host.onOpenSubpatch(id);
+      return;
+    }
+    if (this.mode !== 'edit') return;
+    e.preventDefault();
     if (id && this.doc.node(id)) {
       this.editBox(id);
       return;
@@ -892,6 +918,13 @@ export class Interaction {
     if (e.key === ' ') {
       this.space = true;
       e.preventDefault();
+      return;
+    }
+    // Escape first abandons a gesture in flight (editKey, below); only with nothing in
+    // flight does it mean "back out of this subpatcher".
+    if (e.key === 'Escape' && !this.g && this.host.onBack?.()) {
+      e.preventDefault();
+      e.stopPropagation();
       return;
     }
     if (this.mode !== 'edit') return;

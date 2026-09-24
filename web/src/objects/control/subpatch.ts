@@ -17,13 +17,18 @@
 //     outlettype as a control type even when it carries audio, so the engine would wire
 //     its cords as control only; the signal half of those cords is wired here, by hand.
 //
+// The box stays live while it is edited. A `sub` op (doc/ops.ts) — an edit made inside
+// this subpatcher on the canvas — reaches `subpatch.apply`, which hands the inner ops to
+// the nested engine's own applyOps: the same incremental path the top level uses, so
+// adding a box inside a playing subpatcher builds that box and nothing else.
+//
 // Only embedded subpatchers. An abstraction (a box naming another .maxpat file) and
 // bpatcher still have no source to run from a pasted or opened patch.
 
-import { Engine } from '../../engine/engine';
+import { innerPatch, portLayout } from '../../doc/subpatcher';
+import { edgeKey, Engine } from '../../engine/engine';
 import { register, registerAlias, type MaxNode } from '../../engine/registry';
-import type { IRNode, IRPatch } from '../../ir/types';
-import { parseMaxPat } from '../../parser/maxpat';
+import type { IRPatch } from '../../ir/types';
 import type { Msg } from '../../runtime/atoms';
 import { makeOutlets } from '../../runtime/outlets';
 import { unwire } from '../audio/lifecycle';
@@ -65,59 +70,110 @@ register('outlet', (_args, { ctx }) => {
   } satisfies Relay;
 });
 
-/** Left to right, as Max numbers a box's ports; `index` breaks a tie. */
-function byPosition(a: IRNode, b: IRNode): number {
-  return a.rect[0] - b.rect[0] || Number(a.raw?.index ?? 0) - Number(b.raw?.index ?? 0);
-}
-
-/** The embedded patch, or an empty one for a `p` typed on the canvas with nothing in it. */
-function innerPatch(node: IRNode | undefined): IRPatch {
-  const patcher = node?.raw?.patcher as { boxes?: unknown } | undefined;
-  if (!patcher || !Array.isArray(patcher.boxes)) return { nodes: [], edges: [], byId: new Map() };
-  return parseMaxPat({ patcher });
+/**
+ * The inner patch as the nested engine should see it: cords leaving an `inlet` are
+ * built as control by the engine and as signal by hand (see the header), never both ways
+ * by the engine. A copy, never an edit of the parsed edges — those are shared with
+ * whatever else parsed the same box.
+ */
+function forEngine(patch: IRPatch): IRPatch {
+  const inlet = (id: string) => patch.byId.get(id)?.className === 'inlet';
+  return {
+    ...patch,
+    edges: patch.edges.map((e) => (inlet(e.from.id) && e.domain !== 'control' ? { ...e, domain: 'control' } : e)),
+  };
 }
 
 register('patcher', (_args, { ctx, node }) => {
-  const patch = innerPatch(node);
-  const inletIds = patch.nodes.filter((n) => n.className === 'inlet').sort(byPosition);
-  const outletIds = patch.nodes.filter((n) => n.className === 'outlet').sort(byPosition);
-  const fromInlet = new Set(inletIds.map((n) => n.id));
-
-  // Cords leaving an inlet are built as control by the engine and as signal by hand
-  // below, never both ways by the engine — see the header.
-  for (const edge of patch.edges) if (fromInlet.has(edge.from.id)) edge.domain = 'control';
+  let patch = innerPatch(node);
 
   const inner = new Engine(ctx, { nested: true });
-  inner.build(patch);
+  inner.build(forEngine(patch));
 
-  const inlets = inletIds.map((n) => inner.getNode(n.id) as Relay | undefined);
-  const outlets = outletIds.map((n) => inner.getNode(n.id) as Relay | undefined);
+  // The port arrays are handed to the outer engine ONCE, as this node's own fields, and
+  // an edit inside can change what they hold (a new `inlet`, a reordered one). So they
+  // are refilled in place rather than replaced; the document brackets such an edit with
+  // this box's cords coming off and going back on, and the re-connect reads the new
+  // entries. See doc/subpatcher.ts:writeBack.
+  const signalIns: (AudioNode | undefined)[] = [];
+  const signalOuts: (AudioNode | undefined)[] = [];
+  const controlIns: (((m: Msg) => void) | undefined)[] = [];
+  let outlets: (Relay | undefined)[] = [];
 
-  const signalWires: (() => void)[] = [];
-  for (const edge of patch.edges) {
-    if (!fromInlet.has(edge.from.id)) continue;
-    const pass = (inner.getNode(edge.from.id) as Relay | undefined)?.pass;
-    const target = inner.getNode(edge.to.id)?.signalIns[edge.to.inlet];
-    if (!pass || !target) continue;
-    pass.connect(target as AudioNode & AudioParam);
-    signalWires.push(() => pass.disconnect(target as AudioNode & AudioParam));
-  }
+  const bindPorts = (): void => {
+    const layout = portLayout(patch);
+    const ins = layout.inlets.map((id) => inner.getNode(id) as Relay | undefined);
+    outlets = layout.outlets.map((id) => inner.getNode(id) as Relay | undefined);
+    signalIns.splice(0, signalIns.length, ...ins.map((r) => r?.pass));
+    signalOuts.splice(0, signalOuts.length, ...outlets.map((r) => r?.pass));
+    controlIns.splice(
+      0,
+      controlIns.length,
+      ...ins.map((r) => (r?.push ? (m: Msg) => r.push!(m) : undefined)),
+    );
+  };
+
+  // The hand-wired signal half of every cord out of an inner `inlet`, keyed like a cord.
+  // Reconciled after each inner edit rather than rebuilt, so a cord nobody touched keeps
+  // its connection — and its sound — through an edit elsewhere in the subpatcher. An
+  // entry is re-made when either end became a different object (a retyped target).
+  const wires = new Map<string, { pass: GainNode; target: AudioNode | AudioParam }>();
+  const cut = (w: { pass: GainNode; target: AudioNode | AudioParam }): void => {
+    try {
+      w.pass.disconnect(w.target as AudioNode & AudioParam);
+    } catch {
+      /* already gone */
+    }
+  };
+  const rewireSignals = (): void => {
+    const want = new Map<string, { pass: GainNode; target: AudioNode | AudioParam }>();
+    for (const edge of patch.edges) {
+      if (patch.byId.get(edge.from.id)?.className !== 'inlet') continue;
+      const pass = (inner.getNode(edge.from.id) as Relay | undefined)?.pass;
+      const target = inner.getNode(edge.to.id)?.signalIns[edge.to.inlet];
+      if (pass && target) want.set(edgeKey(edge), { pass, target });
+    }
+    for (const [key, w] of wires) {
+      const next = want.get(key);
+      if (next && next.pass === w.pass && next.target === w.target) continue;
+      cut(w);
+      wires.delete(key);
+    }
+    for (const [key, w] of want) {
+      if (wires.has(key)) continue;
+      w.pass.connect(w.target as AudioNode & AudioParam);
+      wires.set(key, w);
+    }
+  };
+
+  bindPorts();
+  rewireSignals();
 
   return {
-    signalIns: inlets.map((r) => r?.pass),
-    signalOuts: outlets.map((r) => r?.pass),
-    controlIns: inlets.map((r) => (r?.push ? (m: Msg) => r.push!(m) : undefined)),
+    signalIns,
+    signalOuts,
+    controlIns,
     onControlOut: (outlet, cb) => outlets[outlet]?.listen?.(cb) ?? (() => {}),
     start: () => void inner.start(),
     stop: () => void inner.stop(),
+    subpatch: {
+      engine: inner,
+      apply(ops, next) {
+        patch = innerPatch(next);
+        const inlet = (id: string) => patch.byId.get(id)?.className === 'inlet';
+        const adjusted = ops.map((op) =>
+          op.t === 'add-edge' && inlet(op.edge.from.id) && op.edge.domain !== 'control'
+            ? { ...op, edge: { ...op.edge, domain: 'control' as const } }
+            : op,
+        );
+        inner.applyOps(adjusted, { node: (id) => patch.byId.get(id) });
+        bindPorts();
+        rewireSignals();
+      },
+    },
     dispose() {
-      for (const cut of signalWires) {
-        try {
-          cut();
-        } catch {
-          /* already gone */
-        }
-      }
+      for (const w of wires.values()) cut(w);
+      wires.clear();
       // clear(), never dispose(): dispose() is page teardown and would reset the
       // page-wide scheduler and buses that the outer patch is still using.
       inner.clear();
