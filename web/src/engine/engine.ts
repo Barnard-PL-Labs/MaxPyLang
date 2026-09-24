@@ -82,12 +82,21 @@ export class Engine {
   // playing", nothing else. build() reads it to bring a rebuilt patch up running.
   private running = false;
 
+  /**
+   * True for the engine a subpatcher runs its inner patch on (objects/control/subpatch.ts).
+   * It shares its parent's AudioContext and the page's scheduler, so it must never
+   * suspend, resume or re-arm either: ▶ and ■ belong to the top-level engine, and a
+   * nested start() only starts the nodes it owns.
+   */
+  private readonly nested: boolean;
+
   // Accepts a live AudioContext (playback) or an OfflineAudioContext (self-test).
-  constructor(ctx?: BaseAudioContext) {
+  constructor(ctx?: BaseAudioContext, opts: { nested?: boolean } = {}) {
     this.ctx = ctx ?? new AudioContext();
+    this.nested = opts.nested ?? false;
     // A live context starts suspended until a user gesture, so nothing plays
     // until Start is pressed. Offline contexts render on demand instead.
-    if (this.ctx instanceof AudioContext) void this.ctx.suspend();
+    if (!this.nested && this.ctx instanceof AudioContext) void this.ctx.suspend();
   }
 
   /** Instantiate every object and connect the cords. Returns what got built. */
@@ -107,7 +116,7 @@ export class Engine {
         continue;
       }
       try {
-        this.nodes.set(node.id, factory(node.args, { ctx: this.ctx }));
+        this.nodes.set(node.id, factory(node.args, { ctx: this.ctx, node }));
         (tierOf(node.className) === 'B' ? implemented : stubbed).add(node.className);
       } catch (err) {
         console.error(`Failed to build ${node.className} (${node.id}):`, err);
@@ -174,8 +183,10 @@ export class Engine {
 
   async start(): Promise<void> {
     this.running = true;
-    if (this.ctx instanceof AudioContext) await this.ctx.resume();
-    scheduler.start(); // arm every timed control object (metro, delay, …)
+    if (!this.nested) {
+      if (this.ctx instanceof AudioContext) await this.ctx.resume();
+      scheduler.start(); // arm every timed control object (metro, delay, …)
+    }
     for (const n of this.nodes.values()) n.start?.();
     this.startFrameLoop(); // begin pumping video frames (jit.grab → matrix → window)
   }
@@ -184,6 +195,7 @@ export class Engine {
     this.running = false;
     this.stopFrameLoop();
     for (const n of this.nodes.values()) n.stop?.();
+    if (this.nested) return;
     scheduler.stop();
     if (this.ctx instanceof AudioContext) await this.ctx.suspend();
   }
@@ -239,7 +251,7 @@ export class Engine {
 
     let node: MaxNode;
     try {
-      node = factory(ir.args, { ctx: this.ctx });
+      node = factory(ir.args, { ctx: this.ctx, node: ir });
     } catch (err) {
       console.error(`Failed to build ${ir.className} (${ir.id}):`, err);
       return { tier };

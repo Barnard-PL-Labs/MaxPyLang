@@ -33,6 +33,77 @@ describe('control objects', () => {
     expect(vals()).toEqual([0, 1, 2, 3, 0, 1]);
   });
 
+  describe('counter, the rest of its inlets and outlets', () => {
+    /** Every outlet, as [outlet, value] in the order they fire. */
+    function counter(...args: number[]) {
+      const node = getFactory('counter')!(args, { ctx });
+      const fired: [number, Msg[number]][] = [];
+      for (let i = 0; i < 4; i++) node.onControlOut!(i, (m) => fired.push([i, m[0]]));
+      const send = (m: Msg, inlet = 0) => node.controlIns![inlet]!(m);
+      return { fired, send, counts: () => fired.filter(([i]) => i === 0).map(([, v]) => v) };
+    }
+
+    it('flags the carry (1 on the max, 0 after) and counts carries, right to left', () => {
+      const { fired, send } = counter(0, 2);
+      for (let i = 0; i < 4; i++) send(bang);
+      expect(fired).toEqual([
+        [0, 0], [0, 1],
+        [3, 1], [2, 1], [0, 2], // hits max: carry count, carry flag, then the count
+        [2, 0], [0, 0], // leaves it
+      ]);
+    });
+
+    it('inlet 3 jumps and outputs now; a number below min is output once, then counting resumes', () => {
+      // The drum patch resets its step counter with -1 so the next tick is step 0.
+      const { counts, send } = counter(0, 11);
+      send(bang);
+      send(bang);
+      send([-1], 3);
+      send(bang);
+      send(bang);
+      expect(counts()).toEqual([0, 1, -1, 0, 1]);
+    });
+
+    it('inlet 2 sets what the next bang outputs; inlet 4 sets the max silently', () => {
+      const { counts, send } = counter(0, 10);
+      send([7], 2);
+      send([8], 4);
+      send(bang);
+      send(bang);
+      send(bang);
+      expect(counts()).toEqual([7, 8, 0]);
+    });
+
+    it('counts down, and up-and-down, with the direction arg or inlet 1', () => {
+      const down = counter(1, 0, 2);
+      for (let i = 0; i < 4; i++) down.send(bang);
+      expect(down.counts()).toEqual([2, 1, 0, 2]);
+      const updown = counter(0, 2);
+      updown.send([2], 1);
+      for (let i = 0; i < 6; i++) updown.send(bang);
+      expect(updown.counts()).toEqual([0, 1, 2, 1, 0, 1]);
+    });
+
+    it('an int in the left inlet counts, like a bang (the carry outlet feeds a bar counter this way)', () => {
+      const { counts, send } = counter(0, 13);
+      send([5]);
+      send([6]);
+      expect(counts()).toEqual([0, 1]);
+    });
+
+    it('left-inlet messages: set, jam, min, inc, dec', () => {
+      const { counts, send } = counter(0, 5);
+      send(['set', 3]);
+      send(bang);
+      send(['jam', 1]);
+      send(['jam', 9]); // out of range: ignored
+      send(['inc']);
+      send(['dec']);
+      send(['min', 2]);
+      expect(counts()).toEqual([3, 1, 2, 1, 2]);
+    });
+  });
+
   it('random stays within [0, N) and respects inlet 1', () => {
     const { out, vals, send } = build('random', 4);
     for (let i = 0; i < 20; i++) send(bang);

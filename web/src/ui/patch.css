@@ -96,3 +96,75 @@ input[type=number].max-widget {
    sets appearance:none, which switches the UA's accent off). Both were dead weight, and
    leaving them out is what makes this file the single definition rather than the union
    of three historical ones. */
+
+/* ── playlist~ ──
+   One row per clip. The badge says where the clip's audio is coming from — the file
+   itself, a built-in stand-in (≈ clap), or nowhere — and the native <select> sits over
+   it, invisible, so a click on the badge opens the full menu without the menu's longest
+   label setting the row's width. */
+.max-playlist {
+  display: flex; flex-direction: column; gap: 2px; height: 100%; box-sizing: border-box;
+  padding: 2px; background: var(--sunken); border: 1px solid var(--btn-border); border-radius: 3px;
+  font: 10px ui-monospace, Menlo, monospace; color: var(--ink);
+}
+.max-playlist .pl-clip {
+  flex: 1; min-height: 20px; display: flex; align-items: center; gap: 4px; padding: 0 3px;
+  border-radius: 2px; background: var(--box-fill); border-left: 3px solid var(--signal);
+}
+.max-playlist .pl-clip.pl-missing { border-left-color: var(--err); }
+.max-playlist .pl-clip.pl-sub { border-left-color: var(--warn-ink); }
+.max-playlist .pl-clip.pl-loading { border-left-color: var(--faint); }
+.max-playlist .pl-clip.is-playing { background: var(--go-tint, var(--row-active)); }
+.max-playlist .pl-clip.is-drop { outline: 2px dashed var(--signal); outline-offset: -2px; }
+.max-playlist .pl-play {
+  flex: none; width: 16px; height: 16px; padding: 0; font-size: 8px; line-height: 1;
+  border-radius: 50%; cursor: pointer;
+}
+.max-playlist .pl-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.max-playlist .pl-badge {
+  position: relative; flex: none; padding: 1px 4px; border-radius: 8px; white-space: nowrap;
+  background: var(--btn-bg); border: 1px solid var(--btn-border); color: var(--dim);
+}
+.max-playlist .pl-missing .pl-badge { color: var(--err); border-color: var(--err); }
+.max-playlist .pl-sub .pl-badge { color: var(--warn-ink); background: var(--warn-tint, transparent); }
+.max-playlist .pl-badge::after { content: ' ▾'; }
+.max-playlist .pl-menu { position: absolute; inset: 0; width: 100%; opacity: 0; cursor: pointer; font-size: 12px; }
+.max-playlist .pl-empty { color: var(--dim); padding: 2px 4px; }
+
+/* ── live.gain~ ──
+   Two meters behind a transparent fader, like Live's own. `--level` (0..1) is set per
+   meter by the object, ~20 times a second. */
+.max-livegain {
+  display: flex; gap: 4px; height: 100%; box-sizing: border-box; padding: 3px;
+  background: var(--sunken); border: 1px solid var(--btn-border); border-radius: 3px;
+  font: 10px ui-monospace, Menlo, monospace; color: var(--dim);
+}
+.max-livegain.is-horizontal { flex-direction: column; }
+.max-livegain.is-vertical { flex-direction: column-reverse; align-items: center; }
+.max-livegain .lg-track { position: relative; flex: 1; display: flex; gap: 2px; }
+.max-livegain.is-horizontal .lg-track { flex-direction: column; justify-content: center; }
+.max-livegain.is-vertical .lg-track { flex-direction: row; width: 24px; }
+.max-livegain .lg-meter { flex: 1; background: var(--track); border-radius: 1px; position: relative; overflow: hidden; }
+.max-livegain .lg-meter::after {
+  content: ''; position: absolute; left: 0; bottom: 0;
+  background: linear-gradient(to right, var(--go), var(--warn-ink) 80%, var(--err));
+}
+.max-livegain.is-horizontal .lg-meter::after { top: 0; width: calc(var(--level, 0) * 100%); }
+.max-livegain.is-vertical .lg-meter::after {
+  width: 100%; height: calc(var(--level, 0) * 100%);
+  background: linear-gradient(to top, var(--go), var(--warn-ink) 80%, var(--err));
+}
+.max-livegain .lg-fader {
+  position: absolute; inset: 0; width: 100%; height: 100%; margin: 0;
+  -webkit-appearance: none; appearance: none; background: transparent; cursor: pointer;
+}
+.max-livegain.is-vertical .lg-fader { writing-mode: vertical-lr; direction: rtl; }
+.max-livegain .lg-fader::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 8px; height: 100%; min-height: 14px;
+  background: var(--ink); border-radius: 1px; box-shadow: 0 0 0 1px var(--sunken);
+}
+.max-livegain.is-vertical .lg-fader::-webkit-slider-thumb { width: 100%; height: 6px; min-height: 0; }
+.max-livegain .lg-fader::-moz-range-thumb {
+  width: 8px; height: 14px; background: var(--ink); border: 0; border-radius: 1px;
+}
+.max-livegain .lg-readout { text-align: center; white-space: nowrap; }

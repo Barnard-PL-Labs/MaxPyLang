@@ -60,6 +60,7 @@ import { Engine, type BuildReport } from '../engine/engine';
 import { isSupported, type MaxNode } from '../engine/registry';
 import { renderTone } from '../engine/selftest';
 import { parseMaxPat } from '../parser/maxpat';
+import { addSampleFile } from '../objects/audio/samples';
 import { decodeMax5Patcher } from '../parser/max5-clipboard';
 import { EMPTY_PATCHER_HEADER, patchToMaxPat } from '../parser/write-maxpat';
 import { preloadWorklets } from '../runtime/worklet';
@@ -828,6 +829,39 @@ async function newFromClipboard(): Promise<void> {
   }
 }
 
+/**
+ * Sound files dropped on the canvas: make each available under its own name, which is
+ * how a patch refers to them — every playlist~ clip with that file name picks it up.
+ * A file no clip names is still kept, and appears in every clip's menu.
+ */
+async function addAudioFiles(files: File[]): Promise<void> {
+  const clipNames = new Set<string>();
+  for (const node of doc?.nodes() ?? []) {
+    const clips = (node.raw?.data as { clips?: { filename?: unknown }[] } | undefined)?.clips;
+    if (node.className !== 'playlist~' || !Array.isArray(clips)) continue;
+    for (const c of clips) if (typeof c?.filename === 'string') clipNames.add(c.filename.toLowerCase());
+  }
+  try {
+    for (const file of files) addSampleFile(file.name, await file.arrayBuffer());
+  } catch (err) {
+    status(`Could not read that audio file: ${(err as Error).message}`, 'error');
+    return;
+  }
+  const matched = files.filter((f) => clipNames.has(f.name.toLowerCase())).map((f) => f.name);
+  const unmatched = files.filter((f) => !clipNames.has(f.name.toLowerCase())).map((f) => f.name);
+  status(
+    [
+      matched.length ? `Loaded ${matched.join(', ')} — playing in the clips that name it.` : '',
+      unmatched.length
+        ? `Loaded ${unmatched.join(', ')}; no clip is named that — pick it from a clip's menu in 🔒 Run mode.`
+        : '',
+    ]
+      .filter(Boolean)
+      .join(' '),
+    'ok'
+  );
+}
+
 async function openFile(file: File): Promise<void> {
   try {
     await loadPatch(JSON.parse(await file.text()), file.name);
@@ -1173,6 +1207,7 @@ restoreDismissBtn.addEventListener('click', () => {
 // only the kinds that have a handler here.
 installCanvasDrop(canvasEl, {
   onFile: (file) => void openFile(file),
+  onAudio: (files) => void addAudioFiles(files),
   onObject: (name, at) => placeObject(name, toPatch(at)),
   onFragment: (text, at) => {
     input?.insertFragment(text, toPatch(at));

@@ -5,7 +5,7 @@
 //     object, with correct inlet/outlet counts + domains, no behavior, never throws.
 // A patch therefore never contains an "unknown" object — only implemented vs stubbed.
 
-import type { ArgValue } from '../ir/types';
+import type { ArgValue, IRNode } from '../ir/types';
 import type { Msg } from '../runtime/atoms';
 import manifest from '../generated/manifest.json';
 
@@ -16,6 +16,14 @@ export type ControlValue = Msg;
 /** Context handed to every factory. Offline (self-test) or live share the same API. */
 export interface BuildContext {
   ctx: BaseAudioContext;
+  /**
+   * The box being built, when the engine has one. Most objects need only their args,
+   * but some keep their real state in the saved box dict (`node.raw`) rather than in
+   * the box text: a playlist~'s clips, a live.gain~'s initial value, a subpatcher's
+   * whole inner patch. Absent when a factory is called directly (tests, fuzzing), so
+   * every reader must have a default.
+   */
+  node?: IRNode;
 }
 
 /**

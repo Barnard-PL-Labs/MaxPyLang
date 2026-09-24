@@ -74,21 +74,145 @@ register('delay', (args) => {
 
 // ── Generators ──────────────────────────────────────────────────────────────
 
-// counter [min] [max] : on each bang, output the current count, then advance,
-// wrapping min..max. One arg = max (min 0); two args = min, max.
+// counter : Max's counter, all five inlets and four outlets (per its reference page).
+//
+//   args      one = max; two = min max; three = direction min max. Default 0..2^31-1, up.
+//   inlet 0   bang / int / next: output the count, then step. Also set, goto, jam, min,
+//             setmin, max, inc, dec, up, down, updown, flags, carrybang, carryint.
+//   inlet 1   direction: 0 up, 1 down, 2 up-and-down; bang flips it.
+//   inlet 2   int: the next bang outputs this number; bang: the next bang outputs min.
+//   inlet 3   int: jump to this number and output it NOW; bang: the same with min.
+//   inlet 4   int: set the maximum, silently; bang: jump to max and output it.
+//   outlets   count, underflow flag, carry flag, carry count — sent right to left.
+//
+// The flags are 1 when the count lands on the limit and 0 on the step after (or a bang
+// each time, after `carrybang`). A number below min in inlet 2 or 3 is output once and
+// the count then carries on up into the range — Max's "temporary minimum" — which is
+// how a patch resets a counter to -1 so that its next tick is 0.
 register('counter', (args) => {
   const o = makeOutlets();
-  const min = args.length >= 2 ? num(args[0], 0) : 0;
-  const max = args.length >= 2 ? num(args[1], 127) : num(args[0], 127);
-  let count = min;
+  const n = args.map((a) => Math.trunc(num(a, 0)));
+  let dir = 0;
+  let min = 0;
+  let max = 2147483647;
+  if (args.length === 1) max = n[0];
+  else if (args.length === 2) [min, max] = n;
+  else if (args.length >= 3) [dir, min, max] = n;
+  dir = [0, 1, 2].includes(dir) ? dir : 0;
+
+  let count = dir === 1 ? Math.max(min, max) : min; // what the next bang outputs
+  let last: number | undefined; // what the last output was
+  let goingDown = dir === 1;
+  let carries = 0;
+  let atMax = false;
+  let atMin = false;
+  let carryBang = false;
+  const hi = (): number => Math.max(min, max);
+
+  /** Where the count goes after outputting `v`. */
+  const after = (v: number): number => {
+    if (dir === 0) return v >= hi() ? min : v + 1;
+    if (dir === 1) return v <= min ? hi() : v - 1;
+    if (hi() === min) return min;
+    if (v >= hi()) goingDown = true;
+    else if (v <= min) goingDown = false;
+    return goingDown ? v - 1 : v + 1;
+  };
+
+  const flag = (outlet: number, on: boolean): void => o.emit(outlet, on && carryBang ? ['bang'] : [on ? 1 : 0]);
+
+  /** Output `v` with its flags (right to left), then move the count on from it. */
+  const emit = (v: number): void => {
+    const carry = v === hi() && dir !== 1;
+    const under = v === min && dir !== 0;
+    if (carry) {
+      carries += 1;
+      o.emit(3, [carries]);
+      flag(2, true);
+    } else if (atMax && !carryBang) flag(2, false);
+    if (under) flag(1, true);
+    else if (atMin && !carryBang) flag(1, false);
+    atMax = carry;
+    atMin = under;
+    last = v;
+    count = after(v);
+    o.emit(0, [v]);
+  };
+
+  const arg = (m: Msg): number | undefined => {
+    const v = firstNum(m.slice(typeof m[0] === 'string' ? 1 : 0));
+    return v === undefined ? undefined : Math.trunc(v);
+  };
+
+  const left = (m: Msg): void => {
+    if (isBang(m) || typeof m[0] === 'number' || m[0] === 'next') return emit(count);
+    const v = arg(m);
+    switch (m[0]) {
+      case 'set':
+      case 'goto':
+        if (v !== undefined) count = v;
+        return;
+      case 'jam':
+        if (v !== undefined && v >= min && v <= hi()) emit(v);
+        return;
+      case 'min':
+        if (v === undefined) return;
+        min = Math.min(v, hi());
+        return emit(min);
+      case 'setmin':
+        if (v !== undefined) min = v;
+        return;
+      case 'max':
+        if (v !== undefined) max = v;
+        return;
+      case 'inc':
+        return emit(last === undefined || last >= hi() ? min : last + 1);
+      case 'dec':
+        return emit(last === undefined || last <= min ? hi() : last - 1);
+      case 'up':
+      case 'down':
+      case 'updown':
+        dir = m[0] === 'up' ? 0 : m[0] === 'down' ? 1 : 2;
+        goingDown = dir === 1;
+        return;
+      case 'carrybang':
+        carryBang = true;
+        return;
+      case 'carryint':
+        carryBang = false;
+        return;
+      case 'flags':
+        carryBang = Number(m[1]) === 1;
+        return;
+    }
+  };
+
   return {
     signalIns: [],
     signalOuts: [],
     controlIns: [
+      left,
       (m) => {
-        if (!isTrigger(m)) return;
-        o.emit(0, [count]);
-        count = count >= max ? min : count + 1;
+        const v = arg(m);
+        if (v !== undefined && [0, 1, 2].includes(v)) dir = v;
+        else if (isBang(m)) dir = dir === 0 ? 1 : dir === 1 ? 0 : dir;
+        if (dir === 2 && isBang(m)) goingDown = !goingDown;
+        else goingDown = dir === 1;
+      },
+      (m) => {
+        const v = arg(m);
+        if (v !== undefined) count = v;
+        else if (isBang(m)) count = min;
+      },
+      (m) => {
+        const v = arg(m);
+        if (v !== undefined) emit(v);
+        else if (isBang(m)) emit(min);
+      },
+      (m) => {
+        const v = arg(m);
+        if (v !== undefined) max = v;
+        else if (isBang(m)) emit(hi());
       },
     ],
     onControlOut: o.onControlOut,

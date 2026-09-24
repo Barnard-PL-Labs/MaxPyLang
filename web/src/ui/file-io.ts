@@ -34,6 +34,9 @@ export const MAXOBJECT_MIME = 'application/x-maxobject';
 /** Extensions we offer to open. `.json` because a Max patch is JSON and people rename. */
 const PATCH_EXTENSIONS = /\.(maxpat|json)$/i;
 
+/** Sound files, routed to onAudio rather than opened as a patch. */
+const AUDIO_EXTENSIONS = /\.(wav|wave|aif|aiff|aifc|mp3|m4a|aac|ogg|oga|flac|caf)$/i;
+
 /** The picker's file-type filter, in the one shape both pickers take. */
 const PATCH_TYPES = [
   { description: 'Max patch', accept: { 'application/json': ['.maxpat', '.json'] } },
@@ -71,6 +74,11 @@ export interface DropPoint {
 export interface CanvasDropHandlers {
   /** A .maxpat/.json file was dropped. The whole document is being replaced. */
   onFile?(file: File, at: DropPoint): void | Promise<void>;
+  /**
+   * Audio files were dropped (sound files for playlist~ and friends). All of them, since
+   * a patch usually names several; takes precedence over onFile when any are present.
+   */
+  onAudio?(files: File[], at: DropPoint): void | Promise<void>;
   /** An object name dragged out of the palette — create that box at `at`. */
   onObject?(name: string, at: DropPoint): void;
   /**
@@ -349,7 +357,7 @@ export function installCanvasDrop(el: HTMLElement, handlers: CanvasDropHandlers)
   const wanted = (e: DragEvent): 'object' | 'file' | 'text' | null => {
     const kind = payloadKind(e.dataTransfer);
     if (kind === 'object' && handlers.onObject) return kind;
-    if (kind === 'file' && handlers.onFile) return kind;
+    if (kind === 'file' && (handlers.onFile || handlers.onAudio)) return kind;
     if (kind === 'text' && handlers.onFragment) return kind;
     return null;
   };
@@ -388,8 +396,13 @@ export function installCanvasDrop(el: HTMLElement, handlers: CanvasDropHandlers)
       return;
     }
     if (kind === 'file') {
+      const audio = Array.from(dt.files ?? []).filter((f) => AUDIO_EXTENSIONS.test(f.name) || f.type.startsWith('audio/'));
+      if (audio.length && handlers.onAudio) {
+        void handlers.onAudio(audio, at);
+        return;
+      }
       const file = patchFile(dt);
-      if (file) void handlers.onFile!(file, at);
+      if (file && handlers.onFile) void handlers.onFile(file, at);
       return;
     }
     const text = dt.getData('text/plain').trim();
