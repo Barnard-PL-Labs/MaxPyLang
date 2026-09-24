@@ -169,6 +169,7 @@ const stopBtn = el<HTMLButtonElement>('stop');
 const selftestBtn = el<HTMLButtonElement>('selftest');
 
 const newBtn = el<HTMLButtonElement>('file-new');
+const newFromClipboardBtn = el<HTMLButtonElement>('file-new-clipboard');
 const openBtn = el<HTMLButtonElement>('file-open');
 const saveBtn = el<HTMLButtonElement>('file-save');
 const saveAsBtn = el<HTMLButtonElement>('file-save-as');
@@ -778,6 +779,47 @@ async function loadPatch(json: unknown, name: string): Promise<void> {
   await adopt(await PatchDoc.open(parseMaxPat(json)), name);
 }
 
+/**
+ * Max's File > New From Clipboard: a fresh document built from whatever patch JSON is on
+ * the clipboard. Accepts a whole .maxpat (`{patcher: …}`) or a bare `{boxes, lines}`
+ * fragment — the shape this patcher's own ⌘C writes — which is wrapped in an empty
+ * patcher header so it opens as a document of its own rather than pasting into this one.
+ */
+async function newFromClipboard(): Promise<void> {
+  let text: string;
+  try {
+    text = (await navigator.clipboard.readText()).trim();
+  } catch {
+    status('Could not read the clipboard — the browser did not allow it.', 'error');
+    return;
+  }
+  let json: unknown;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    status('The clipboard does not hold a Max patch (expected .maxpat JSON).', 'error');
+    return;
+  }
+  const root = json as { patcher?: unknown; boxes?: unknown; lines?: unknown } | null;
+  if (root && typeof root === 'object' && !root.patcher && Array.isArray(root.boxes)) {
+    json = {
+      patcher: {
+        ...EMPTY_PATCHER_HEADER,
+        boxes: root.boxes,
+        lines: Array.isArray(root.lines) ? root.lines : [],
+      },
+    };
+  } else if (!root || typeof root !== 'object' || !root.patcher) {
+    status('The clipboard does not hold a Max patch (expected .maxpat JSON).', 'error');
+    return;
+  }
+  try {
+    await loadPatch(json, 'Untitled.maxpat');
+  } catch (err) {
+    status(`Could not open the clipboard patch: ${(err as Error).message}`, 'error');
+  }
+}
+
 async function openFile(file: File): Promise<void> {
   try {
     await loadPatch(JSON.parse(await file.text()), file.name);
@@ -1090,6 +1132,7 @@ stopBtn.addEventListener('click', () => {
 selftestBtn.addEventListener('click', () => void selftest());
 
 newBtn.addEventListener('click', () => void newPatch());
+newFromClipboardBtn.addEventListener('click', () => void newFromClipboard());
 openBtn.addEventListener('click', () => void openPatch());
 saveBtn.addEventListener('click', save);
 saveAsBtn.addEventListener('click', saveAs);
