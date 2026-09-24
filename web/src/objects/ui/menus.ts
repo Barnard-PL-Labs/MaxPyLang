@@ -11,7 +11,7 @@
 
 import { num, register, type MaxNode } from '../../engine/registry';
 import { makeOutlets } from '../../runtime/outlets';
-import { firstNum, isBang, nums, type Atom } from '../../runtime/atoms';
+import { firstNum, isBang, nums, type Atom, type Msg } from '../../runtime/atoms';
 
 const HAS_DOM = typeof document !== 'undefined';
 
@@ -93,51 +93,111 @@ function makeSelector(tag: 'select' | 'tabs') {
 register('umenu', makeSelector('select'));
 register('tab', makeSelector('tabs'));
 
-// ── radiogroup : pick exactly one of N buttons ───────────────────────────────
-// One outlet: the selected index (int). A number selects (and clamps to) a button;
-// a bang re-outputs the current selection. First numeric arg = button count.
-register('radiogroup', (args) => {
+// ── radiogroup : a column of radio buttons or check boxes ────────────────────
+// Per Max's reference page. The group's shape lives in the saved box, not its text:
+// `size` buttons (default 2), `offset` px apart (default 16), `value` selected,
+// `itemtype` 0 = radio buttons / 1 = check boxes, `flagmode` (check boxes as the bits of
+// one int), and a per-item `disabled` list. A box typed fresh has none of that, so the
+// first numeric arg still gives the button count.
+//
+//   radio mode   int: select that button (none if out of range, e.g. -1) and output the
+//                int as given; bang: output the selection; set N: select silently.
+//   check mode   list of 0/1: set and output; bang: output the list; set: silently.
+//   flag mode    the same as check mode, but as one int whose bits are the boxes.
+//   both         disableitem / enableitem N…: grey an item out (it ignores clicks only).
+register('radiogroup', (args, build) => {
+  const raw = build?.node?.raw ?? {};
   const o = makeOutlets();
-  const count = Math.max(0, Math.round(num(args[0], 0)));
-  let index = 0;
-  const clampIdx = (n: number): number => {
-    const r = Math.round(n);
-    return count > 0 ? Math.max(0, Math.min(count - 1, r)) : Math.max(0, r);
+  const size = Math.max(1, Math.round(num(raw.size as number, num(args[0], 2))));
+  const offset = Math.max(8, num(raw.offset as number, 16));
+  const checkMode = Number(raw.itemtype) === 1;
+  const flagMode = checkMode && Number(raw.flagmode) === 1;
+  const disabled = new Set<number>(
+    Array.isArray(raw.disabled) ? raw.disabled.flatMap((d, i) => (Number(d) ? [i] : [])) : []
+  );
+
+  let selected = Math.round(num(raw.value as number, 0)); // radio mode
+  const states = new Array<number>(size).fill(0); // check mode
+  if (checkMode) {
+    const v = Array.isArray(raw.value) ? raw.value.map(Number) : [];
+    if (flagMode && v.length <= 1) fromBits(v[0] ?? 0);
+    else v.slice(0, size).forEach((x, i) => (states[i] = x ? 1 : 0));
+  }
+
+  function fromBits(n: number): void {
+    for (let i = 0; i < size; i++) states[i] = (Math.trunc(n) >> i) & 1;
+  }
+  const bits = (): number => states.reduce((acc, on, i) => acc | (on << i), 0);
+  const output = (): void => {
+    if (!checkMode) o.emit(0, [selected]);
+    else o.emit(0, flagMode ? [bits()] : [...states]);
   };
-  const emit = (): void => o.emit(0, [index]);
-  const setIndex = (n: number, doEmit = true): void => {
-    index = clampIdx(n);
-    if (radios[index]) radios[index].checked = true;
-    if (doEmit) emit();
+
+  let items: HTMLElement[] = [];
+  const paint = (): void => {
+    items.forEach((item, i) => {
+      const on = checkMode ? states[i] === 1 : selected === i;
+      item.classList.toggle('is-on', on);
+      item.classList.toggle('is-disabled', disabled.has(i));
+      item.setAttribute('aria-checked', String(on));
+    });
+  };
+
+  const click = (i: number): void => {
+    if (disabled.has(i)) return;
+    if (checkMode) states[i] = states[i] ? 0 : 1;
+    else selected = i;
+    paint();
+    output();
   };
 
   let el: HTMLElement | undefined;
-  const radios: HTMLInputElement[] = [];
   if (HAS_DOM) {
     const wrap = document.createElement('div');
-    const name = `radiogroup-${Math.random().toString(36).slice(2)}`;
-    for (let i = 0; i < Math.max(count, 1); i++) {
-      const r = document.createElement('input');
-      r.type = 'radio';
-      r.name = name;
-      if (i === 0) r.checked = true;
-      r.addEventListener('change', () => setIndex(i));
-      radios.push(r);
-      wrap.appendChild(r);
-    }
+    wrap.className = `max-radiogroup${checkMode ? ' is-check' : ''}`;
+    wrap.setAttribute('role', checkMode ? 'group' : 'radiogroup');
+    items = Array.from({ length: size }, (_, i) => {
+      const item = document.createElement('div');
+      item.className = 'rg-item';
+      item.setAttribute('role', checkMode ? 'checkbox' : 'radio');
+      item.style.top = `${i * offset}px`;
+      item.style.height = `${offset}px`;
+      item.title = String(i);
+      item.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        click(i);
+      });
+      wrap.appendChild(item);
+      return item;
+    });
+    paint();
     el = wrap;
   }
+
+  const message = (m: Msg): void => {
+    if (isBang(m)) return output();
+    const head = m[0];
+    if (head === 'disableitem' || head === 'enableitem') {
+      for (const i of nums(m.slice(1))) head === 'disableitem' ? disabled.add(i) : disabled.delete(i);
+      return paint();
+    }
+    const silent = head === 'set';
+    const values = nums(silent ? m.slice(1) : m);
+    if (!values.length) return;
+    if (!checkMode) selected = Math.round(values[0]);
+    else if (flagMode && values.length === 1) fromBits(values[0]);
+    else values.slice(0, size).forEach((v, i) => (states[i] = v ? 1 : 0));
+    paint();
+    if (!silent) {
+      if (checkMode && !flagMode) o.emit(0, values.map((v) => (v ? 1 : 0)));
+      else o.emit(0, [Math.round(values[0])]);
+    }
+  };
 
   return {
     signalIns: [],
     signalOuts: [],
-    controlIns: [
-      (m) => {
-        if (isBang(m)) { emit(); return; }
-        const n = firstNum(m);
-        if (n !== undefined) setIndex(n);
-      },
-    ],
+    controlIns: [message],
     onControlOut: o.onControlOut,
     el,
   };

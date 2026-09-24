@@ -70,13 +70,40 @@ describe('menus batch (UI widgets)', () => {
   }
 
   // ── radiogroup : single-outlet index selector ───────────────────────────────
-  it('radiogroup sets, clamps to its button count, and re-outputs on bang', () => {
-    const { outs, listen, send } = build('radiogroup', 4); // 4 buttons -> [0,3]
+  it('radiogroup selects and outputs an int as given, and re-outputs on bang', () => {
+    // Max's reference: "An integer sets the radio button selection and outputs the input
+    // value … a negative number indicates that no buttons will be selected." No clamping.
+    const { outs, listen, send } = build('radiogroup', 4);
     listen(0);
     send([2]);
-    send([10]); // clamped to 3
-    send(['bang']); // re-output current (3)
-    expect(outs[0]).toEqual([[2], [3], [3]]);
+    send([-1]);
+    send(['bang']);
+    send(['set', 3]); // silent
+    send(['bang']);
+    expect(outs[0]).toEqual([[2], [-1], [-1], [3]]);
+  });
+
+  it('radiogroup reads size, value and check-box mode from the saved box', () => {
+    const raw = (fields: Record<string, unknown>) => ({ ctx, node: { raw: fields } as never });
+    const radio = getFactory('radiogroup')!([], raw({ size: 14, value: 1, offset: 18 }));
+    const heard: Msg[] = [];
+    radio.onControlOut!(0, (m) => heard.push(m));
+    radio.controlIns![0]!(['bang']);
+    expect(heard).toEqual([[1]]);
+
+    const check = getFactory('radiogroup')!([], raw({ size: 3, itemtype: 1, value: [1, 0, 1] }));
+    const checked: Msg[] = [];
+    check.onControlOut!(0, (m) => checked.push(m));
+    check.controlIns![0]!(['bang']);
+    check.controlIns![0]!([0, 1, 1]);
+    expect(checked).toEqual([[1, 0, 1], [0, 1, 1]]);
+
+    const flags = getFactory('radiogroup')!([], raw({ size: 5, itemtype: 1, flagmode: 1 }));
+    const flagged: Msg[] = [];
+    flags.onControlOut!(0, (m) => flagged.push(m));
+    flags.controlIns![0]!([19]); // 10011: boxes 1, 2 and 5
+    flags.controlIns![0]!(['bang']);
+    expect(flagged).toEqual([[19], [19]]);
   });
 
   // ── matrixctrl : grid cells emit [col row value] ─────────────────────────────

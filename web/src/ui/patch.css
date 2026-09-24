@@ -168,3 +168,20 @@ input[type=number].max-widget {
   width: 8px; height: 14px; background: var(--ink); border: 0; border-radius: 1px;
 }
 .max-livegain .lg-readout { text-align: center; white-space: nowrap; }
+
+/* ── radiogroup ──
+   One item per `offset` px, positioned by the object (it knows the spacing Max saved),
+   drawn as a ring with a dot — or a square with a tick in check-box mode. */
+.max-radiogroup { position: relative; height: 100%; }
+.max-radiogroup .rg-item { position: absolute; left: 0; right: 0; cursor: pointer; }
+.max-radiogroup .rg-item::before {
+  content: ''; position: absolute; left: 2px; top: 50%; width: 10px; height: 10px; margin-top: -6px;
+  border: 1px solid var(--ink); border-radius: 50%; background: var(--sunken); box-sizing: content-box;
+}
+.max-radiogroup.is-check .rg-item::before { border-radius: 2px; }
+.max-radiogroup .rg-item.is-on::after {
+  content: ''; position: absolute; left: 5px; top: 50%; width: 6px; height: 6px; margin-top: -3px;
+  border-radius: 50%; background: var(--control);
+}
+.max-radiogroup.is-check .rg-item.is-on::after { border-radius: 1px; }
+.max-radiogroup .rg-item.is-disabled { cursor: default; opacity: 0.35; }

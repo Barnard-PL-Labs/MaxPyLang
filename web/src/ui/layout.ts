@@ -148,6 +148,9 @@ export function boxSize(node: IRNode, widget?: HTMLElement): [number, number] {
   // than a control. WIDGET_SIZE has no entry for it and must not grow one: a fixed width
   // would make every `1 2 3` as wide as the longest message in the patch.
   if (node.className === 'message') return fromText();
+  // A radiogroup's saved rect IS its layout — `offset` px per button — so it is drawn at
+  // exactly that size; stretching it to a minimum width leaves a wide empty panel.
+  if (node.className === 'radiogroup') return [Math.max(node.rect[2], 18), Math.max(node.rect[3], 18)];
   const known = WIDGET_SIZE[node.className];
   if (known) return known;
   if (typeof HTMLCanvasElement !== 'undefined' && widget instanceof HTMLCanvasElement) {
