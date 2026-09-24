@@ -723,7 +723,12 @@ export class Interaction {
     if (this.destroyed || this.mode !== 'edit' || this.editor) return;
     e.preventDefault();
     const target = e.target as Element | null;
-    const id = target?.closest('[data-box]')?.getAttribute('data-box');
+    // Probe the point as well as the target: pointerdown captures the pointer on the
+    // <svg>, and Chrome then aims the click and dblclick that follow at the capturing
+    // element — so for a real mouse the target is the <svg> itself, never the box, and
+    // a double-click meant to edit a box used to drop a new empty one on top of it.
+    const id =
+      target?.closest('[data-box]')?.getAttribute('data-box') ?? this.view.hitBox(e.clientX, e.clientY);
     if (id && this.doc.node(id)) {
       this.editBox(id);
       return;
@@ -732,7 +737,8 @@ export class Interaction {
     // double-click that landed exactly on a patch cord used to fall through to "make a
     // box here" — a phantom empty box on top of the cord, from a gesture that in Max
     // does nothing. Select it instead, which is what a single click already does.
-    const key = target?.closest('[data-edge]')?.getAttribute('data-edge');
+    const key =
+      target?.closest('[data-edge]')?.getAttribute('data-edge') ?? this.view.hitCord(e.clientX, e.clientY);
     if (key) {
       this.view.selectEdges([key], e.shiftKey);
       return;

@@ -151,6 +151,16 @@ export function boxSize(node: IRNode, widget?: HTMLElement): [number, number] {
   // A radiogroup's saved rect IS its layout — `offset` px per button — so it is drawn at
   // exactly that size; stretching it to a minimum width leaves a wide empty panel.
   if (node.className === 'radiogroup') return [Math.max(node.rect[2], 18), Math.max(node.rect[3], 18)];
+  // A comment wraps to the width it was saved at, over as many lines as it was saved with.
+  // Never shorter than its text needs, since a retyped comment comes back one line high:
+  // ~6.2px per character of 12px Arial, 15.6px per line, as .max-comment sets it.
+  if (node.className === 'comment' && node.rect[2] > 0) {
+    const w = Math.max(node.rect[2], 20);
+    const perLine = Math.max(1, Math.floor((w - 8) / 6.2));
+    const prose = node.text.replace(/^comment(\s+|$)/, '');
+    const lines = prose.split('\n').reduce((n, l) => n + Math.max(1, Math.ceil(l.length / perLine)), 0);
+    return [w, Math.max(node.rect[3], 20, Math.ceil(lines * 15.6 + 4))];
+  }
   const known = WIDGET_SIZE[node.className];
   if (known) return known;
   if (typeof HTMLCanvasElement !== 'undefined' && widget instanceof HTMLCanvasElement) {

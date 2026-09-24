@@ -748,6 +748,7 @@ export class PatcherView {
     view.g.setAttribute(
       'class',
       `box box-${domain}${widget ? ' box-widget' : ''}${stub ? ' node-stub' : ''}` +
+        `${node.className === 'comment' ? ' box-comment' : ''}` +
         `${node.known === false ? ' box-unknown' : ''}${this.sel.has(node.id) ? ' selected' : ''}`
     );
     view.accent.setAttribute('fill', DOMAIN_COLOR[domain] ?? NEUTRAL);

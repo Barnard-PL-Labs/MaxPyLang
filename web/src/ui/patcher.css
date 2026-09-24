@@ -110,6 +110,12 @@
 .patcher .node-stub .box-body { fill: var(--stub-fill); stroke: var(--stub-stroke); }
 .patcher .node-stub .box-label { fill: var(--stub-ink); }
 .patcher .box-unknown .box-body { stroke: var(--unknown-stroke); }
+/* A comment is bare text, as in Max: no box and no domain strip. In edit mode a faint
+   outline on hover shows there is something to grab; a selected one gets the normal
+   selection stroke (.box.selected, below, outranks this). */
+.patcher .box-comment .box-body { fill: transparent; stroke: none; }
+.patcher .box-comment .box-accent { display: none; }
+.patcher.mode-edit .box-comment:hover .box-body { stroke: var(--box-stroke); stroke-dasharray: 3 3; }
 
 /* Domain colour, one source. The cord line, the box's accent bar and an outlet's nub all
    mean "this port carries audio / messages / frames", so they are all keyed off the same

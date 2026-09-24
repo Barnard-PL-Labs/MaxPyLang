@@ -88,10 +88,40 @@ const chan = (a: Atom | undefined, fallback: number): number => {
 };
 
 // comment : static text label.
-register('comment', makePassive(1, (el, args) => {
-  el.textContent = args.join(' ');
-  el.style.cssText = 'width:100%;height:100%;color:#ddd;font:11px monospace;overflow:hidden;';
-}));
+/**
+ * What a comment says. A comment read from a file stores its prose as-is — which may
+ * itself begin with the word "comment" — while one retyped on the canvas is stored as
+ * `comment <prose>` (ui/patcher-input.ts's storedText). The saved box text tells them
+ * apart: text that still matches it is prose, anything else came from the editor.
+ */
+function commentText(text: string | undefined, saved: unknown, args: Atom[]): string {
+  if (!text) return typeof saved === 'string' ? saved : args.join(' ');
+  if (text === saved) return text;
+  return text.replace(/^comment(\s+|$)/, '');
+}
+
+// comment : text on the canvas, drawn the way Max draws it — no box, wrapped to the
+// saved width (styled by `.max-comment` in ui/patch.css, so it follows the theme). The
+// text comes from the box text rather than the parsed args, which would re-spell
+// "9, 10, 11" as numbers. A colour, size or alignment the author saved is kept.
+register('comment', (args, build) => {
+  const raw = build?.node?.raw ?? {};
+  let el: HTMLElement | undefined;
+  if (hasDOM()) {
+    el = document.createElement('div');
+    el.className = 'max-comment';
+    el.textContent = commentText(build?.node?.text, raw.text, args);
+    const rgba = Array.isArray(raw.textcolor) ? raw.textcolor.map(Number) : undefined;
+    if (rgba?.length === 4 && rgba.every(Number.isFinite)) {
+      el.style.color = `rgba(${rgba.slice(0, 3).map((c) => Math.round(c * 255)).join(',')},${rgba[3]})`;
+    }
+    const size = Number(raw.fontsize);
+    if (size > 0) el.style.fontSize = `${size}px`;
+    const justify = ['left', 'center', 'right'][Number(raw.textjustification)];
+    if (justify) el.style.textAlign = justify;
+  }
+  return { signalIns: [], signalOuts: [], controlIns: [() => {}], el } satisfies MaxNode;
+});
 
 // panel : a filled background rectangle.
 register('panel', makePassive(1, (el) => {

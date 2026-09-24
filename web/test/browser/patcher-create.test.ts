@@ -208,4 +208,16 @@ describe('patcher: creating boxes', () => {
     // somebody's object would be data loss dressed up as an edit.
     expect(m.doc.node(node.id)?.text).toBe('cycle~ 440');
   });
+
+  it('a real double-click on a box edits it, although Chrome aims the dblclick at the <svg>', async () => {
+    // pointerdown captures the pointer on the <svg>, and Chrome then targets the click
+    // and dblclick that follow at the capturing element — not at the box under the
+    // pointer. Dispatching on the <svg> is what a real mouse produces.
+    m = await mountPatcher();
+    m.doc.addBox('metro 168', 120, 120);
+    const at = patchToClient(m.view, { x: 130, y: 130 });
+    m.svg.dispatchEvent(new MouseEvent('dblclick', { ...at, bubbles: true, cancelable: true }));
+    expect(m.doc.nodeCount, 'no new box on top of the old one').toBe(1);
+    expect(editorInput(m)?.value).toBe('metro 168');
+  });
 });
