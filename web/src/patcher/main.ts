@@ -60,6 +60,7 @@ import { Engine, type BuildReport } from '../engine/engine';
 import { isSupported, type MaxNode } from '../engine/registry';
 import { renderTone } from '../engine/selftest';
 import { parseMaxPat } from '../parser/maxpat';
+import { decodeMax5Patcher } from '../parser/max5-clipboard';
 import { EMPTY_PATCHER_HEADER, patchToMaxPat } from '../parser/write-maxpat';
 import { preloadWorklets } from '../runtime/worklet';
 import { clearAutosave, installAutosave, loadAutosave } from '../ui/autosave';
@@ -780,9 +781,9 @@ async function loadPatch(json: unknown, name: string): Promise<void> {
 }
 
 /**
- * Max's File > New From Clipboard: a fresh document built from whatever patch JSON is on
- * the clipboard. Accepts a whole .maxpat (`{patcher: …}`) or a bare `{boxes, lines}`
- * fragment — the shape this patcher's own ⌘C writes — which is wrapped in an empty
+ * Max's File > New From Clipboard: a fresh document built from whatever patch is on the
+ * clipboard. Accepts what Max's own copy writes (a compressed `begin_max5_patcher`
+ * block), a whole .maxpat (`{patcher: …}`), or a bare `{boxes, lines}` fragment — the shape this patcher's own ⌘C writes — which is wrapped in an empty
  * patcher header so it opens as a document of its own rather than pasting into this one.
  */
 async function newFromClipboard(): Promise<void> {
@@ -793,11 +794,18 @@ async function newFromClipboard(): Promise<void> {
     status('Could not read the clipboard — the browser did not allow it.', 'error');
     return;
   }
+  // Max itself copies as a compressed `begin_max5_patcher` block, not as JSON.
+  try {
+    text = (await decodeMax5Patcher(text)) ?? text;
+  } catch (err) {
+    status(`Could not read the Max patch on the clipboard: ${(err as Error).message}`, 'error');
+    return;
+  }
   let json: unknown;
   try {
     json = JSON.parse(text);
   } catch {
-    status('The clipboard does not hold a Max patch (expected .maxpat JSON).', 'error');
+    status('The clipboard does not hold a Max patch — copy one in Max, or copy .maxpat JSON.', 'error');
     return;
   }
   const root = json as { patcher?: unknown; boxes?: unknown; lines?: unknown } | null;
@@ -810,7 +818,7 @@ async function newFromClipboard(): Promise<void> {
       },
     };
   } else if (!root || typeof root !== 'object' || !root.patcher) {
-    status('The clipboard does not hold a Max patch (expected .maxpat JSON).', 'error');
+    status('The clipboard does not hold a Max patch — copy one in Max, or copy .maxpat JSON.', 'error');
     return;
   }
   try {

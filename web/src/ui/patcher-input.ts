@@ -49,6 +49,7 @@ import type { PatchDoc } from '../doc/patch-doc';
 import type { MaxNode } from '../engine/registry';
 import { canConnect, loadObjDocs, type Verdict } from '../ir/connect';
 import type { Domain, IRNode } from '../ir/types';
+import { decodeMax5Patcher } from '../parser/max5-clipboard';
 import { nodeToBox } from '../parser/write-maxpat';
 import { domainColor } from './layout';
 import { openBoxEditor, type BoxEditorHandle } from './box-editor';
@@ -181,10 +182,10 @@ interface Fragment {
 /**
  * Read a pasted fragment.
  *
- * NOT VERIFIED AGAINST A REAL MAX COPY. Max's own clipboard payload has not been
- * inspected, so this accepts the shape this file WRITES ({boxes, lines}) and the shape
- * a .maxpat file has ({patcher: {boxes, lines}}) and claims nothing beyond that. If it
- * turns out Max writes something else, this is the one function that has to change.
+ * Accepts the shape this file WRITES ({boxes, lines}) and the shape a .maxpat file has
+ * ({patcher: {boxes, lines}}). A copy made in Max is a compressed `begin_max5_patcher`
+ * block that decodes to the first shape — parser/max5-clipboard.ts turns it into JSON
+ * before it gets here.
  */
 function readFragment(text: string): Fragment | undefined {
   let json: unknown;
@@ -1026,6 +1027,12 @@ export class Interaction {
     let text = '';
     try {
       text = (await navigator.clipboard?.readText()) ?? '';
+    } catch {
+      text = '';
+    }
+    // A copy made in Max arrives as a compressed `begin_max5_patcher` block.
+    try {
+      text = (await decodeMax5Patcher(text)) ?? text;
     } catch {
       text = '';
     }
