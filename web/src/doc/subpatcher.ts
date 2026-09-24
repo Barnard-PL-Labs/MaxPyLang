@@ -8,19 +8,19 @@
 // made inside the subpatcher back into the box and has to know when the box's ports moved
 // underneath the cords attached to it. A disagreement would be a cord the document draws
 // into port 2 that the engine wired into what it thinks is port 1. So the rule lives
-// here, once, and both import it.
+// here, once, and both import it. The parser has a third reader, ir/subpatcher.ts's
+// subpatcherPorts, which works on the raw box dicts because the parser sits below this
+// layer; test/subpatcher-agreement.test.ts holds the two to the same answer.
 
 import { parseMaxPat } from '../parser/maxpat';
 import { EMPTY_PATCHER_HEADER, patchToMaxPat } from '../parser/write-maxpat';
 import type { Domain, IREdge, IRNode, IRPatch } from '../ir/types';
 import type { Op } from './ops';
-
-/** Class names that embed a patch. `p` is Max's own abbreviation for `patcher`. */
-const SUBPATCHER_CLASSES = new Set(['p', 'patcher']);
+import { isSubpatcherClass } from '../ir/subpatcher';
 
 /** True for a box that can be opened: an object box running an embedded patch. */
 export function isSubpatcher(node: IRNode | undefined): boolean {
-  return !!node && node.maxclass === 'newobj' && SUBPATCHER_CLASSES.has(node.className);
+  return !!node && node.maxclass === 'newobj' && isSubpatcherClass(node.className);
 }
 
 /** Left to right, as Max numbers a box's ports; `index` breaks a tie. */

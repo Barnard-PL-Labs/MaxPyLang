@@ -140,7 +140,7 @@ input[type=number].max-widget {
   font: 10px ui-monospace, Menlo, monospace; color: var(--dim);
 }
 .max-livegain.is-horizontal { flex-direction: column; }
-.max-livegain.is-vertical { flex-direction: column-reverse; align-items: center; }
+.max-livegain.is-vertical { flex-direction: column; align-items: center; }
 .max-livegain .lg-track { position: relative; flex: 1; display: flex; gap: 2px; }
 .max-livegain.is-horizontal .lg-track { flex-direction: column; justify-content: center; }
 .max-livegain.is-vertical .lg-track { flex-direction: row; width: 24px; }
@@ -163,11 +163,15 @@ input[type=number].max-widget {
   -webkit-appearance: none; appearance: none; width: 8px; height: 100%; min-height: 14px;
   background: var(--ink); border-radius: 1px; box-shadow: 0 0 0 1px var(--sunken);
 }
-.max-livegain.is-vertical .lg-fader::-webkit-slider-thumb { width: 100%; height: 6px; min-height: 0; }
+/* Explicit px, not 100%: in vertical writing mode a percentage thumb width resolves
+   against the wrong axis and collapses to nothing, which hid the thumb entirely. */
+.max-livegain.is-vertical .lg-fader::-webkit-slider-thumb { width: 24px; height: 6px; min-height: 0; }
+.max-livegain.is-vertical .lg-fader::-moz-range-thumb { width: 24px; height: 6px; }
 .max-livegain .lg-fader::-moz-range-thumb {
   width: 8px; height: 14px; background: var(--ink); border: 0; border-radius: 1px;
 }
 .max-livegain .lg-readout { text-align: center; white-space: nowrap; }
+.max-livegain.is-vertical .lg-readout { font-size: 9px; letter-spacing: -0.3px; }
 
 /* ── radiogroup ──
    One item per `offset` px, positioned by the object (it knows the spacing Max saved),

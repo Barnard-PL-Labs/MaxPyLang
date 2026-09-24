@@ -151,6 +151,9 @@ export function boxSize(node: IRNode, widget?: HTMLElement): [number, number] {
   // A radiogroup's saved rect IS its layout — `offset` px per button — so it is drawn at
   // exactly that size; stretching it to a minimum width leaves a wide empty panel.
   if (node.className === 'radiogroup') return [Math.max(node.rect[2], 18), Math.max(node.rect[3], 18)];
+  // live.gain~ lays itself out in whatever rect Max gave it (tall and 48 wide by default,
+  // wide and short when horizontal); the 90px minimum would pad a vertical one sideways.
+  if (node.className === 'live.gain~') return [Math.max(node.rect[2], 36), Math.max(node.rect[3], 36)];
   // A comment wraps to the width it was saved at, over as many lines as it was saved with.
   // Never shorter than its text needs, since a retyped comment comes back one line high:
   // ~6.2px per character of 12px Arial, 15.6px per line, as .max-comment sets it.
