@@ -46,6 +46,14 @@ export interface RawBoxSpec {
   /** Present only for the 46 objects whose arity depends on their args. */
   io?: IoRules;
   attribs: { name: string; type?: string; size?: string }[];
+  /**
+   * Set on the few objects the web engine plays that maxpylang's OBJ_INFO does not
+   * describe (live.gain~) — the generator's SUPPLEMENT table. maxpylang cannot build
+   * these from their text, so codegen/maxpy.ts declares them instead of naming them.
+   */
+  webOnly?: true;
+  /** Aliases Max accepts that maxpylang does not (`p` for `patcher`); same reason. */
+  webAliases?: string[];
 }
 
 export type BoxSpecTable = Record<string, RawBoxSpec>;
@@ -128,6 +136,11 @@ export function loadBoxSpecs(): Promise<BoxSpecTable> {
 /** The loaded table, or undefined before loadBoxSpecs() has resolved. */
 export function boxSpecs(): BoxSpecTable | undefined {
   return cache;
+}
+
+/** The object a class name resolves to (`t` -> `trigger`); itself when not an alias or unknown. */
+export function canonicalName(name: string): string {
+  return MANIFEST[name]?.aliasOf ?? name;
 }
 
 /** Every class name the manifest knows, aliases included. Ranking lives in engine/catalog. */
@@ -398,7 +411,10 @@ export function resolveBox(text: string, at?: readonly [number, number]): BoxSpe
   };
 
   const counts = applyIoRules(spec?.io, parsed.args, defaults);
-  const box = spec ? { ...spec.box } : {};
+  // A deep copy, not a spread: a default box can carry nested dicts — `patcher` embeds
+  // a whole (empty) patch, live.gain~ its parameter block — and a box that edits its own
+  // copy (opening a new subpatcher and adding to it) must not edit every future one.
+  const box = spec ? structuredClone(spec.box) : {};
   const uiRect = spec?.box.patching_rect as [number, number, number, number] | undefined;
 
   // The one box dict maxpylang rewrites from the args as well as from the arity rules.

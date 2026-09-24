@@ -40,12 +40,23 @@
 //     and cord keys (`order`, which fixes fan-out execution order and so changes what
 //     the patch DOES) have no maxpylang expression at all. IRNode.raw carries them
 //     through a .maxpat save; it cannot carry them through Python.
+//   • Objects maxpylang's database does not have — live.gain~, and Max's `p` shorthand
+//     for `patcher` (the generator's web-only SUPPLEMENT) — cannot be rebuilt from their
+//     text: place("live.gain~") would be an unknown 0-port box and every cord into it an
+//     IndexError. They are DECLARED instead, with the ports the canvas shows:
+//     `mp.MaxObject("live.gain~", abstraction=True, inlets=2, outlets=5)`, maxpylang's
+//     own escape hatch for boxes it has no reference file for. The script runs and the
+//     cords land; what is lost is everything that is not text — live.gain~'s parameter
+//     block, and a subpatcher's embedded patch, which maxpylang has no way to express at
+//     all. A `patcher` box is declared the same way once it has ports, because
+//     maxpylang's `patcher` is the stock 0/0 box.
 //   • A `comment` box's text loses nothing but gains its own class name: get_text()
 //     re-emits `name + args` for every class except `message`, so `place("comment hi")`
 //     produces a comment reading "comment hi". Naming the class is the only way to get
 //     the right object, so this one is unavoidable upstream.
 
-import { parseBoxText } from '../ir/objectspec';
+import { boxSpecs, canonicalName, parseBoxText } from '../ir/objectspec';
+import { isSubpatcherClass } from '../ir/subpatcher';
 import type { IREdge, IRNode } from '../ir/types';
 
 /**
@@ -273,6 +284,31 @@ export function placeTextFor(node: IRNode): string {
   return content === '' ? node.className : `${node.className} ${content}`;
 }
 
+/**
+ * Can maxpylang rebuild this box from its text alone, with the ports it has here?
+ *
+ * No for a web-only object or alias (see the header's KNOWN LIMITS), and no for a
+ * subpatcher with ports: maxpylang's `patcher` is always 0/0, so a cord to it would
+ * index past the end of `.ins`. Reads the boxspecs the patcher loads at start-up; before
+ * they load, only the subpatcher rule applies, which covers `p` either way.
+ */
+function needsDeclaration(node: IRNode): boolean {
+  const canonical = canonicalName(node.className);
+  const spec = boxSpecs()?.[canonical];
+  if (spec?.webOnly || spec?.webAliases?.includes(node.className)) return true;
+  if (node.maxclass === 'newobj' && isSubpatcherClass(node.className)) {
+    return node.className !== canonical || node.numInlets + node.numOutlets > 0;
+  }
+  return false;
+}
+
+/** The place() argument: the box text, or a declared-I/O MaxObject when text won't do. */
+function placeArgFor(node: IRNode): string {
+  const text = pyString(placeTextFor(node));
+  if (!needsDeclaration(node)) return text;
+  return `mp.MaxObject(${text}, abstraction=True, inlets=${node.numInlets}, outlets=${node.numOutlets})`;
+}
+
 /** A Python double-quoted string literal. */
 function pyString(value: string): string {
   return `"${value
@@ -320,7 +356,7 @@ export function patchToMaxPy(doc: MaxPySource, opts: MaxPyOptions = {}): string 
     const name = names.get(node.id)!;
     const [x, y] = node.rect;
     places.push({
-      stmt: `${name} = patch.place(${pyString(placeTextFor(node))})[0];`,
+      stmt: `${name} = patch.place(${placeArgFor(node)})[0];`,
       move: `${name}.move(${pyNumber(x)}, ${pyNumber(y)})`,
     });
   }

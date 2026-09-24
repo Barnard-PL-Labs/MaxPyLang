@@ -80,6 +80,73 @@ function cleanAttribs(attribs) {
   return out;
 }
 
+/**
+ * Objects maxpylang's OBJ_INFO does not describe, but that the web engine really plays
+ * and a user can therefore TYPE into a box. Web-only on purpose — see below.
+ *
+ * OBJ_INFO is not hand-maintained: maxpylang/importobjs.py regenerates every file in it
+ * by scripting Max itself, and maxpylang's own instantiation reads the same folder
+ * (tools/objfuncs/reffile.py: get_ref walks OBJ_INFO/{pkg}, check_aliases reads
+ * obj_aliases.json). Dropping a live.gain~.json or a "p" alias in there would change
+ * what `MaxObject("p foo")` builds in Python — today an UnknownObjectWarning and a 0/0
+ * box — and the next re-import would silently delete it again. So the supplement lives
+ * here, stamped into the two generated files only, and marked `webOnly` in boxspecs so
+ * the Python code generator knows maxpylang cannot build these from their text.
+ *
+ * Each entry's `box` is Max's own default box dict, transcribed rather than invented:
+ *
+ *   live.gain~ — ports and outlettype from m4l-ref/live.gain~.maxref.xml (2 signal
+ *     inlets; signal, signal, dB value, raw 0..1 float, meter list) and the saved form
+ *     Max writes (snippets/m4l/live.gain~ Example.maxsnip, the M4L extended.V prototype):
+ *     outlettype ["signal","signal","","float","list"], the Live parameter block under
+ *     saved_attribute_attributes.valueof with Max's defaults (range -70..6 dB, initial
+ *     0 dB, parameter_initial_enable 0), orientation 0 = vertical, and the vertical
+ *     fader's 48x136 footprint. objects/audio/live-gain.ts reads exactly these keys.
+ *     Filed under 'msp': the palette groups by maxpylang's three packages, Max files it
+ *     under M4L, and 'msp' is the audio group a user would look in.
+ */
+const SUPPLEMENT = {
+  'live.gain~': {
+    pkg: 'msp',
+    box: {
+      maxclass: 'live.gain~',
+      numinlets: 2,
+      numoutlets: 5,
+      orientation: 0,
+      outlettype: ['signal', 'signal', '', 'float', 'list'],
+      parameter_enable: 1,
+      patching_rect: [100.0, 100.0, 48.0, 136.0],
+      saved_attribute_attributes: {
+        valueof: {
+          parameter_initial: [0.0],
+          parameter_initial_enable: 0,
+          parameter_longname: 'live.gain~',
+          parameter_mmax: 6.0,
+          parameter_mmin: -70.0,
+          parameter_shortname: 'live.gain~',
+          parameter_type: 0,
+          parameter_unitstyle: 4,
+        },
+      },
+    },
+    args: {},
+    attribs: [
+      { name: 'orientation', type: 'int', size: '1' },
+      { name: 'channels', type: 'int', size: '1' },
+    ],
+  },
+};
+
+/**
+ * Aliases Max accepts that obj_aliases.json lacks, for the same web-only reason.
+ *
+ * `p` is Max's standard abbreviation for `patcher` — the name nearly every subpatcher in
+ * the wild is saved under. maxpylang's alias scrape only records an alias when Max
+ * rewrites the box text to a different name, and Max keeps `p` as typed, so the scrape
+ * never saw it. Recorded on the canonical boxspec as `webAliases` for the code generator.
+ */
+const SUPPLEMENT_ALIASES = { p: 'patcher' };
+
 const manifest = {};
 const boxspecs = {};
 let ioCount = 0;
@@ -145,6 +212,35 @@ try {
   /* alias file optional */
 }
 
+// Supplements go in last, and refuse to shadow real OBJ_INFO data: the day maxpylang
+// learns one of these objects, its scraped metadata must win and the table entry here
+// must be deleted — a thrown error is the reminder.
+for (const [name, sup] of Object.entries(SUPPLEMENT)) {
+  if (manifest[name]) {
+    throw new Error(`supplement '${name}' is now in OBJ_INFO; delete it from SUPPLEMENT`);
+  }
+  const { box } = sup;
+  manifest[name] = {
+    pkg: sup.pkg,
+    maxclass: box.maxclass,
+    numInlets: box.numinlets,
+    numOutlets: box.numoutlets,
+    outletDomains: Array.from({ length: box.numoutlets }, (_, i) => outletDomain(box.outlettype[i])),
+    args: flattenArgs(sup.args),
+    aliases: [],
+  };
+  boxspecs[name] = { box: cleanBox(box), attribs: sup.attribs, webOnly: true };
+}
+for (const [alias, canonical] of Object.entries(SUPPLEMENT_ALIASES)) {
+  if (manifest[alias]) {
+    throw new Error(`supplement alias '${alias}' is now in OBJ_INFO; delete it from SUPPLEMENT_ALIASES`);
+  }
+  if (!manifest[canonical]) throw new Error(`supplement alias '${alias}' -> unknown '${canonical}'`);
+  manifest[canonical].aliases.push(alias);
+  manifest[alias] = { ...manifest[canonical], aliasOf: canonical, aliases: [] };
+  (boxspecs[canonical].webAliases ??= []).push(alias);
+}
+
 mkdirSync(OUT_DIR, { recursive: true });
 writeFileSync(OUT, JSON.stringify(manifest, null, 0) + '\n');
 writeFileSync(OUT_SPECS, JSON.stringify(boxspecs, null, 0) + '\n');
@@ -163,6 +259,9 @@ for (const e of Object.values(manifest)) {
 }
 console.log(`wrote ${OUT}`);
 console.log(`  ${total} objects (${aliasCount} alias entries added)`);
+console.log(
+  `  web-only supplements: ${Object.keys(SUPPLEMENT).join(', ')}; aliases: ${Object.keys(SUPPLEMENT_ALIASES).join(', ')}`,
+);
 console.log(`  by primary domain:`, byDomain);
 console.log(`wrote ${OUT_SPECS}`);
 console.log(`  ${Object.keys(boxspecs).length} canonical objects, ${ioCount} with arity rules`);

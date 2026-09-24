@@ -41,6 +41,7 @@
 
 import { edgeKey } from '../engine/engine';
 import { boxSpecs, loadBoxSpecs, resolveBox, specToNode } from '../ir/objectspec';
+import { reconcileSubpatcherPorts } from '../ir/subpatcher';
 import type { IREdge, IRNode, IRPatch } from '../ir/types';
 import { invert, type Op, type Rect } from './ops';
 import { innerPatch, isSubpatcher, writeBack } from './subpatcher';
@@ -490,11 +491,14 @@ export class PatchDoc {
    * out for a name no object has, which is a statement about this app's catalog and not
    * about the box, so adopting it would amputate every cord on the box the moment the
    * user mistyped one character — and correcting the typo would not bring them back,
-   * because by then the document no longer has them. `p` (Max's own abbreviation for
-   * `patcher`, whose real arity comes from the nested patcher's inlet/outlet objects,
-   * which this IR does not model) is permanently in that category, so renaming any
-   * subpatcher would sever it from its patch. The box keeps its ports, is marked
+   * because by then the document no longer has them. The box keeps its ports, is marked
    * `known: false` for the dashed-red treatment, and its cords are left alone.
+   *
+   * A subpatcher (`p` / `patcher`) IS known, but the catalog's 0/0 for it is just as much
+   * a non-answer: its ports are its embedded patch's inlet/outlet objects. Retyping
+   * `p foo` to `p bar` keeps that embedded patch (same maxclass, so `raw` carries over),
+   * and the ports are re-read from it — ir/subpatcher.ts — so renaming a subpatcher does
+   * not sever it from the patch around it.
    *
    * The box keeps its position and re-fits its width to the new text, as Max does.
    * (Resize is deliberately not modelled at all this pass: maxpylang has no public API
@@ -521,6 +525,7 @@ export class PatchDoc {
     // new class's own default dict takes over.
     const raw = spec.maxclass === prev.maxclass ? prev.raw : spec.box;
     if (raw && Object.keys(raw).length > 0) next.raw = raw;
+    reconcileSubpatcherPorts(next);
 
     this.transact(`Retype ${spec.name || 'box'}`, (tx) => {
       const survivors: IREdge[] = [];

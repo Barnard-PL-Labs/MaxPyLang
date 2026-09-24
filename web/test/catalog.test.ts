@@ -22,7 +22,7 @@ const names = (os: { name: string }[]): string[] => os.map((o) => o.name);
 describe('objectOptions', () => {
   it('covers every manifest object exactly once, sorted by name', () => {
     const all = objectOptions();
-    expect(all.length).toBe(1054);
+    expect(all.length).toBe(1056);
     expect(all.length).toBe(Object.keys(MANIFEST).length);
     expect(new Set(names([...all])).size).toBe(all.length);
 
@@ -170,7 +170,7 @@ describe('objectsByPackage', () => {
   it('partitions the whole catalog with no overlap', () => {
     const groups = objectsByPackage();
     const total = groups.max.length + groups.msp.length + groups.jit.length;
-    expect(total).toBe(1054);
+    expect(total).toBe(1056);
 
     const union = new Set([...names(groups.max), ...names(groups.msp), ...names(groups.jit)]);
     expect(union.size).toBe(total);

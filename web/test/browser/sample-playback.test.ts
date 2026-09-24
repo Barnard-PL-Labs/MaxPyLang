@@ -7,7 +7,9 @@
 
 import { describe, expect, it } from 'vitest';
 import '../../src/objects';
+import { PatchDoc } from '../../src/doc/patch-doc';
 import { Engine } from '../../src/engine/engine';
+import { reconcileSubpatcherPorts } from '../../src/ir/subpatcher';
 import { loadSample } from '../../src/objects/audio/samples';
 import { parseMaxPat } from '../../src/parser/maxpat';
 
@@ -140,6 +142,53 @@ describe('p', () => {
       },
     });
     const out = await render(0.1, async (engine) => void engine.build(through));
+    // A 440 Hz sine at 0.5 has an RMS of 0.5/√2.
+    expect(rms(out)).toBeGreaterThan(0.3);
+    expect(rms(out)).toBeLessThan(0.4);
+  });
+});
+
+describe('typed on the canvas, not loaded', () => {
+  // The same objects, built the way a user builds them: box text through resolveBox
+  // (the generated manifest's web-only supplement) into a PatchDoc, whose IR the engine
+  // plays. A fresh live.gain~ starts at 0 dB, so it must pass audio at unity.
+  it('cycle~ → live.gain~ (fresh defaults) → ezdac~ passes the sine at unity', async () => {
+    const doc = await PatchDoc.create();
+    const osc = doc.addBox('cycle~ 440', 0, 0);
+    const gain = doc.addBox('live.gain~', 0, 40);
+    const dac = doc.addBox('ezdac~', 0, 200);
+    expect(gain.known).toBe(true);
+    doc.addEdge({ id: osc.id, outlet: 0 }, { id: gain.id, inlet: 0 });
+    doc.addEdge({ id: gain.id, outlet: 0 }, { id: dac.id, inlet: 0 });
+    const out = await render(0.2, async (engine) => void engine.build(doc.toIR()));
+    // Skip the fader's 10 ms glide up from silence; a unit sine's RMS is 1/√2.
+    const r = rms(out, SR * 0.1);
+    expect(r).toBeGreaterThan(0.65);
+    expect(r).toBeLessThan(0.75);
+  });
+
+  it('a typed `p`, filled with inlet → *~ 0.5 → outlet, carries audio', async () => {
+    const doc = await PatchDoc.create();
+    const osc = doc.addBox('cycle~ 440', 0, 0);
+    const sub = doc.addBox('p half', 0, 40);
+    const dac = doc.addBox('ezdac~', 0, 80);
+    expect([sub.known, sub.numInlets, sub.numOutlets]).toEqual([true, 0, 0]);
+    // What editing the subpatcher amounts to: objects added to its embedded patch. The
+    // outlet is fed by a signal object, which is what types the box's outlet "signal".
+    const inner = sub.raw!.patcher as Record<string, unknown>;
+    inner.boxes = [
+      box('i', { maxclass: 'inlet', numinlets: 0, numoutlets: 1, outlettype: [''] }),
+      box('amp', { maxclass: 'newobj', text: '*~ 0.5', numinlets: 2, numoutlets: 1, outlettype: ['signal'] }),
+      box('o', { maxclass: 'outlet', numinlets: 1 }),
+    ];
+    inner.lines = [line('i', 0, 'amp', 0), line('amp', 0, 'o', 0)];
+    reconcileSubpatcherPorts(sub);
+    expect([sub.numInlets, sub.numOutlets]).toEqual([1, 1]);
+    expect(sub.outletDomains).toEqual(['signal']);
+    doc.addEdge({ id: osc.id, outlet: 0 }, { id: sub.id, inlet: 0 });
+    doc.addEdge({ id: sub.id, outlet: 0 }, { id: dac.id, inlet: 0 });
+    expect(doc.edgeCount).toBe(2);
+    const out = await render(0.1, async (engine) => void engine.build(doc.toIR()));
     // A 440 Hz sine at 0.5 has an RMS of 0.5/√2.
     expect(rms(out)).toBeGreaterThan(0.3);
     expect(rms(out)).toBeLessThan(0.4);
