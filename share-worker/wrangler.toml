@@ -1,0 +1,25 @@
+# maxpy-share — short links for MaxPy patches. See src/index.ts for what and why.
+name = "maxpy-share"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+workers_dev = true
+
+[vars]
+APP_URL = "https://barnard-pl-labs.github.io/MaxPyLang/app/"
+ALLOWED_ORIGINS = "https://barnard-pl-labs.github.io,http://localhost:5173,http://localhost:5391"
+
+# Stored patches. `id` is filled in by `npx wrangler kv namespace create PATCHES`.
+[[kv_namespaces]]
+binding = "PATCHES"
+id = "da6222ae13e84dab85ae737df62c2e8a"
+
+# 10 new links per minute per IP, per Cloudflare location. Counted by the rate-limit
+# binding, not KV: a KV counter would spend one of the free plan's 1,000 daily writes
+# on every request.
+[[ratelimits]]
+name = "SHARE_LIMITER"
+namespace_id = "7301"
+
+  [ratelimits.simple]
+  limit = 10
+  period = 60

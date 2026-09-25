@@ -723,3 +723,53 @@ body[data-drawer='open'] .drawer-body { display: flex; flex-direction: row; }
   pointer-events: none;
   box-shadow: 0 6px 20px rgba(0, 0, 0, .55);
 }
+
+/* ── Share popover ──
+   Anchored under the Share button (ui/share-popover.ts sets left/top and --arrow-x).
+   The headline flashes when the link lands on the clipboard, so the click that copied
+   it gets an answer where the user is looking, not only in the status line. */
+.share-popover {
+  position: fixed; z-index: 50; width: min(360px, calc(100vw - 16px)); box-sizing: border-box;
+  padding: 12px; border-radius: 10px; background: var(--panel); color: var(--ink);
+  border: 1px solid var(--btn-border); box-shadow: 0 10px 30px rgba(0, 0, 0, .22);
+  font: 13px system-ui, sans-serif; animation: share-in .14s ease-out;
+}
+.share-popover::before {
+  content: ''; position: absolute; top: -6px; left: calc(var(--arrow-x, 50%) - 6px);
+  width: 10px; height: 10px; transform: rotate(45deg); background: var(--panel);
+  border-left: 1px solid var(--btn-border); border-top: 1px solid var(--btn-border);
+}
+.share-head { font-weight: 600; font-size: 14px; padding: 4px 8px; margin: -4px -8px 4px; border-radius: 6px; }
+.share-head.is-copied { color: var(--go-ink, var(--go)); }
+.share-head.flash { animation: share-flash .9s ease-out; }
+.share-blurb { margin: 0 0 10px; color: var(--dim); font-size: 12px; }
+.share-link-row { display: flex; gap: 6px; }
+.share-link-row input {
+  flex: 1; min-width: 0; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--btn-border);
+  background: var(--sunken); color: var(--ink); font: 12px ui-monospace, Menlo, monospace;
+}
+.share-copy { padding: 6px 12px; border-radius: 6px; font-weight: 600; }
+.share-note { margin: 8px 0 0; color: var(--warn-ink); font-size: 12px; }
+.share-targets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+.share-target {
+  flex: 1 1 28%; display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 7px 6px; border-radius: 6px; white-space: nowrap;
+}
+.share-shorten { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.share-popover .share-make-short { width: 100%; padding: 7px 10px; border-radius: 6px; font-weight: 600; }
+.share-popover .share-make-short:disabled { opacity: .6; cursor: progress; }
+.share-fineprint { margin: 6px 0 0; color: var(--dim); font-size: 11px; line-height: 1.35; }
+.share-fineprint.is-error { color: var(--err); }
+.share-glyph { font-size: 14px; line-height: 1; }
+@keyframes share-in { from { opacity: 0; transform: translateY(-4px); } }
+@keyframes share-flash { 0% { background: var(--go-tint); } 100% { background: transparent; } }
+@media (prefers-reduced-motion: reduce) {
+  .share-popover, .share-head.flash { animation: none; }
+}
+/* The popover lives on <body>, outside the header whose rules style every other button. */
+.share-popover button {
+  background: var(--btn-bg); color: var(--ink); border: 1px solid var(--btn-border);
+  font: inherit; cursor: pointer;
+}
+.share-popover button:hover { background: var(--btn-bg-hover); border-color: var(--btn-border-hover); }
+.share-popover button:focus-visible { outline: 2px solid var(--control); outline-offset: 1px; }

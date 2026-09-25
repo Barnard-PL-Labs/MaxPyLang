@@ -87,6 +87,7 @@ import {
   readPermalinkFromLocation,
   type Permalink,
 } from '../ui/permalink';
+import { closeSharePopover, openSharePopover } from '../ui/share-popover';
 import { SyncController } from '../ui/sync';
 import { attachPortTips } from '../ui/tooltip';
 // Static, and it stays that way: python-pane.ts has type-only static imports of its own,
@@ -1115,6 +1116,8 @@ const saveAs = (): void => void writeFile(false);
  */
 async function share(): Promise<void> {
   if (!doc) return;
+  // Share is a toggle for its popover: a second click closes it.
+  if (closeSharePopover()) return;
   let link: Permalink;
   try {
     link = await buildPermalink(patchToMaxPat(doc, { renumber: true }));
@@ -1126,18 +1129,24 @@ async function share(): Promise<void> {
     status(`Could not make a link: ${(err as Error).message}`, 'error');
     return;
   }
+  // Copied first, then the popover: the common case is "click Share, paste somewhere",
+  // and that must not wait on anything the popover offers. A refused clipboard is not
+  // an error any more — the popover shows the link, selected, to copy by hand.
+  let copied = true;
   try {
     await navigator.clipboard.writeText(link.url);
-    status(
-      link.tooLong
-        ? `Link copied — ${link.bytes} characters, long enough that some apps will cut it`
-        : 'Link copied',
-      link.tooLong ? 'info' : 'ok'
-    );
   } catch {
-    location.hash = link.url.slice(link.url.indexOf('#') + 1);
-    status('Link is in the address bar — the clipboard was not available.', 'info');
+    copied = false;
   }
+  status(copied ? 'Link copied' : 'Link ready — copy it from the Share box', 'ok');
+  openSharePopover(shareBtn, {
+    url: link.url,
+    title: currentName.replace(/\.(maxpat|json)$/i, ''),
+    copied,
+    note: link.tooLong
+      ? `This link is ${link.bytes.toLocaleString()} characters — long enough that some apps may cut it off.`
+      : undefined,
+  });
 }
 
 /**
