@@ -16,7 +16,7 @@ Wrangler needs Node 22 (`source ~/.nvm/nvm.sh && nvm use 22`).
     npm test                       # unit tests, in-memory KV
     npm run dev                    # real Workers runtime, local KV, on :8787
 
-The deployed Worker is https://maxpy-share.msantolucuito13.workers.dev (set in
+The deployed Worker is https://maxpy-share.forg-lab.workers.dev (set in
 `web/.env.production`).
 
 To try it with the app: `npx wrangler dev --port 8787 --var APP_URL:http://localhost:5391/`
