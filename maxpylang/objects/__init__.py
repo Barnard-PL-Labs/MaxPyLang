@@ -17,3 +17,7 @@ with warnings.catch_warnings():
         from .msp import *
     except ImportError:
         pass
+    try:
+        from .gen import *
+    except ImportError:
+        pass

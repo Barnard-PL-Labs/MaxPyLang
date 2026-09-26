@@ -60,10 +60,41 @@ Stubs have no arguments. Use string syntax when arguments are needed::
     osc = patch.place("cycle~ 440")[0]     # string: has arguments
     dac = patch.place(ezdac_tilde)[0]      # stub: no arguments needed
 
+Gen Patchers
+------------
+
+Create gen~ sub-patchers using ``gen_type`` parameter::
+
+    # Inner gen patcher
+    gen_patch = mp.MaxPatch(gen_type="dsp.gen")
+    inp = gen_patch.place("in 1")[0]
+    cyc = gen_patch.place("cycle")[0]
+    outp = gen_patch.place("out 1")[0]
+    gen_patch.connect([inp.outs[0], cyc.ins[0]],
+                      [cyc.outs[0], outp.ins[0]])
+
+    # Embed in outer patch
+    patch = mp.MaxPatch()
+    gen_obj = patch.place("gen~", gen_patcher=gen_patch)[0]
+    dac = patch.place("ezdac~")[0]
+    patch.connect([gen_obj.outs[0], dac.ins[0]])
+    patch.save("my_gen_patch")
+
+Gen type options:
+
+- ``"dsp.gen"`` -- gen~ (audio-rate)
+- ``"jit.gen"`` -- jit.gen (CPU matrix)
+- ``"jit.pix"`` -- jit.pix (CPU pixel)
+- ``"jit.gl.pix"`` -- jit.gl.pix (GPU pixel)
+
+Gen operator stubs are in ``maxpylang/objects/gen.py``::
+
+    from maxpylang.objects import gen
+
 Available Objects
 -----------------
 
-All valid object names are in ``maxpylang/objects/`` (stubs by package: ``max.py``, ``msp.py``, ``jit.py``).
+All valid object names are in ``maxpylang/objects/`` (stubs by package: ``max.py``, ``msp.py``, ``jit.py``, ``gen.py``).
 
 Common objects by category:
 

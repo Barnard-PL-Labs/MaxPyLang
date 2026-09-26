@@ -1,0 +1,30 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "newobj",
+      "numinlets": 1,
+      "numoutlets": 1,
+      "outlettype": [
+        ""
+      ],
+      "patching_rect": [
+        0.0,
+        0.0,
+        60.0,
+        22.0
+      ],
+      "text": "tanh"
+    }
+  },
+  "args": {
+    "required": [],
+    "optional": []
+  },
+  "attribs": [],
+  "in/out": {},
+  "doc": {
+    "digest": "Gen operator: tanh",
+    "description": "Gen operator 'tanh' (category: Trigonometry)"
+  }
+}

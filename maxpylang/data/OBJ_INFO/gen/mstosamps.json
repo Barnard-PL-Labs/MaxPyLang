@@ -1,0 +1,30 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "newobj",
+      "numinlets": 1,
+      "numoutlets": 1,
+      "outlettype": [
+        ""
+      ],
+      "patching_rect": [
+        0.0,
+        0.0,
+        60.0,
+        22.0
+      ],
+      "text": "mstosamps"
+    }
+  },
+  "args": {
+    "required": [],
+    "optional": []
+  },
+  "attribs": [],
+  "in/out": {},
+  "doc": {
+    "digest": "Gen operator: mstosamps",
+    "description": "Gen operator 'mstosamps' (category: Convert)"
+  }
+}
