@@ -124,3 +124,25 @@ def test_calling_a_declared_abstraction_keeps_its_inlets_and_outlets():
     assert voiced._args == [440]
     assert (len(voiced.ins), len(voiced.outs)) == (2, 3)
     assert not voiced.notknown()
+
+
+def test_connecting_a_stub_itself_raises():
+    # place() copies a stub, so wiring the stub would save no cord; fail loudly instead
+    from maxpylang.objects import cycle_tilde, ezdac_tilde
+
+    patch = mp.MaxPatch(verbose=False)
+    patch.place(cycle_tilde, verbose=False)
+    dac = patch.place(ezdac_tilde, verbose=False)[0]
+    with pytest.raises(ValueError, match="cycle~.*stub"):
+        patch.connect([cycle_tilde.outs[0], dac.ins[0]], verbose=False)
+
+
+def test_reusing_a_placed_non_stub_object_still_works():
+    # the common pattern: make an object, place it, keep using the same variable
+    patch = mp.MaxPatch(verbose=False)
+    osc = mp.MaxObject("cycle~ 440")
+    dac = mp.MaxObject("ezdac~")
+    patch.place(osc, dac, verbose=False)
+    patch.connect([osc.outs[0], dac.ins[0]], verbose=False)
+    assert len(patch.get_json()["patcher"]["lines"]) == 1
+

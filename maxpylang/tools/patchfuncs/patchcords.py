@@ -123,6 +123,15 @@ def check_connection_format(self, connections):
                 connection[2], list
             ), f"optional midpoints must be specified as list"
 
+        # a stub is a template and is never in a patch, so its cord would never be saved
+        for xlet in connection[:2]:
+            if xlet.parent._is_stub:
+                raise ValueError(
+                    f"'{xlet.parent.name}' is a stub from maxpylang.objects, which is never placed "
+                    f"itself. Connect the object place() returned instead, e.g. "
+                    f"obj = patch.place(stub)[0]"
+                )
+
     return
 
 
