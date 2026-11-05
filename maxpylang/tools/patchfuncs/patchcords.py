@@ -16,6 +16,7 @@ Methods related to patchcords in a MaxPatch.
 """
 from __future__ import annotations
 
+from maxpylang.cordcheck import warn_if_problem
 from maxpylang.xlet import Inlet, Outlet
 
 # user usage
@@ -139,9 +140,11 @@ def check_connection_typing(self, connections):
     """
     Helper function for patchcords.
 
-    Removes improperly typed connections from list and returns updated list.
+    Warns about connections that send audio into an inlet that takes no audio. The
+    connections are kept, as Max keeps them, and returned unchanged.
     """
-    ###PLACEHOLDER!
+    for connection in connections:
+        warn_if_problem(connection[0], connection[1])
 
     return connections
 
