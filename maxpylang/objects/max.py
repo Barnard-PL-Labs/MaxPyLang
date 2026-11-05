@@ -951,9 +951,25 @@ _devnull = open(_os.devnull, 'w')
 _old_stdout = _sys.stdout
 _sys.stdout = _devnull
 
-
 abs_ = MaxObject('abs')
+"""
+abs - Calculate an absolute value
 
+Outputs the absolute (non-negative) value of any given number. Floats will be output only if the argument to abs is a float.
+
+Args:
+  format (number, optional)
+
+Inlets:
+  0 (INLET_TYPE): Input for Absolute Value
+
+Outlets:
+  0 (OUTLET_TYPE): Absolute Value of Input
+
+Messages: int, float
+"""
+
+absolutepath = MaxObject('absolutepath')
 """
 absolutepath - Convert a file name to an absolute path
 
@@ -967,8 +983,8 @@ Outlets:
 
 Messages: anything, types
 """
-absolutepath = MaxObject('absolutepath')
 
+accum = MaxObject('accum')
 """
 accum - Store, add to, and multiply a number
 
@@ -987,8 +1003,8 @@ Outlets:
 
 Messages: bang, int, float, ft1, in1, in2, set
 """
-accum = MaxObject('accum')
 
+acos = MaxObject('acos')
 """
 acos - Arc-cosine function
 
@@ -1005,8 +1021,8 @@ Outlets:
 
 Messages: bang, int, float
 """
-acos = MaxObject('acos')
 
+acosh = MaxObject('acosh')
 """
 acosh - Hyperbolic arc-cosine function
 
@@ -1023,8 +1039,8 @@ Outlets:
 
 Messages: bang, int, float
 """
-acosh = MaxObject('acosh')
 
+active = MaxObject('active')
 """
 active - Send 1 when patcher window is active, 0 when inactive
 
@@ -1032,8 +1048,8 @@ active will output a 1 when the Patcher window becomes active (i.e., it is the f
 
 Messages: int
 """
-active = MaxObject('active')
 
+anal = MaxObject('anal')
 """
 anal - Make a histogram of number pairs
 
@@ -1050,8 +1066,8 @@ Outlets:
 
 Messages: int, clear, reset
 """
-anal = MaxObject('anal')
 
+append = MaxObject('append')
 """
 append - Append arguments to the end of a message
 
@@ -1068,8 +1084,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, set
 """
-append = MaxObject('append')
 
+array = MaxObject('array')
 """
 array - Create or duplicate an array object
 
@@ -1091,8 +1107,8 @@ Messages: bang, int, float, list, anything, append, array, atoms, clear, delete,
 
 Attributes: name, parameter_enable, parameter_mappable, size
 """
-array = MaxObject('array')
 
+array_change = MaxObject('array.change')
 """
 array.change - Detect array changes
 
@@ -1110,8 +1126,8 @@ Messages: bang, int, float, list, anything, array, dictionary, string
 
 Attributes: unordered
 """
-array_change = MaxObject('array.change')
 
+array_compare = MaxObject('array.compare')
 """
 array.compare - Compare two arrays for equality
 
@@ -1128,8 +1144,8 @@ Messages: bang, int, float, list, anything, array, dictionary, string
 
 Attributes: unordered
 """
-array_compare = MaxObject('array.compare')
 
+array_concat = MaxObject('array.concat')
 """
 array.concat - Concatenate two array objects
 
@@ -1144,8 +1160,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, dictionary, string
 """
-array_concat = MaxObject('array.concat')
 
+array_deserialize = MaxObject('array.deserialize')
 """
 array.deserialize - Parse a string, symbol or list to an array.
 
@@ -1159,8 +1175,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, dictionary, string
 """
-array_deserialize = MaxObject('array.deserialize')
 
+array_every = MaxObject('array.every')
 """
 array.every - Tests all elements in the array
 
@@ -1177,8 +1193,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, cancel, dictionary, in1, string
 """
-array_every = MaxObject('array.every')
 
+array_expr = MaxObject('array.expr')
 """
 array.expr - Evaluate a math expression for an array
 
@@ -1202,8 +1218,8 @@ Messages: bang, int, float, list, anything, array, dictionary, string
 
 Attributes: fillmode
 """
-array_expr = MaxObject('array.expr')
 
+array_fill = MaxObject('array.fill')
 """
 array.fill - Generate an array of a specified length
 
@@ -1224,8 +1240,8 @@ Messages: bang, int, float, list, anything, array, dictionary, in1, string
 
 Attributes: mode, range, seed, urn
 """
-array_fill = MaxObject('array.fill')
 
+array_filter = MaxObject('array.filter')
 """
 array.filter - Output elements of an array matching a condition
 
@@ -1242,8 +1258,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, cancel, dictionary, in1, string
 """
-array_filter = MaxObject('array.filter')
 
+array_flatten = MaxObject('array.flatten')
 """
 array.flatten - Flatten a multi-dimensional array object to a single dimension
 
@@ -1260,8 +1276,8 @@ Messages: bang, int, float, list, anything, array, dictionary, string
 
 Attributes: mode
 """
-array_flatten = MaxObject('array.flatten')
 
+array_foreach = MaxObject('array.foreach')
 """
 array.foreach - Iterate the elements of an array
 
@@ -1278,8 +1294,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, dictionary, string
 """
-array_foreach = MaxObject('array.foreach')
 
+array_frombuffer = MaxObject('array.frombuffer')
 """
 array.frombuffer - Read audio buffer values into an array object
 
@@ -1300,8 +1316,8 @@ Messages: bang, list
 
 Attributes: buffername, channelcount, channelstart, flatsinglechannel, framelength, frameoffset
 """
-array_frombuffer = MaxObject('array.frombuffer')
 
+array_group = MaxObject('array.group')
 """
 array.group - Output an array when it reaches a certain size
 
@@ -1319,8 +1335,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, clear, dictionary, in1, string
 """
-array_group = MaxObject('array.group')
 
+array_index = MaxObject('array.index')
 """
 array.index - Output the indexed element of an array object
 
@@ -1341,8 +1357,8 @@ Messages: bang, int, float, list, anything, array, dictionary, in1, string
 
 Attributes: remainder
 """
-array_index = MaxObject('array.index')
 
+array_indexmap = MaxObject('array.indexmap')
 """
 array.indexmap - Reorder the elements of an array object based on an indexed map
 
@@ -1360,8 +1376,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, dictionary, string
 """
-array_indexmap = MaxObject('array.indexmap')
 
+array_indexof = MaxObject('array.indexof')
 """
 array.indexof - Search for the index of an array element
 
@@ -1378,8 +1394,8 @@ Messages: bang, int, float, list, anything, array, dictionary, string
 
 Attributes: all, offset
 """
-array_indexof = MaxObject('array.indexof')
 
+array_insert = MaxObject('array.insert')
 """
 array.insert - Insert elements into an array object
 
@@ -1398,8 +1414,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, dictionary, in2, string
 """
-array_insert = MaxObject('array.insert')
 
+array_iter = MaxObject('array.iter')
 """
 array.iter - Iterate every element of an array object
 
@@ -1414,8 +1430,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, dictionary, string
 """
-array_iter = MaxObject('array.iter')
 
+array_join = MaxObject('array.join')
 """
 array.join - Convert an array object to a string object with an optional separator string
 
@@ -1430,8 +1446,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, clear, string
 """
-array_join = MaxObject('array.join')
 
+array_length = MaxObject('array.length')
 """
 array.length - Determine the length of an array object
 
@@ -1445,8 +1461,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, clear, dictionary, string
 """
-array_length = MaxObject('array.length')
 
+array_map = MaxObject('array.map')
 """
 array.map - Perform an operation on every element of an array object, replacing elements in-place
 
@@ -1463,8 +1479,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, cancel, dictionary, string
 """
-array_map = MaxObject('array.map')
 
+array_max = MaxObject('array.max')
 """
 array.max - Calculate the maximum of the numerical elements of an array
 
@@ -1479,8 +1495,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, dictionary, string
 """
-array_max = MaxObject('array.max')
 
+array_mean = MaxObject('array.mean')
 """
 array.mean - Calculate the mean of the numerical elements of an array
 
@@ -1495,8 +1511,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, dictionary, string
 """
-array_mean = MaxObject('array.mean')
 
+array_median = MaxObject('array.median')
 """
 array.median - Calculate the median of the numerical elements of an array
 
@@ -1513,8 +1529,8 @@ Messages: bang, int, float, list, anything, array, dictionary, string
 
 Attributes: evenmode
 """
-array_median = MaxObject('array.median')
 
+array_min = MaxObject('array.min')
 """
 array.min - Calculate the minimum of the numerical elements of an array
 
@@ -1529,8 +1545,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, dictionary, string
 """
-array_min = MaxObject('array.min')
 
+array_mode = MaxObject('array.mode')
 """
 array.mode - Calculate the mode of the numerical elements of an array
 
@@ -1545,8 +1561,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, dictionary, string
 """
-array_mode = MaxObject('array.mode')
 
+array_pop = MaxObject('array.pop')
 """
 array.pop - Remove an element from the end of an array
 
@@ -1565,8 +1581,8 @@ Messages: bang, int, float, list, anything, array, clear, dictionary, string
 
 Attributes: wrapmode
 """
-array_pop = MaxObject('array.pop')
 
+array_push = MaxObject('array.push')
 """
 array.push - Add one or more elements to the end of an array
 
@@ -1583,8 +1599,8 @@ Messages: bang, int, float, list, anything, array, clear, dictionary, string
 
 Attributes: wrapmode
 """
-array_push = MaxObject('array.push')
 
+array_random = MaxObject('array.random')
 """
 array.random - Generate a random array of a specified length
 
@@ -1605,8 +1621,8 @@ Messages: bang, int, float, list, anything, array, dictionary, in1, string
 
 Attributes: mode, range, seed, urn
 """
-array_random = MaxObject('array.random')
 
+array_reduce = MaxObject('array.reduce')
 """
 array.reduce - Combine array elements based on a custom function
 
@@ -1626,8 +1642,8 @@ Messages: bang, int, float, list, anything, array, cancel, dictionary, string
 
 Attributes: initial
 """
-array_reduce = MaxObject('array.reduce')
 
+array_regexp = MaxObject('array.regexp')
 """
 array.regexp - Use regular expressions to process input
 
@@ -1653,8 +1669,8 @@ Messages: bang, int, float, list, anything, array, dictionary, string
 
 Attributes: re, substitute
 """
-array_regexp = MaxObject('array.regexp')
 
+array_remove = MaxObject('array.remove')
 """
 array.remove - Remove a range of elements from an array object
 
@@ -1671,8 +1687,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, dictionary, in1, in2, string
 """
-array_remove = MaxObject('array.remove')
 
+array_replace = MaxObject('array.replace')
 """
 array.replace - Replace elements in an array
 
@@ -1686,8 +1702,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, dictionary, in2, string
 """
-array_replace = MaxObject('array.replace')
 
+array_reverse = MaxObject('array.reverse')
 """
 array.reverse - Reverse the order of elements in an array object
 
@@ -1702,8 +1718,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, dictionary, string
 """
-array_reverse = MaxObject('array.reverse')
 
+array_rotate = MaxObject('array.rotate')
 """
 array.rotate - Rotate the elements in any array object
 
@@ -1721,8 +1737,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, dictionary, in1, string
 """
-array_rotate = MaxObject('array.rotate')
 
+array_routepass = MaxObject('array.routepass')
 """
 array.routepass - Route a complete input array object based on input matching
 
@@ -1741,8 +1757,8 @@ Messages: bang, int, float, list, anything, array, dictionary, string
 
 Attributes: match
 """
-array_routepass = MaxObject('array.routepass')
 
+array_scramble = MaxObject('array.scramble')
 """
 array.scramble - Randomize the order of elements in an array object
 
@@ -1758,8 +1774,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, dictionary, string
 """
-array_scramble = MaxObject('array.scramble')
 
+array_sect = MaxObject('array.sect')
 """
 array.sect - Return the elements of an array object which intersect with another array object
 
@@ -1774,8 +1790,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, dictionary, string
 """
-array_sect = MaxObject('array.sect')
 
+array_shift = MaxObject('array.shift')
 """
 array.shift - Remove an element from the beginning of an array
 
@@ -1794,8 +1810,8 @@ Messages: bang, int, float, list, anything, array, clear, dictionary, string
 
 Attributes: wrapmode
 """
-array_shift = MaxObject('array.shift')
 
+array_slice = MaxObject('array.slice')
 """
 array.slice - Output a range of elements of an array object as a new array object
 
@@ -1813,8 +1829,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, dictionary, string
 """
-array_slice = MaxObject('array.slice')
 
+array_some = MaxObject('array.some')
 """
 array.some - Test the elements of an array object for a matching condition
 
@@ -1831,8 +1847,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, cancel, dictionary, in1, string
 """
-array_some = MaxObject('array.some')
 
+array_sort = MaxObject('array.sort')
 """
 array.sort - Sort the elements of an array object according to a test
 
@@ -1851,8 +1867,8 @@ Messages: bang, int, float, list, anything, array, cancel, dictionary, in1, stri
 
 Attributes: simple
 """
-array_sort = MaxObject('array.sort')
 
+array_split = MaxObject('array.split')
 """
 array.split - Split an array object into two new array objects at a specified index
 
@@ -1871,8 +1887,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, dictionary, in1, string
 """
-array_split = MaxObject('array.split')
 
+array_stddev = MaxObject('array.stddev')
 """
 array.stddev - Calculate the standard deviation of the numerical elements of an array
 
@@ -1887,8 +1903,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, dictionary, string
 """
-array_stddev = MaxObject('array.stddev')
 
+array_stream = MaxObject('array.stream')
 """
 array.stream - Make an array of a certain size
 
@@ -1907,8 +1923,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, clear, dictionary, string
 """
-array_stream = MaxObject('array.stream')
 
+array_subarray = MaxObject('array.subarray')
 """
 array.subarray - Output a range of elements of an array object as a new array object
 
@@ -1926,8 +1942,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, dictionary, string
 """
-array_subarray = MaxObject('array.subarray')
 
+array_thin = MaxObject('array.thin')
 """
 array.thin - Remove duplicated entries from an array object
 
@@ -1939,8 +1955,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, dictionary, string
 """
-array_thin = MaxObject('array.thin')
 
+array_tobuffer = MaxObject('array.tobuffer')
 """
 array.tobuffer - Write array object values to an audio buffer
 
@@ -1960,8 +1976,8 @@ Messages: bang, int, float, list, anything, array, dictionary, string
 
 Attributes: buffername, channelstart, framelength, frameoffset, resize
 """
-array_tobuffer = MaxObject('array.tobuffer')
 
+array_tolist = MaxObject('array.tolist')
 """
 array.tolist - Convert an array object to a list
 
@@ -1977,8 +1993,8 @@ Messages: bang, int, float, list, anything, array, dictionary, string
 
 Attributes: flatten, stringmode
 """
-array_tolist = MaxObject('array.tolist')
 
+array_tostring = MaxObject('array.tostring')
 """
 array.tostring - Convert an array object to a string object
 
@@ -1992,8 +2008,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, dictionary, string
 """
-array_tostring = MaxObject('array.tostring')
 
+array_tosymbol = MaxObject('array.tosymbol')
 """
 array.tosymbol - Convert an array object to a symbol
 
@@ -2007,8 +2023,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, dictionary, string
 """
-array_tosymbol = MaxObject('array.tosymbol')
 
+array_tuplewise = MaxObject('array.tuplewise')
 """
 array.tuplewise - Make an array of a certain size (counting iterations)
 
@@ -2025,8 +2041,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, clear, dictionary, string
 """
-array_tuplewise = MaxObject('array.tuplewise')
 
+array_union = MaxObject('array.union')
 """
 array.union - Combine two arrays into a new array object containing non-duplicate entries of both arrays
 
@@ -2041,8 +2057,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, dictionary, string
 """
-array_union = MaxObject('array.union')
 
+array_unique = MaxObject('array.unique')
 """
 array.unique - Filtering duplicates and subtract arrays
 
@@ -2057,8 +2073,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, dictionary, string
 """
-array_unique = MaxObject('array.unique')
 
+array_unshift = MaxObject('array.unshift')
 """
 array.unshift - Add one or more elements to the beginning of an array
 
@@ -2075,8 +2091,8 @@ Messages: bang, int, float, list, anything, array, clear, dictionary, string
 
 Attributes: wrapmode
 """
-array_unshift = MaxObject('array.unshift')
 
+array_wrap = MaxObject('array.wrap')
 """
 array.wrap - Wrap an array inside of an array
 
@@ -2091,8 +2107,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, array, dictionary, string
 """
-array_wrap = MaxObject('array.wrap')
 
+asin = MaxObject('asin')
 """
 asin - Arc-sine function
 
@@ -2109,8 +2125,8 @@ Outlets:
 
 Messages: bang, int, float
 """
-asin = MaxObject('asin')
 
+asinh = MaxObject('asinh')
 """
 asinh - Hyperbolic arc-sine function
 
@@ -2127,8 +2143,8 @@ Outlets:
 
 Messages: bang, int, float
 """
-asinh = MaxObject('asinh')
 
+atan = MaxObject('atan')
 """
 atan - Arc-tangent function
 
@@ -2145,8 +2161,8 @@ Outlets:
 
 Messages: bang, int, float
 """
-atan = MaxObject('atan')
 
+atan2 = MaxObject('atan2')
 """
 atan2 - Two-variable arc-tangent function
 
@@ -2164,8 +2180,8 @@ Outlets:
 
 Messages: bang, int, float, ft1, in1
 """
-atan2 = MaxObject('atan2')
 
+atanh = MaxObject('atanh')
 """
 atanh - Hyperbolic arc-tangent function
 
@@ -2182,8 +2198,8 @@ Outlets:
 
 Messages: bang, int, float
 """
-atanh = MaxObject('atanh')
 
+atodb = MaxObject('atodb')
 """
 atodb - Convert a linear value to decibels
 
@@ -2197,8 +2213,8 @@ Outlets:
 
 Messages: bang, int, float, list, set
 """
-atodb = MaxObject('atodb')
 
+atoi = MaxObject('atoi')
 """
 atoi - Convert characters to integers
 
@@ -2214,8 +2230,8 @@ Messages: bang, int, float, list, anything, clear
 
 Attributes: utf8
 """
-atoi = MaxObject('atoi')
 
+attrui = MaxObject('attrui')
 """
 attrui - Inspect attributes
 
@@ -2231,8 +2247,8 @@ Messages: int, float, list, anything, (mouse)
 
 Attributes: align, annotation_name, arrowcolor, attr, attr_display, attrfilter, bgcolor, bgcolor2, bordercolor, displaymode, htricolor, lock, menu_display, orientation, parameter_enable, paramonly, rounded, showcaption, showgetonly, storeinpreset, style, text_width, textcolor, textjustification, tricolor
 """
-attrui = MaxObject('attrui')
 
+autopattr = MaxObject('autopattr')
 """
 autopattr - Expose multiple objects to the pattr system
 
@@ -2257,8 +2273,8 @@ Messages: bang, int, float, list, anything, getattributes, getstate
 
 Attributes: autoname, autorestore, dirty, greedy, name
 """
-autopattr = MaxObject('autopattr')
 
+bag = MaxObject('bag')
 """
 bag - Store a collection of numbers
 
@@ -2276,8 +2292,8 @@ Outlets:
 
 Messages: bang, int, float, clear, cut, in1, length, send, list
 """
-bag = MaxObject('bag')
 
+bangbang = MaxObject('bangbang')
 """
 bangbang - Output a bang from many outlets
 
@@ -2295,8 +2311,8 @@ Outlets:
 
 Messages: bang, int, float, anything
 """
-bangbang = MaxObject('bangbang')
 
+bendin = MaxObject('bendin')
 """
 bendin - Output MIDI pitch bend values
 
@@ -2319,8 +2335,8 @@ Messages: anything, (mouse), (MIDI), port
 
 Attributes: matchport, name
 """
-bendin = MaxObject('bendin')
 
+bendout = MaxObject('bendout')
 """
 bendout - Send MIDI pitch bend messages
 
@@ -2340,8 +2356,8 @@ Messages: int, float, anything, (mouse), in1, port
 
 Attributes: matchport, name
 """
-bendout = MaxObject('bendout')
 
+bgcolor = MaxObject('bgcolor')
 """
 bgcolor - Set background color
 
@@ -2360,8 +2376,8 @@ Inlets:
 
 Messages: bang, int, list, ft3, in1, in2, set
 """
-bgcolor = MaxObject('bgcolor')
 
+bitand = MaxObject('bitand')
 """
 bitand - Bitwise intersection of two numbers
 
@@ -2379,8 +2395,8 @@ Outlets:
 
 Messages: bang, int, float, in1, set, list
 """
-bitand = MaxObject('bitand')
 
+bitor = MaxObject('bitor')
 """
 bitor - Bitwise union of two numbers
 
@@ -2398,8 +2414,8 @@ Outlets:
 
 Messages: bang, int, float, in1, set, list
 """
-bitor = MaxObject('bitor')
 
+bline = MaxObject('bline')
 """
 bline - Generate ramps using bang
 
@@ -2417,8 +2433,8 @@ Outlets:
 
 Messages: bang, int, float, list, set, stop
 """
-bline = MaxObject('bline')
 
+bondo = MaxObject('bondo')
 """
 bondo - Synchronize a group of messages
 
@@ -2439,8 +2455,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, set
 """
-bondo = MaxObject('bondo')
 
+borax = MaxObject('borax')
 """
 borax - Report note-on and note-off information
 
@@ -2466,8 +2482,8 @@ Messages: bang, int, delta, in1, list
 
 Attributes: size
 """
-borax = MaxObject('borax')
 
+bpatcher = MaxObject('bpatcher')
 """
 bpatcher - Embed a subpatch with a visible UI
 
@@ -2477,8 +2493,8 @@ Messages: (drag), (mouse), replace
 
 Attributes: args, bgcolor, bgmode, border, clickthrough, embed, enablehscroll, enablevscroll, lockeddragscroll, lockedsize, name, offset
 """
-bpatcher = MaxObject('bpatcher')
 
+bucket = MaxObject('bucket')
 """
 bucket - Pass numbers from outlet to outlet
 
@@ -2496,8 +2512,8 @@ Outlets:
 
 Messages: bang, int, float, L2R, R2L, clear, freeze, l2r, r2l, roll, set, thaw
 """
-bucket = MaxObject('bucket')
 
+buddy = MaxObject('buddy')
 """
 buddy - Synchronize arriving data
 
@@ -2516,8 +2532,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, clear
 """
-buddy = MaxObject('buddy')
 
+button = MaxObject('button')
 """
 button - Blink and send a bang
 
@@ -2533,8 +2549,8 @@ Messages: bang, int, float, list, anything, (mouse)
 
 Attributes: annotation_name, bgcolor, blinkcolor, blinktime, fgcolor, outlinecolor, param_connect, parameter_enable, parameter_mappable, style
 """
-button = MaxObject('button')
 
+capture = MaxObject('capture')
 """
 capture - Store values to view or edit
 
@@ -2555,8 +2571,8 @@ Messages: int, float, list, anything, clear, count, (mouse), dump, open, wclose,
 
 Attributes: listout, precision, size
 """
-capture = MaxObject('capture')
 
+cartopol = MaxObject('cartopol')
 """
 cartopol - Convert cartesian to polar coordinates
 
@@ -2572,8 +2588,8 @@ Outlets:
 
 Messages: bang, int, float
 """
-cartopol = MaxObject('cartopol')
 
+change = MaxObject('change')
 """
 change - Filter out repetitions of a number
 
@@ -2593,8 +2609,8 @@ Outlets:
 
 Messages: int, float, mode, set
 """
-change = MaxObject('change')
 
+chooser = MaxObject('chooser')
 """
 chooser - Display a scrolling list of selectable items
 
@@ -2615,8 +2631,8 @@ Messages: bang, int, float, anything, append, clear, count, delete, deselect, di
 
 Attributes: autopopulate, bgcolor, collection, depth, enabledrag, factorycontent, filekind, filtertext, headerheight, headerlabel, items, keynavigate, margin, multiselect, parameter_enable, parameter_mappable, prefix, prefix_mode, preview, selectedclick, selectioncolor, showdotfiles, stripecolor, style, textcolor, types, useselectioncolor
 """
-chooser = MaxObject('chooser')
 
+clip = MaxObject('clip')
 """
 clip - Limit numbers to a range
 
@@ -2636,8 +2652,8 @@ Messages: int, float, list, set
 
 Attributes: mode
 """
-clip = MaxObject('clip')
 
+clocker = MaxObject('clocker')
 """
 clocker - Report elapsed time, at regular intervals
 
@@ -2657,8 +2673,8 @@ Messages: bang, int, float, list, anything, clock, reset, stop
 
 Attributes: active, autostart, autostarttime, defer, interval, quantize, transport
 """
-clocker = MaxObject('clocker')
 
+closebang = MaxObject('closebang')
 """
 closebang - Send a bang on close
 
@@ -2672,8 +2688,8 @@ Outlets:
 
 Messages: bang, (mouse)
 """
-closebang = MaxObject('closebang')
 
+coll = MaxObject('coll')
 """
 coll - Store and edit a collection of data
 
@@ -2696,8 +2712,8 @@ Messages: bang, int, float, list, anything, append, assoc, clear, (mouse), deass
 
 Attributes: embed, name, precision
 """
-coll = MaxObject('coll')
 
+coll_codebox = MaxObject('coll.codebox')
 """
 coll.codebox - Store and edit a collection of data
 
@@ -2716,8 +2732,8 @@ Messages: int, float, list, (mouse), anything, append, assoc, bang, symbol, clea
 
 Attributes: bgcolor, editlocked, embed, linenumbers, linenumberwidth, margin, style, textcolor, precision, name
 """
-coll_codebox = MaxObject('coll.codebox')
 
+colorpicker = MaxObject('colorpicker')
 """
 colorpicker - Select and output a color
 
@@ -2732,8 +2748,8 @@ Messages: bang, list, (mouse)
 
 Attributes: compatibility, currentcolor
 """
-colorpicker = MaxObject('colorpicker')
 
+combine = MaxObject('combine')
 """
 combine - Combine multiple items into a single symbol
 
@@ -2753,8 +2769,8 @@ Messages: bang, int, float, list, anything
 
 Attributes: padding, triggers
 """
-combine = MaxObject('combine')
 
+comment = MaxObject('comment')
 """
 comment - Explanatory note or label
 
@@ -2767,8 +2783,8 @@ Messages: append, prepend, set, setwithtruncation, string
 
 Attributes: bgcolor, bubble, bubble_bgcolor, bubble_outlinecolor, bubblepoint, bubbleside, bubbletextmargin, bubbleusescolors, style, suppressinlet, underline
 """
-comment = MaxObject('comment')
 
+conformpath = MaxObject('conformpath')
 """
 conformpath - Convert file paths styles
 
@@ -2787,8 +2803,8 @@ Outlets:
 
 Messages: anything, pathstyle, pathtype
 """
-conformpath = MaxObject('conformpath')
 
+console = MaxObject('console')
 """
 console - Console Output in Patcher
 
@@ -2806,8 +2822,8 @@ Messages: clear, write
 
 Attributes: classfilter, patcherfilter, showonlyerrors, textfilter
 """
-console = MaxObject('console')
 
+cos = MaxObject('cos')
 """
 cos - Cosine function
 
@@ -2824,8 +2840,8 @@ Outlets:
 
 Messages: bang, int, float
 """
-cos = MaxObject('cos')
 
+cosh = MaxObject('cosh')
 """
 cosh - Hyperbolic cosine function
 
@@ -2842,8 +2858,8 @@ Outlets:
 
 Messages: bang, int, float
 """
-cosh = MaxObject('cosh')
 
+counter = MaxObject('counter')
 """
 counter - Keep count based on bang messages
 
@@ -2869,8 +2885,8 @@ Messages: bang, int, float, carrybang, carryint, dec, down, flags, goto, inc, ja
 
 Attributes: carryflag, compatmode
 """
-counter = MaxObject('counter')
 
+cpuclock = MaxObject('cpuclock')
 """
 cpuclock - Retrieve the CPU time
 
@@ -2884,8 +2900,8 @@ Outlets:
 
 Messages: bang, reset
 """
-cpuclock = MaxObject('cpuclock')
 
+crosspatch = MaxObject('crosspatch')
 """
 crosspatch - Patching Editor for Matrix Objects
 
@@ -2902,8 +2918,8 @@ Messages: bang, list, clear, dictionary, dump, dumpconnections, indisable, (mous
 
 Attributes: allowdisabled, annotation_name, bgcolor, candycane, candycane2, candycane3, candycane4, candycane5, candycane6, candycane7, candycane8, candymode, colorlabels, connectacrossdividers, dimmedconnectionalpha, dividercolor, dividers, embed, exclusive, gaincaption, gaindragmode, gainradius, gainstyle, incolormap, initialgain, inlabels, labelheight, labelwidth, linecolor, maxgain, numins, numouts, outcolormap, outlabels, overgaincolor, parameter_enable, parameter_mappable, preservegain, showgain, showlabels, style, textcolor
 """
-crosspatch = MaxObject('crosspatch')
 
+ctlin = MaxObject('ctlin')
 """
 ctlin - Output received MIDI control values
 
@@ -2926,8 +2942,8 @@ Messages: anything, (mouse), (MIDI), port, set
 
 Attributes: matchport, name
 """
-ctlin = MaxObject('ctlin')
 
+ctlout = MaxObject('ctlout')
 """
 ctlout - Transmit MIDI controller messages
 
@@ -2947,8 +2963,8 @@ Messages: int, float, anything, (mouse), in1, in2, port
 
 Attributes: matchport, name
 """
-ctlout = MaxObject('ctlout')
 
+cycle = MaxObject('cycle')
 """
 cycle - Round-robin messages to outlets
 
@@ -2966,8 +2982,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, set, symbol, thresh
 """
-cycle = MaxObject('cycle')
 
+date = MaxObject('date')
 """
 date - Report current date and time
 
@@ -2983,8 +2999,8 @@ Outlets:
 
 Messages: date, ticks, time
 """
-date = MaxObject('date')
 
+dbtoa = MaxObject('dbtoa')
 """
 dbtoa - Convert decibels to a linear value
 
@@ -2998,8 +3014,8 @@ Outlets:
 
 Messages: bang, int, float, list, set
 """
-dbtoa = MaxObject('dbtoa')
 
+decide = MaxObject('decide')
 """
 decide - Choose randomly between 1 and 0
 
@@ -3017,8 +3033,8 @@ Outlets:
 
 Messages: bang, int, in1
 """
-decide = MaxObject('decide')
 
+decode = MaxObject('decode')
 """
 decode - Send 1 or 0 out a specific outlet
 
@@ -3038,8 +3054,8 @@ Outlets:
 
 Messages: bang, int, in1, in2
 """
-decode = MaxObject('decode')
 
+defer = MaxObject('defer')
 """
 defer - Defer execution of a message
 
@@ -3053,8 +3069,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything
 """
-defer = MaxObject('defer')
 
+deferlow = MaxObject('deferlow')
 """
 deferlow - Defer the execution of a message (always)
 
@@ -3068,8 +3084,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything
 """
-deferlow = MaxObject('deferlow')
 
+delay = MaxObject('delay')
 """
 delay - Delay a bang
 
@@ -3089,8 +3105,8 @@ Messages: bang, int, float, list, anything, clock, stop
 
 Attributes: delaytime, quantize, transport
 """
-delay = MaxObject('delay')
 
+detonate = MaxObject('detonate')
 """
 detonate - Play a score of note events
 
@@ -3121,8 +3137,8 @@ Outlets:
 
 Messages: bang, int, float, list, clear, (mouse), delay, export, follow, followat, import, in1, in2, in3, in4, in5, in6, in7, mute, next, nth, open, params, read, record, restore, setparam, start, startat, stop, unmute, unmuteall, wclose, write, writemax
 """
-detonate = MaxObject('detonate')
 
+dial = MaxObject('dial')
 """
 dial - Output numbers using an onscreen dial
 
@@ -3138,8 +3154,8 @@ Messages: bang, int, float, (mouse), resize, set, setminmax
 
 Attributes: annotation_name, bgcolor, clip, degrees, fgcolor, floatoutput, inputrangemode, min, mode, mult, needlecolor, outlinecolor, param_connect, parameter_enable, parameter_mappable, size, style, thickness, vtracking
 """
-dial = MaxObject('dial')
 
+dialog = MaxObject('dialog')
 """
 dialog - Open a dialog box
 
@@ -3161,8 +3177,8 @@ Messages: bang, int, float, clearsymbol, in1, symbol
 
 Attributes: label, mask, mode
 """
-dialog = MaxObject('dialog')
 
+dict_ = MaxObject('dict')
 """
 dict - Create and access dictionaries
 
@@ -3187,8 +3203,8 @@ Messages: bang, append, clear, clone, contains, (mouse), dictionary, edit, expor
 
 Attributes: annotation_name, embed, legacy, name, parameter_enable, parameter_mappable, quiet
 """
-dict_ = MaxObject('dict')
 
+dict_codebox = MaxObject('dict.codebox')
 """
 dict.codebox - Create and access dictionaries
 
@@ -3209,8 +3225,8 @@ Messages: bang, clear, remove, getkeys, contains, getnames, getsize, gettype, ge
 
 Attributes: bgcolor, editlocked, embed, linenumbers, linenumberwidth, margin, style, textcolor, legacy, name, parameter_enable, parameter_mappable, quiet
 """
-dict_codebox = MaxObject('dict.codebox')
 
+dict_compare = MaxObject('dict.compare')
 """
 dict.compare - Compare two dictionaries for equivalence.
 
@@ -3227,8 +3243,8 @@ Messages: bang, dictionary
 
 Attributes: unordered
 """
-dict_compare = MaxObject('dict.compare')
 
+dict_deserialize = MaxObject('dict.deserialize')
 """
 dict.deserialize - Create a dictionary from text
 
@@ -3247,8 +3263,8 @@ Messages: anything
 
 Attributes: name
 """
-dict_deserialize = MaxObject('dict.deserialize')
 
+dict_group = MaxObject('dict.group')
 """
 dict.group - Build a dictionary iteratively
 
@@ -3267,8 +3283,8 @@ Messages: bang, list, anything
 
 Attributes: name
 """
-dict_group = MaxObject('dict.group')
 
+dict_iter = MaxObject('dict.iter')
 """
 dict.iter - Stream the content of a dictionary
 
@@ -3282,8 +3298,8 @@ Outlets:
 
 Messages: array, dictionary
 """
-dict_iter = MaxObject('dict.iter')
 
+dict_join = MaxObject('dict.join')
 """
 dict.join - Merge the content of two dictionaries
 
@@ -3301,8 +3317,8 @@ Outlets:
 
 Messages: bang, array, dictionary
 """
-dict_join = MaxObject('dict.join')
 
+dict_pack = MaxObject('dict.pack')
 """
 dict.pack - Create a dictionary and set its values
 
@@ -3322,8 +3338,8 @@ Messages: bang, int, float, list, anything, array, dictionary, string
 
 Attributes: keys, name, triggers, unmatched
 """
-dict_pack = MaxObject('dict.pack')
 
+dict_print = MaxObject('dict.print')
 """
 dict.print - Post a dictionary to the Max Console
 
@@ -3337,8 +3353,8 @@ Inlets:
 
 Messages: array, dictionary
 """
-dict_print = MaxObject('dict.print')
 
+dict_route = MaxObject('dict.route')
 """
 dict.route - Compare dictionaries
 
@@ -3357,8 +3373,8 @@ Outlets:
 
 Messages: dictionary
 """
-dict_route = MaxObject('dict.route')
 
+dict_serialize = MaxObject('dict.serialize')
 """
 dict.serialize - Convert a dictionary's content to text
 
@@ -3374,8 +3390,8 @@ Messages: dictionary
 
 Attributes: compress, mode
 """
-dict_serialize = MaxObject('dict.serialize')
 
+dict_slice = MaxObject('dict.slice')
 """
 dict.slice - Split a dictionary into two dictionaries
 
@@ -3392,8 +3408,8 @@ Messages: dictionary
 
 Attributes: keys
 """
-dict_slice = MaxObject('dict.slice')
 
+dict_strip = MaxObject('dict.strip')
 """
 dict.strip - Remove keys from a dictionary
 
@@ -3413,8 +3429,8 @@ Messages: dictionary
 
 Attributes: keys
 """
-dict_strip = MaxObject('dict.strip')
 
+dict_unpack = MaxObject('dict.unpack')
 """
 dict.unpack - Extract values from a dictionary
 
@@ -3435,8 +3451,8 @@ Messages: bang, array, dictionary
 
 Attributes: keys, legacy, unmatched
 """
-dict_unpack = MaxObject('dict.unpack')
 
+dict_view = MaxObject('dict.view')
 """
 dict.view - View the contents of a dictionary
 
@@ -3446,8 +3462,8 @@ Messages: bang, dictionary, expand, expandall, (mouse)
 
 Attributes: bgcolor, stripecolor, style, textcolor
 """
-dict_view = MaxObject('dict.view')
 
+div = MaxObject('div')
 """
 div - Divide two numbers
 
@@ -3465,8 +3481,8 @@ Outlets:
 
 Messages: bang, int, float, in1, set, list
 """
-div = MaxObject('div')
 
+dropfile = MaxObject('dropfile')
 """
 dropfile - Drag and drop files
 
@@ -3483,8 +3499,8 @@ Messages: (drag)
 
 Attributes: border, bordercolor, folderslash, rounded, types
 """
-dropfile = MaxObject('dropfile')
 
+drunk = MaxObject('drunk')
 """
 drunk - Output random numbers within a step range
 
@@ -3506,8 +3522,8 @@ Messages: bang, int, float, list, reset, set, setresetvalue
 
 Attributes: cycle, floatoutput, range, seed, stepsize
 """
-drunk = MaxObject('drunk')
 
+equals = MaxObject('equals')
 """
 equals - Compare numbers for equal-to condition
 
@@ -3527,8 +3543,8 @@ Messages: bang, int, float, in1, set, list
 
 Attributes: fuzzy
 """
-equals = MaxObject('equals')
 
+error = MaxObject('error')
 """
 error - Report Max errors
 
@@ -3545,8 +3561,8 @@ Outlets:
 
 Messages: int, float, error
 """
-error = MaxObject('error')
 
+expr = MaxObject('expr')
 """
 expr - Evaluate a mathematical expression
 
@@ -3567,8 +3583,8 @@ Outlets:
 
 Messages: bang, int, float, ft1, ft2, ft3, ft4, ft5, ft6, ft7, ft8, ft9, in1, in2, in3, in4, in5, in6, in7, in8, in9, set, sm1, sm2, sm3, sm4, sm5, sm6, sm7, sm8, sm9, symbol, list
 """
-expr = MaxObject('expr')
 
+filedate = MaxObject('filedate')
 """
 filedate - Report the modification date of a file
 
@@ -3580,8 +3596,8 @@ Outlets:
 
 Messages: anything
 """
-filedate = MaxObject('filedate')
 
+filein = MaxObject('filein')
 """
 filein - Read and access a file of binary data
 
@@ -3603,8 +3619,8 @@ Outlets:
 
 Messages: int, fclose, in1, in2, read, spool
 """
-filein = MaxObject('filein')
 
+filepath = MaxObject('filepath')
 """
 filepath - Manage and report on the Max search path
 
@@ -3622,8 +3638,8 @@ Outlets:
 
 Messages: bang, append, clear, revert, set
 """
-filepath = MaxObject('filepath')
 
+filewatch = MaxObject('filewatch')
 """
 filewatch - Watch a file for changes
 
@@ -3640,8 +3656,8 @@ Outlets:
 
 Messages: bang, int, anything, stop
 """
-filewatch = MaxObject('filewatch')
 
+float_ = MaxObject('float')
 """
 float - Store a decimal number
 
@@ -3659,8 +3675,8 @@ Outlets:
 
 Messages: bang, int, float, in1, send, set
 """
-float_ = MaxObject('float')
 
+flonum = MaxObject('flonum')
 """
 flonum - Display and output a number
 
@@ -3677,8 +3693,8 @@ Messages: bang, int, float, max, min, (mouse), select, set
 
 Attributes: bgcolor, bordercolor, cantchange, hbgcolor, htextcolor, htricolor, maximum, minimum, mouseup, numdecimalplaces, outputonclick, parameter_enable, textcolor, triangle, tricolor, triscale
 """
-flonum = MaxObject('flonum')
 
+flush = MaxObject('flush')
 """
 flush - Output MIDI note-offs for held notes
 
@@ -3694,8 +3710,8 @@ Outlets:
 
 Messages: bang, int, clear, in1
 """
-flush = MaxObject('flush')
 
+folder = MaxObject('folder')
 """
 folder - List the files in a folder
 
@@ -3713,8 +3729,8 @@ Outlets:
 
 Messages: bang, int, anything, symbol, types
 """
-folder = MaxObject('folder')
 
+follow = MaxObject('follow')
 """
 follow - Compare a live performance to a recorded performance
 
@@ -3732,8 +3748,8 @@ Outlets:
 
 Messages: bang, int, float, append, delay, dump, follow, in1, next, print, read, record, start, stop, write
 """
-follow = MaxObject('follow')
 
+fontlist = MaxObject('fontlist')
 """
 fontlist - List system fonts
 
@@ -3750,8 +3766,8 @@ Outlets:
 
 Messages: bang
 """
-fontlist = MaxObject('fontlist')
 
+forward = MaxObject('forward')
 """
 forward - Send messages to specified receive objects
 
@@ -3765,8 +3781,8 @@ Inlets:
 
 Messages: bang, int, float, list, anything, send
 """
-forward = MaxObject('forward')
 
+fpic = MaxObject('fpic')
 """
 fpic - Display an image
 
@@ -3780,8 +3796,8 @@ Messages: bang, (drag), (mouse), noscale, offset, pict, read, readany, rect
 
 Attributes: alpha, autofit, destrect, embed, forceaspect, pic, xoffset, yoffset
 """
-fpic = MaxObject('fpic')
 
+freebang = MaxObject('freebang')
 """
 freebang - Send a bang when a patcher is freed
 
@@ -3793,8 +3809,8 @@ Outlets:
 
 Messages: bang, (mouse)
 """
-freebang = MaxObject('freebang')
 
+fromsymbol = MaxObject('fromsymbol')
 """
 fromsymbol - Convert a symbol into numbers/messages
 
@@ -3810,8 +3826,8 @@ Messages: bang, int, float, anything
 
 Attributes: separator
 """
-fromsymbol = MaxObject('fromsymbol')
 
+fswap = MaxObject('fswap')
 """
 fswap - Swap position of two numbers
 
@@ -3830,8 +3846,8 @@ Outlets:
 
 Messages: bang, int, float, ft1, in1
 """
-fswap = MaxObject('fswap')
 
+ftom = MaxObject('ftom')
 """
 ftom - Convert frequency to a MIDI note number
 
@@ -3850,8 +3866,8 @@ Messages: int, float, list
 
 Attributes: base, map, mapname, mid, ref, round, scale, scalename
 """
-ftom = MaxObject('ftom')
 
+funbuff = MaxObject('funbuff')
 """
 funbuff - Store pairs of numbers
 
@@ -3871,8 +3887,8 @@ Outlets:
 
 Messages: bang, int, float, clear, copy, cut, delete, dump, embed, find, goto, in1, interp, interptab, max, min, next, paste, print, read, select, set, undo, write
 """
-funbuff = MaxObject('funbuff')
 
+function = MaxObject('function')
 """
 function - Breakpoint function editor
 
@@ -3891,8 +3907,8 @@ Messages: bang, int, float, list, clear, clearfix, clearsustain, color, copy, du
 
 Attributes: annotation_name, autosustain, bgcolor, bordercolor, classic_curve, clickadd, clickmove, clicksustain, constrainpointchanges, cursor, cursorcolor, domain, grid, gridcolor, gridstep_x, gridstep_y, legend, linecolor, linethickness, mode, mousemode, mousereport, outputmode, param_connect, parameter_enable, parameter_mappable, pointalign, pointcolor, pointsize, range, shadowalpha, shadowblend, shadowproportion, shadowreflectionpoint, shadowsigned, snap2grid, style, sustaincolor, textcolor, zoom_x, zoom_y
 """
-function = MaxObject('function')
 
+funnel = MaxObject('funnel')
 """
 funnel - Tag data with its inlet number
 
@@ -3904,8 +3920,8 @@ Args:
 
 Messages: bang, int, float, list, anything, offset, set
 """
-funnel = MaxObject('funnel')
 
+gamepad = MaxObject('gamepad')
 """
 gamepad - Report gamepad controller events
 
@@ -3923,8 +3939,8 @@ Messages: addmapping, addmappingfile, senddevice, sendinstance
 
 Attributes: interval, rawdata
 """
-gamepad = MaxObject('gamepad')
 
+gate = MaxObject('gate')
 """
 gate - Pass input to an outlet
 
@@ -3941,8 +3957,8 @@ Outlets:
 
 Messages: bang, int, float, next
 """
-gate = MaxObject('gate')
 
+gestalt = MaxObject('gestalt')
 """
 gestalt - Retrieve system information
 
@@ -3957,8 +3973,8 @@ Messages: bang, anything, keys, symbol
 
 Attributes: outputmode, selector
 """
-gestalt = MaxObject('gestalt')
 
+getattr_ = MaxObject('getattr')
 """
 getattr - Query object attributes
 
@@ -3979,8 +3995,8 @@ Messages: bang, getattrlist
 
 Attributes: attr, listen, prefix
 """
-getattr_ = MaxObject('getattr')
 
+grab = MaxObject('grab')
 """
 grab - Intercept the output of another object
 
@@ -4001,8 +4017,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, set
 """
-grab = MaxObject('grab')
 
+greaterthan = MaxObject('greaterthan')
 """
 greaterthan - Compare numbers for greater than condition
 
@@ -4020,8 +4036,8 @@ Outlets:
 
 Messages: bang, int, float, in1, set
 """
-greaterthan = MaxObject('greaterthan')
 
+greaterthaneq = MaxObject('greaterthaneq')
 """
 greaterthaneq - Compare numbers for greater than or equal to condition
 
@@ -4041,8 +4057,8 @@ Messages: bang, int, float, in1, set
 
 Attributes: fuzzy
 """
-greaterthaneq = MaxObject('greaterthaneq')
 
+gswitch = MaxObject('gswitch')
 """
 gswitch - Select output from two inlets
 
@@ -4058,8 +4074,8 @@ Messages: bang, int, float, list, anything, (mouse)
 
 Attributes: annotation_name, bgcolor, color, inputs, int, param_connect, parameter_enable, parameter_mappable, style, switchcolor
 """
-gswitch = MaxObject('gswitch')
 
+gswitch2 = MaxObject('gswitch2')
 """
 gswitch2 - Send input to one of two outlets
 
@@ -4077,8 +4093,8 @@ Messages: bang, int, float, (mouse)
 
 Attributes: annotation_name, bgcolor, color, int, outputs, param_connect, parameter_enable, parameter_mappable, style, switchcolor
 """
-gswitch2 = MaxObject('gswitch2')
 
+hi = MaxObject('hi')
 """
 hi - Human Interface device input (legacy)
 
@@ -4096,8 +4112,8 @@ Outlets:
 
 Messages: bang, int, anything, clear, delta, ignore, info, menu, poll
 """
-hi = MaxObject('hi')
 
+hid = MaxObject('hid')
 """
 hid - Human Interface Device input (modern)
 
@@ -4122,8 +4138,8 @@ Messages: bang, int, anything, close, info, menu, poll
 
 Attributes: exclusive
 """
-hid = MaxObject('hid')
 
+hint = MaxObject('hint')
 """
 hint - Display hint text
 
@@ -4136,8 +4152,8 @@ Messages: int, float, (mouse), set
 
 Attributes: delay, enabled
 """
-hint = MaxObject('hint')
 
+histo = MaxObject('histo')
 """
 histo - Create a histogram of numbers received
 
@@ -4156,8 +4172,8 @@ Outlets:
 
 Messages: bang, int, clear, in1
 """
-histo = MaxObject('histo')
 
+hover = MaxObject('hover')
 """
 hover - Report object scripting names
 
@@ -4174,8 +4190,8 @@ Outlets:
 
 Attributes: mode
 """
-hover = MaxObject('hover')
 
+if_ = MaxObject('if')
 """
 if - Conditional statement in if/then/else form
 
@@ -4190,8 +4206,8 @@ Args:
 
 Messages: bang, int, float, ft1, ft2, ft3, ft4, ft5, ft6, ft7, ft8, ft9, in1, in2, in3, in4, in5, in6, in7, in8, in9, set, symbol
 """
-if_ = MaxObject('if')
 
+imovie = MaxObject('imovie')
 """
 imovie - Play video
 
@@ -4209,8 +4225,8 @@ Messages: bang, int, (drag), active, clear, dispose, duration, getduration, getr
 
 Attributes: autofit, border, moviedim, name
 """
-imovie = MaxObject('imovie')
 
+incdec = MaxObject('incdec')
 """
 incdec - Increment and decrement a value
 
@@ -4226,8 +4242,8 @@ Messages: bang, int, float, dec, inc, (mouse), set
 
 Attributes: annotation_name, bgcolor, bordercolor, elementcolor, fgcolor, increment, param_connect, parameter_enable, parameter_mappable, style
 """
-incdec = MaxObject('incdec')
 
+inlet = MaxObject('inlet')
 """
 inlet - Receive messages from outside a patcher
 
@@ -4243,8 +4259,8 @@ Messages: (mouse)
 
 Attributes: comment, cool, style, tricolor
 """
-inlet = MaxObject('inlet')
 
+int_ = MaxObject('int')
 """
 int - Store an integer value
 
@@ -4262,8 +4278,8 @@ Outlets:
 
 Messages: bang, int, float, in1, send, set
 """
-int_ = MaxObject('int')
 
+itable = MaxObject('itable')
 """
 itable - Data table editor
 
@@ -4284,8 +4300,8 @@ Messages: bang, int, float, list, clear, const, dump, fquantile, getbits, goto, 
 
 Attributes: annotation_name, autohint, bgcolor, bgcolor2, bordercolor, embed, legend, linecolor, name, notename, param_connect, parameter_enable, parameter_mappable, pointcolor, range, selectioncolor, setresizes, shadowalpha, shadowblend, shadowproportion, signed, size, style, textcolor, tool
 """
-itable = MaxObject('itable')
 
+iter_ = MaxObject('iter')
 """
 iter - Break a list into individual messages
 
@@ -4299,8 +4315,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything
 """
-iter_ = MaxObject('iter')
 
+itoa = MaxObject('itoa')
 """
 itoa - Convert character codes to symbol
 
@@ -4318,8 +4334,8 @@ Messages: bang, int, float, list, clear
 
 Attributes: utf8
 """
-itoa = MaxObject('itoa')
 
+jit_cellblock = MaxObject('jit.cellblock')
 """
 jit.cellblock - Edit rows and columns of data
 
@@ -4339,8 +4355,8 @@ Messages: bang, list, append, cell, clear, col, deref, dump, jit_deref, jit_matr
 
 Attributes: automouse, bblend, bgcolor, border, bordercolor, colhead, cols, colwidth, datadirty, fblend, fgcolor, grid, gridlinecolor, hcellcolor, headercolor, hscroll, hsync, interval, just, neverdirty, outmode, precision, readonly, rowhead, rowheight, rows, savemode, sccolor, selmode, selsync, sgcolor, signalmode, signalusecols, stcolor, textcolor, vscroll, vsync
 """
-jit_cellblock = MaxObject('jit.cellblock')
 
+join = MaxObject('join')
 """
 join - Combine items into a list
 
@@ -4360,8 +4376,8 @@ Messages: bang, int, float, list, anything, set
 
 Attributes: triggers
 """
-join = MaxObject('join')
 
+js = MaxObject('js')
 """
 js - Execute Javascript (Legacy Engine)
 
@@ -4382,8 +4398,8 @@ Messages: bang, int, float, list, anything, autowatch, compile, delprop, editfon
 
 Attributes: annotation_name, parameter_enable, parameter_mappable, template
 """
-js = MaxObject('js')
 
+jstrigger = MaxObject('jstrigger')
 """
 jstrigger - Execute Javascript instructions sequentially
 
@@ -4397,8 +4413,8 @@ Inlets:
 
 Messages: bang, int, float, list, anything
 """
-jstrigger = MaxObject('jstrigger')
 
+jsui = MaxObject('jsui')
 """
 jsui - Javascript user interfaces and graphics (Legacy Engine)
 
@@ -4414,8 +4430,8 @@ Messages: bang, int, float, list, anything, (drag), autowatch, compile, delprop,
 
 Attributes: annotation_name, border, filename, jsarguments, nofsaa, param_connect, parameter_enable, parameter_mappable, template
 """
-jsui = MaxObject('jsui')
 
+jweb = MaxObject('jweb')
 """
 jweb - Web browser
 
@@ -4431,8 +4447,8 @@ Messages: anything, back, executejavascript, forward, gotohistory, (mouse), mute
 
 Attributes: disablefind, history, historysize, nonstandardoutletcalls, rendermode, url
 """
-jweb = MaxObject('jweb')
 
+jweb_tilde = MaxObject('jweb~')
 """
 jweb~ - Web browser with audio output
 
@@ -4450,8 +4466,8 @@ Messages: anything, back, executejavascript, forward, gotohistory, (mouse), mute
 
 Attributes: disablefind, history, historysize, latency, rendermode, url
 """
-jweb_tilde = MaxObject('jweb~')
 
+key = MaxObject('key')
 """
 key - Report keyboard presses
 
@@ -4465,8 +4481,8 @@ Outlets:
 
 Messages: (keyboard)
 """
-key = MaxObject('key')
 
+keyup = MaxObject('keyup')
 """
 keyup - Report key information on release
 
@@ -4480,8 +4496,8 @@ Outlets:
 
 Messages: (keyboard)
 """
-keyup = MaxObject('keyup')
 
+kslider = MaxObject('kslider')
 """
 kslider - Output numbers from an onscreen keyboard
 
@@ -4499,8 +4515,8 @@ Messages: bang, int, float, chord, clear, flush, ft1, in1, (mouse), set, size
 
 Attributes: annotation_name, blackkeycolor, bordercolor, hkeycolor, inputmode, mode, offset, param_connect, parameter_enable, parameter_mappable, range, selectioncolor, style, whitekeycolor
 """
-kslider = MaxObject('kslider')
 
+lcd = MaxObject('lcd')
 """
 lcd - Display graphics (deprecated)
 
@@ -4517,8 +4533,8 @@ Messages: anything, ascii, backsprite, brgb, clear, clearpicts, clearsprites, cl
 
 Attributes: bgtransparent, border, enablesprites, idle, local
 """
-lcd = MaxObject('lcd')
 
+led = MaxObject('led')
 """
 led - Color on/off button
 
@@ -4532,8 +4548,8 @@ Messages: bang, int, float, (mouse), pict, set, toggle
 
 Attributes: annotation_name, bgcolor, blinktime, offcolor, oncolor, param_connect, parameter_enable, parameter_mappable, style, thickness, useoffcolor
 """
-led = MaxObject('led')
 
+lessthan = MaxObject('lessthan')
 """
 lessthan - Compare numbers for less than condition
 
@@ -4551,8 +4567,8 @@ Outlets:
 
 Messages: bang, int, float, in1, set
 """
-lessthan = MaxObject('lessthan')
 
+lessthaneq = MaxObject('lessthaneq')
 """
 lessthaneq - Compare numbers as less than or equal to
 
@@ -4572,8 +4588,8 @@ Messages: bang, int, float, in1, set
 
 Attributes: fuzzy
 """
-lessthaneq = MaxObject('lessthaneq')
 
+line = MaxObject('line')
 """
 line - Generate timed ramp
 
@@ -4596,8 +4612,8 @@ Messages: int, float, list, clock, pause, resume, set, stop
 
 Attributes: compatmode, floatoutput, grain, maxpoints
 """
-line = MaxObject('line')
 
+linedrive = MaxObject('linedrive')
 """
 linedrive - Scale numbers exponentially
 
@@ -4611,8 +4627,8 @@ Args:
 
 Messages: int, float, in1
 """
-linedrive = MaxObject('linedrive')
 
+listbox = MaxObject('listbox')
 """
 listbox - Display and output numbers, lists, and messages
 
@@ -4629,8 +4645,8 @@ Messages: bang, int, float, list, anything, clear, max, min, (mouse), select, se
 
 Attributes: annotation_name, bgcolor, bordercolor, cantchange, format, hbgcolor, htextcolor, htricolor, maximum, minimum, mousefilter, numdecimalplaces, outputonclick, param_connect, parameter_enable, parameter_mappable, style, textcolor, triangle, tricolor, triscale
 """
-listbox = MaxObject('listbox')
 
+listfunnel = MaxObject('listfunnel')
 """
 listfunnel - Index and output list elements
 
@@ -4651,8 +4667,8 @@ Outlets:
 
 Messages: int, float, list, anything, offset
 """
-listfunnel = MaxObject('listfunnel')
 
+loadbang = MaxObject('loadbang')
 """
 loadbang - Send a bang when a patcher is loaded
 
@@ -4666,8 +4682,8 @@ Outlets:
 
 Messages: bang, (mouse), loadbang
 """
-loadbang = MaxObject('loadbang')
 
+loadmess = MaxObject('loadmess')
 """
 loadmess - Send a message when a patch is loaded
 
@@ -4686,8 +4702,8 @@ Messages: bang, (mouse), set
 
 Attributes: defer
 """
-loadmess = MaxObject('loadmess')
 
+logand = MaxObject('logand')
 """
 logand - Perform a logical AND
 
@@ -4705,8 +4721,8 @@ Outlets:
 
 Messages: bang, int, float, in1, set
 """
-logand = MaxObject('logand')
 
+logor = MaxObject('logor')
 """
 logor - Perform a logical OR
 
@@ -4724,8 +4740,8 @@ Outlets:
 
 Messages: bang, int, float, in1, set
 """
-logor = MaxObject('logor')
 
+makenote = MaxObject('makenote')
 """
 makenote - Generate a note-on/note-off pair
 
@@ -4749,8 +4765,8 @@ Messages: int, float, list, anything, clear, clock, stop
 
 Attributes: duration, repeatmode
 """
-makenote = MaxObject('makenote')
 
+mappings = MaxObject('mappings')
 """
 mappings - Utility object for Mappings
 
@@ -4760,8 +4776,8 @@ Messages: (mouse), key, midi, open, read, write
 
 Attributes: file
 """
-mappings = MaxObject('mappings')
 
+match = MaxObject('match')
 """
 match - Watch for a message match, then output the message
 
@@ -4778,8 +4794,8 @@ Outlets:
 
 Messages: int, float, list, anything, clear, set
 """
-match = MaxObject('match')
 
+matrix = MaxObject('matrix')
 """
 matrix - Event routing matrix
 
@@ -4804,8 +4820,8 @@ Messages: list, clear, connect, dictionary, disconnect, dumpconnections
 
 Attributes: defaultgain, exclusive, inhibit, inrange, outscale, scalemode
 """
-matrix = MaxObject('matrix')
 
+matrixctrl = MaxObject('matrixctrl')
 """
 matrixctrl - Matrix switch control
 
@@ -4822,8 +4838,8 @@ Messages: bang, list, bkgndpicture, cellpicture, clear, dictionary, disable, dis
 
 Attributes: active, annotation_name, autosize, bgcolor, bkgndpict, cellpict, clickedimage, clickvalue, color, columns, dialmode, dialtracking, elementcolor, horizontalmargin, horizontalspacing, imagemask, inactiveimage, invisiblebkgnd, one/column, one/matrix, one/row, parameter_enable, range, rows, scale, style, verticalmargin, verticalspacing
 """
-matrixctrl = MaxObject('matrixctrl')
 
+maximum = MaxObject('maximum')
 """
 maximum - Output the highest value
 
@@ -4842,8 +4858,8 @@ Outlets:
 
 Messages: bang, int, float, list, ft1, in1
 """
-maximum = MaxObject('maximum')
 
+maxurl = MaxObject('maxurl')
 """
 maxurl - Make HTTP requests
 
@@ -4868,8 +4884,8 @@ Outlets:
 
 Messages: abort, abortall, delete, dictionary, get, post, put, verbosity
 """
-maxurl = MaxObject('maxurl')
 
+mc_function = MaxObject('mc.function')
 """
 mc.function - Breakpoint function editor
 
@@ -4889,8 +4905,8 @@ Messages: bang, int, float, list, clear, clearchans, clearfix, clearsustain, col
 
 Attributes: annotation_name, autosustain, bgcolor, bordercolor, candycane, candycane2, candycane3, candycane4, candycane5, candycane6, candycane7, candycane8, chans, classic_curve, clickadd, clickinactive, clickmove, clicksustain, constrainpointchanges, cursor, cursorcolor, displaychan, domain, grid, gridcolor, gridstep_x, gridstep_y, legend, linecolor, linethickness, mode, mousemode, mousereport, outputmode, param_connect, parameter_enable, parameter_mappable, pointalign, pointcolor, pointsize, range, shadowactive, shadowalpha, shadowblend, shadowproportion, shadowreflectionpoint, shadowsigned, snap2grid, style, sustaincolor, textcolor, zoom_x, zoom_y
 """
-mc_function = MaxObject('mc.function')
 
+mc_getattr = MaxObject('mc.getattr')
 """
 mc.getattr - Query object attributes  (multichannel)
 
@@ -4911,8 +4927,8 @@ Messages: bang, getattrlist
 
 Attributes: attr, listen, prefix
 """
-mc_getattr = MaxObject('mc.getattr')
 
+mc_line = MaxObject('mc.line')
 """
 mc.line - Generate timed ramp  (multichannel)
 
@@ -4935,8 +4951,8 @@ Messages: int, float, list, clock, pause, resume, set, stop
 
 Attributes: compatmode, floatoutput, grain, maxpoints
 """
-mc_line = MaxObject('mc.line')
 
+mean = MaxObject('mean')
 """
 mean - Calculate a running average
 
@@ -4951,8 +4967,8 @@ Outlets:
 
 Messages: bang, int, float, list, clear
 """
-mean = MaxObject('mean')
 
+menubar = MaxObject('menubar')
 """
 menubar - Put up a custom menu bar
 
@@ -4972,8 +4988,8 @@ Outlets:
 
 Messages: int, about, append, appendpermanent, apple, checkitem, closeitem, (mouse), edit, enableitem, end, file, item, markitem, menutitle, newitem, open, saveas
 """
-menubar = MaxObject('menubar')
 
+message = MaxObject('message')
 """
 message - Send any message
 
@@ -4996,8 +5012,8 @@ Messages: bang, int, float, list, anything, append, (mouse), prepend, set, setar
 
 Attributes: bgcolor, bgcolor2, bgfillcolor, convertobj, dontreplace, gradient, style
 """
-message = MaxObject('message')
 
+messageview = MaxObject('messageview')
 """
 messageview - View a stream of messages
 
@@ -5013,8 +5029,8 @@ Messages: bang, int, float, list, anything, append, clear, scrolltoend
 
 Attributes: autoscroll, bgcolor, stripe2, style, textcolor
 """
-messageview = MaxObject('messageview')
 
+metro = MaxObject('metro')
 """
 metro - Output a bang message at regular intervals
 
@@ -5034,8 +5050,8 @@ Messages: bang, int, float, list, anything, clock, stop
 
 Attributes: active, autostart, autostarttime, defer, interval, quantize, transport
 """
-metro = MaxObject('metro')
 
+midiflush = MaxObject('midiflush')
 """
 midiflush - Send MIDI note-offs for hanging note-ons
 
@@ -5049,8 +5065,8 @@ Outlets:
 
 Messages: bang, int, clear
 """
-midiflush = MaxObject('midiflush')
 
+midiformat = MaxObject('midiformat')
 """
 midiformat - Prepare data in the form of a MIDI message
 
@@ -5068,8 +5084,8 @@ Messages: int, float, list, in1, in2, in3, in4, in5, in7
 
 Attributes: hires
 """
-midiformat = MaxObject('midiformat')
 
+midiin = MaxObject('midiin')
 """
 midiin - Output raw MIDI data
 
@@ -5089,8 +5105,8 @@ Messages: anything, (mouse), (MIDI), port
 
 Attributes: matchport, name
 """
-midiin = MaxObject('midiin')
 
+midiinfo = MaxObject('midiinfo')
 """
 midiinfo - Fill a pop-up menu with MIDI device names
 
@@ -5107,8 +5123,8 @@ Messages: bang, int, controllers
 
 Attributes: autopollcontrollers, autopollinput, autopolloutput
 """
-midiinfo = MaxObject('midiinfo')
 
+midiout = MaxObject('midiout')
 """
 midiout - Transmit raw MIDI data
 
@@ -5125,8 +5141,8 @@ Messages: int, float, list, anything, (mouse), port
 
 Attributes: matchport, name
 """
-midiout = MaxObject('midiout')
 
+midiparse = MaxObject('midiparse')
 """
 midiparse - Interpret raw MIDI data
 
@@ -5149,8 +5165,8 @@ Messages: bang, int, float
 
 Attributes: hires
 """
-midiparse = MaxObject('midiparse')
 
+minimum = MaxObject('minimum')
 """
 minimum - Output the smallest value
 
@@ -5169,8 +5185,8 @@ Outlets:
 
 Messages: bang, int, float, list, ft1, in1
 """
-minimum = MaxObject('minimum')
 
+minus = MaxObject('minus')
 """
 minus - Subtract two numbers, output the result
 
@@ -5186,8 +5202,8 @@ Outlets:
 
 Messages: bang, int, float, in1, set, list
 """
-minus = MaxObject('minus')
 
+modifiers = MaxObject('modifiers')
 """
 modifiers - Report modifier key presses
 
@@ -5208,8 +5224,8 @@ Outlets:
 
 Messages: bang, (keyboard), interval
 """
-modifiers = MaxObject('modifiers')
 
+modulo = MaxObject('modulo')
 """
 modulo - Divide two numbers, output the remainder
 
@@ -5227,8 +5243,8 @@ Outlets:
 
 Messages: bang, int, float, in1, set, list
 """
-modulo = MaxObject('modulo')
 
+mousefilter = MaxObject('mousefilter')
 """
 mousefilter - Gate messages with the mouse
 
@@ -5242,8 +5258,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything
 """
-mousefilter = MaxObject('mousefilter')
 
+mousestate = MaxObject('mousestate')
 """
 mousestate - Report the mouse information
 
@@ -5266,8 +5282,8 @@ Outlets:
 
 Messages: bang, mode, (mouse), nopoll, poll, reset, zero
 """
-mousestate = MaxObject('mousestate')
 
+movie = MaxObject('movie')
 """
 movie - Play a movie in a window
 
@@ -5288,8 +5304,8 @@ Messages: bang, int, (drag), active, clear, (mouse), dispose, duration, ff, getd
 
 Attributes: autofit, border, name
 """
-movie = MaxObject('movie')
 
+mpeconfig = MaxObject('mpeconfig')
 """
 mpeconfig - Configure a MIDI device that supports Multidimensional Polyphonic Expression (MPE) messages
 
@@ -5306,8 +5322,8 @@ Messages: bang, clear, createzone, masterbendrange, notebendrange
 
 Attributes: chanrange, masterchan
 """
-mpeconfig = MaxObject('mpeconfig')
 
+mpeformat = MaxObject('mpeformat')
 """
 mpeformat - Prepare data in the form of a Multidimensional Polyphonic Expression (MPE) MIDI message
 
@@ -5342,8 +5358,8 @@ Messages: bang, int, float, midievent, mpeevent, reset
 
 Attributes: chanrange, masterchan, zone
 """
-mpeformat = MaxObject('mpeformat')
 
+mpeparse = MaxObject('mpeparse')
 """
 mpeparse - Interpret raw MPE MIDI data
 
@@ -5368,8 +5384,8 @@ Messages: bang, int, float, mpeevent
 
 Attributes: hires, index, strict
 """
-mpeparse = MaxObject('mpeparse')
 
+mtof = MaxObject('mtof')
 """
 mtof - Convert a MIDI note number to frequency
 
@@ -5385,8 +5401,8 @@ Messages: int, float, list
 
 Attributes: base, map, mapname, mid, ref, scale, scalename
 """
-mtof = MaxObject('mtof')
 
+mtr = MaxObject('mtr')
 """
 mtr - Record and sequence messages
 
@@ -5407,8 +5423,8 @@ Messages: bang, int, float, list, anything, addevent, clear, cleareventat, defin
 
 Attributes: autostart, autostarttime, bindto, embed, length, loop, mode, nextmode, quantize, selection, speed, sync, trackspeed, transport
 """
-mtr = MaxObject('mtr')
 
+multirange = MaxObject('multirange')
 """
 multirange - Graphical function breakpoint editor
 
@@ -5427,8 +5443,8 @@ Messages: bang, int, float, list, clear, dump, listdump, (mouse)
 
 Attributes: annotation_name, bgcolor, color, domain, elementcolor, legend, param_connect, parameter_enable, parameter_mappable, range, style, textcolor
 """
-multirange = MaxObject('multirange')
 
+multislider = MaxObject('multislider')
 """
 multislider - Display data as sliders or a scrolling display
 
@@ -5445,8 +5461,8 @@ Messages: bang, int, float, list, anything, copy, drawbars, drawlines, echo, fet
 
 Attributes: annotation_name, bgcolor, border_bottom, border_left, border_right, border_top, bordercolor, candicane2, candicane3, candicane4, candicane5, candicane6, candicane7, candicane8, candycane, compatibility, contdata, drawpeaks, ghostbar, listresize, orientation, param_connect, parameter_enable, parameter_mappable, peakcolor, setminmax, setstyle, settype, shadowalpha, shadowblend, shadoworientation, shadowperbar, shadowproportion, signed, size, slidercolor, spacing, style, thickness
 """
-multislider = MaxObject('multislider')
 
+mxj = MaxObject('mxj')
 """
 mxj - Execute Java in Max
 
@@ -5458,8 +5474,8 @@ Args:
 
 Messages: bang, int, float, list, anything, (mouse), get, viewsource, zap
 """
-mxj = MaxObject('mxj')
 
+next_ = MaxObject('next')
 """
 next - Detect separation of messages
 
@@ -5474,8 +5490,8 @@ Outlets:
 
 Messages: bang, int, float, anything
 """
-next_ = MaxObject('next')
 
+nodes = MaxObject('nodes')
 """
 nodes - Interpolate data graphically
 
@@ -5493,8 +5509,8 @@ Messages: bang, list, active, ad, clear, getactive, getad, getnode, getsize, get
 
 Attributes: annotation_name, bgcolor, bordercolor, candycane, candycane2, candycane3, candycane4, candycane5, candycane6, candycane7, candycane8, clickmoveinactive, disabledalpha, displayknob, dynamic, filternodeschanges, knobbordercolor, knobcolor, knobpict, knobsize, maxdynamicnodes, mousemode, nodecolor, nodenumber, nodesnames, nsize, param_connect, parameter_enable, parameter_mappable, pointcolor, style, textcolor, xplace, yplace
 """
-nodes = MaxObject('nodes')
 
+notein = MaxObject('notein')
 """
 notein - Receive MIDI note messages
 
@@ -5518,8 +5534,8 @@ Messages: anything, (mouse), (MIDI), port
 
 Attributes: matchport, name
 """
-notein = MaxObject('notein')
 
+noteout = MaxObject('noteout')
 """
 noteout - Transmit MIDI note messages
 
@@ -5540,8 +5556,8 @@ Messages: int, float, anything, (mouse), in1, in2, port
 
 Attributes: matchport, name
 """
-noteout = MaxObject('noteout')
 
+notequals = MaxObject('notequals')
 """
 notequals - Compare numbers for not-equal-to condition
 
@@ -5561,8 +5577,8 @@ Messages: bang, int, float, in1, set, list
 
 Attributes: fuzzy
 """
-notequals = MaxObject('notequals')
 
+nrpnin = MaxObject('nrpnin')
 """
 nrpnin - Output received NRPN values
 
@@ -5584,8 +5600,8 @@ Messages: int, list, set
 
 Attributes: hires, permissive
 """
-nrpnin = MaxObject('nrpnin')
 
+nrpnout = MaxObject('nrpnout')
 """
 nrpnout - Format 14-bit MIDI NRPN messages
 
@@ -5607,8 +5623,8 @@ Messages: bang, int, list, in1, in2, in3, set
 
 Attributes: hires, running
 """
-nrpnout = MaxObject('nrpnout')
 
+nslider = MaxObject('nslider')
 """
 nslider - Output numbers from a notation display
 
@@ -5626,8 +5642,8 @@ Messages: bang, int, float, list, anything, chord, clear, flush, ft1, in1, (mous
 
 Attributes: annotation_name, bgcolor, bordercolor, clefs, fgcolor, mode, param_connect, parameter_enable, parameter_mappable, rounded, staffs, style
 """
-nslider = MaxObject('nslider')
 
+number = MaxObject('number')
 """
 number - Display and output numbers, lists, and messages
 
@@ -5644,8 +5660,8 @@ Messages: bang, int, float, list, anything, clear, max, min, (mouse), select, se
 
 Attributes: annotation_name, bgcolor, bordercolor, cantchange, format, hbgcolor, htextcolor, htricolor, maximum, minimum, mousefilter, numdecimalplaces, outputonclick, param_connect, parameter_enable, parameter_mappable, style, textcolor, triangle, tricolor, triscale
 """
-number = MaxObject('number')
 
+numkey = MaxObject('numkey')
 """
 numkey - Interpret numbers typed on the keyboard
 
@@ -5661,8 +5677,8 @@ Outlets:
 
 Messages: bang, int, clear
 """
-numkey = MaxObject('numkey')
 
+offer = MaxObject('offer')
 """
 offer - Store one-time number pairs
 
@@ -5677,8 +5693,8 @@ Outlets:
 
 Messages: bang, int, clear, in1
 """
-offer = MaxObject('offer')
 
+onebang = MaxObject('onebang')
 """
 onebang - Gate bangs using a bang
 
@@ -5697,15 +5713,15 @@ Outlets:
 
 Messages: bang, int, float, list, anything, stop
 """
-onebang = MaxObject('onebang')
 
+onecopy = MaxObject('onecopy')
 """
 onecopy - Prevent multiple copies of the same patcher from being opened
 
 Use the onecopy object inside a patcher that you want to place in the extras folder for inclusion in the Extras menu. When the patcher's name is chosen using the Extras menu, its window will be brought to the front instead of opened a second time if it has already been loaded. The patch will be loaded if it is not currently open. The onecopy object cooperates with the Extras menu to ensure that only one copy of the patcher is opened at a time. However, opening the patcher containing a onecopy object by choosing Open... from the File menu will open additional copies.
 """
-onecopy = MaxObject('onecopy')
 
+opendialog = MaxObject('opendialog')
 """
 opendialog - Open a dialog to ask for a file or folder
 
@@ -5725,8 +5741,8 @@ Outlets:
 
 Messages: bang, anything, path, set, setpath, sound, types
 """
-opendialog = MaxObject('opendialog')
 
+osc_codebox = MaxObject('osc.codebox')
 """
 osc.codebox - Display OSC packets as Dictionaries
 
@@ -5739,8 +5755,8 @@ Messages: FullPacket, clear, osc_packet
 
 Attributes: bgcolor, editlocked, embed, linenumbers, linenumberwidth, margin, style, textcolor
 """
-osc_codebox = MaxObject('osc.codebox')
 
+osc_packet = MaxObject('osc.packet')
 """
 osc.packet - Store and recall an OSC packet
 
@@ -5757,8 +5773,8 @@ Messages: bang, FullPacket, clear, osc_packet
 
 Attributes: outputformat
 """
-osc_packet = MaxObject('osc.packet')
 
+outlet = MaxObject('outlet')
 """
 outlet - Send messages out of a patcher
 
@@ -5772,8 +5788,8 @@ Messages: (mouse)
 
 Attributes: comment, style, tricolor
 """
-outlet = MaxObject('outlet')
 
+pack = MaxObject('pack')
 """
 pack - Create a list
 
@@ -5791,8 +5807,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, nth, send, set, symbol
 """
-pack = MaxObject('pack')
 
+pak = MaxObject('pak')
 """
 pak - Output a list when any element changes
 
@@ -5810,8 +5826,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, set
 """
-pak = MaxObject('pak')
 
+panel = MaxObject('panel')
 """
 panel - Colored background area
 
@@ -5824,8 +5840,8 @@ Messages: (mouse), size
 
 Attributes: angle, arrow_orientation, bgcolor, bgfillcolor, border, bordercolor, drag_window, grad1, grad2, horizontal_direction, mode, rounded, shadow, shape, style, vertical_direction
 """
-panel = MaxObject('panel')
 
+param = MaxObject('param')
 """
 param - Define a polyphonic-compatible parameter in poly~
 
@@ -5847,8 +5863,8 @@ Messages: bang, int, float
 
 Attributes: annotation_name, default, max, min
 """
-param = MaxObject('param')
 
+param_osc = MaxObject('param.osc')
 """
 param.osc - Control and report info about parameters using OSC.
 
@@ -5864,8 +5880,8 @@ Messages: bang, anything, FullPacket, allparams, info, osc_packet, param, set
 
 Attributes: auto, outputformat, outputmode
 """
-param_osc = MaxObject('param.osc')
 
+past = MaxObject('past')
 """
 past - Notify when a threshold is passed
 
@@ -5883,8 +5899,8 @@ Outlets:
 
 Messages: int, float, list, clear, set
 """
-past = MaxObject('past')
 
+patcher = MaxObject('patcher')
 """
 patcher - Create a subpatch within a patch
 
@@ -5898,8 +5914,8 @@ Inlets:
 
 Attributes: accentcolor, assistshowspatchername, bgcolor, bgfillcolor, bottomtoolbarpinned, boxanimatetime, bubble_bgcolor, bubble_outlinecolor, clearcolor, cluebar, color, commentary, defaultfocusbox, description, digest, editing_bgcolor, elementcolor, enablehscroll, enabletransparentbgwithtitlebar, enablevscroll, filepath, fontface, fontname, fontsize, globalpatchername, gridonopen, gridsize, gridsnaponopen, helpsidebarclosed, integercoordinates, isolateaudio, lefttoolbarpinned, locked_bgcolor, objectsnaponopen, openinpresentation, openrect, openrectmode, oscdefer, oscparamenableddefault, oscprefix, oscprefixmode, oscqueryenable, oscreceivemode, oscreceivequantize, oscreceivethreshold, oscreceiveudpport, oscsendmode, oscsendthreshold, oscsendudpaddr, oscsendudpport, oscuseparamprefix, oscvaluemode, patchlinecolor, righttoolbarpinned, selectioncolor, showcommentary, showontab, stripecolor, style, subpatcher_template, syntax_attrargcolor, syntax_attributecolor, syntax_objargcolor, syntax_objectcolor, taborientation, tags, tallnewobj, textcolor, textcolor_inverse, textjustification, title, toolbarvisible, toptoolbarpinned, workspacedisabled, external_mpe_tuning_enabled, is_mpe, latency, minimum_live_version, minimum_max_version, platform_compatibility
 """
-patcher = MaxObject('patcher')
 
+patcherargs = MaxObject('patcherargs')
 """
 patcherargs - Retrieve patcher arguments
 
@@ -5917,8 +5933,8 @@ Outlets:
 
 Messages: bang, (mouse)
 """
-patcherargs = MaxObject('patcherargs')
 
+pattr = MaxObject('pattr')
 """
 pattr - Provide an alias with a named data wrapper
 
@@ -5939,8 +5955,8 @@ Messages: bang, int, float, list, anything, assign, (mouse), dictionary, init
 
 Attributes: annotation_name, autorestore, bindto, default_active, default_interp, default_priority, dirty, initial, invisible, max, min, parameter_enable, parameter_mappable, thru, type
 """
-pattr = MaxObject('pattr')
 
+pattrforward = MaxObject('pattrforward')
 """
 pattrforward - Send any message to a named object
 
@@ -5959,8 +5975,8 @@ Messages: bang, int, float, list, anything, (mouse)
 
 Attributes: send
 """
-pattrforward = MaxObject('pattrforward')
 
+pattrhub = MaxObject('pattrhub')
 """
 pattrhub - Access all pattr objects in a patcher
 
@@ -5977,8 +5993,8 @@ Messages: bang, int, float, list, anything, getattributes, getstate
 
 Attributes: bound, patcher
 """
-pattrhub = MaxObject('pattrhub')
 
+pattrmarker = MaxObject('pattrmarker')
 """
 pattrmarker - Provide pattr communication between patchers
 
@@ -5997,8 +6013,8 @@ Messages: getmarkerlist, reveal
 
 Attributes: invisible, name
 """
-pattrmarker = MaxObject('pattrmarker')
 
+pattrstorage = MaxObject('pattrstorage')
 """
 pattrstorage - Save and recall pattr presets
 
@@ -6017,8 +6033,8 @@ Messages: int, float, anything, active, alias, clear, client_close, clientwindow
 
 Attributes: activewritemode, annotation_name, autopattr_vis, autorestore, autowatch, backupmode, changemode, client_rect, dirty, fileusagemode, flat, greedy, notifymode, outputmode, parameter_enable, savemode, storage_rect, subscribemode, writefilter
 """
-pattrstorage = MaxObject('pattrstorage')
 
+pcontrol = MaxObject('pcontrol')
 """
 pcontrol - Open and close subwindows
 
@@ -6032,8 +6048,8 @@ Outlets:
 
 Messages: close, help, load, loadunique, open, shroud, shroudunique
 """
-pcontrol = MaxObject('pcontrol')
 
+peak = MaxObject('peak')
 """
 peak - Output larger numbers
 
@@ -6053,8 +6069,8 @@ Outlets:
 
 Messages: bang, int, float, ft1, in1, list
 """
-peak = MaxObject('peak')
 
+pgmin = MaxObject('pgmin')
 """
 pgmin - Receive MIDI program changes
 
@@ -6075,8 +6091,8 @@ Messages: anything, (mouse), (MIDI), port
 
 Attributes: matchport, name, zerobased
 """
-pgmin = MaxObject('pgmin')
 
+pgmout = MaxObject('pgmout')
 """
 pgmout - Send MIDI program changes
 
@@ -6094,8 +6110,8 @@ Messages: int, float, anything, (mouse), in1, port, list
 
 Attributes: matchport, name, zerobased
 """
-pgmout = MaxObject('pgmout')
 
+pictctrl = MaxObject('pictctrl')
 """
 pictctrl - Picture-based control
 
@@ -6111,8 +6127,8 @@ Messages: bang, int, float, (drag), link, (mouse), picture, read, readany, set
 
 Attributes: active, annotation_name, clickedimage, clickincrement, clip, degrees, frames, imagemask, inactiveimage, mode, multiplier, name, offset, param_connect, parameter_enable, parameter_mappable, range, ratio, snap, threshold, trackcircular, trackhorizontal, tracking, trackvertical
 """
-pictctrl = MaxObject('pictctrl')
 
+pictslider = MaxObject('pictslider')
 """
 pictslider - Picture-based slider control
 
@@ -6130,8 +6146,8 @@ Messages: bang, int, float, list, (drag), bkgndpicture, knobpicture, (mouse), re
 
 Attributes: active, annotation_name, bgcolor, bkgnddrag, bkgndpict, bkgndsize, bottommargin, bottomvalue, clickedimage, color, elementcolor, horizontaltracking, imagemask, inactiveimage, invisiblebkgnd, jump, knobpict, leftmargin, leftvalue, movehorizontal, movevertical, param_connect, parameter_enable, parameter_mappable, rightmargin, rightvalue, scaleknob, style, topmargin, topvalue, verticaltracking
 """
-pictslider = MaxObject('pictslider')
 
+pipe = MaxObject('pipe')
 """
 pipe - Delay numbers, lists or symbols
 
@@ -6151,8 +6167,8 @@ Messages: bang, int, float, list, anything, clear, flush, stop
 
 Attributes: clock, delaytime, quantize
 """
-pipe = MaxObject('pipe')
 
+playbar = MaxObject('playbar')
 """
 playbar - Control video or audio file playback
 
@@ -6169,8 +6185,8 @@ Messages: bang, loop, (mouse), palindrome
 
 Attributes: bgcolor, color, disabledcolor, hideloop, hiderwff, refreshrate, selectioncolor, style
 """
-playbar = MaxObject('playbar')
 
+plus = MaxObject('plus')
 """
 plus - Add two numbers, output the result
 
@@ -6186,8 +6202,8 @@ Outlets:
 
 Messages: bang, int, float, in1, set, list
 """
-plus = MaxObject('plus')
 
+poltocar = MaxObject('poltocar')
 """
 poltocar - Convert polar to cartesian coordinates
 
@@ -6203,8 +6219,8 @@ Outlets:
 
 Messages: bang, int, float
 """
-poltocar = MaxObject('poltocar')
 
+poly = MaxObject('poly')
 """
 poly - Allocate notes to different voices
 
@@ -6226,8 +6242,8 @@ Outlets:
 
 Messages: int, in1, stop
 """
-poly = MaxObject('poly')
 
+polyin = MaxObject('polyin')
 """
 polyin - Received MIDI poly pressure
 
@@ -6250,8 +6266,8 @@ Messages: anything, (mouse), (MIDI), port
 
 Attributes: matchport, name
 """
-polyin = MaxObject('polyin')
 
+polymidiin = MaxObject('polymidiin')
 """
 polymidiin - Output Multidimensional Polyphonic Expression (MPE) MIDI data
 
@@ -6260,8 +6276,8 @@ The polymidiin object is used inside a poly~ instance. It outputs MPE MIDI data.
 Outlets:
   0 (OUTLET_TYPE): Raw MIDI Messages
 """
-polymidiin = MaxObject('polymidiin')
 
+polyout = MaxObject('polyout')
 """
 polyout - Send MIDI poly pressure
 
@@ -6280,8 +6296,8 @@ Messages: int, float, anything, (mouse), in1, in2, port, list
 
 Attributes: matchport, name
 """
-polyout = MaxObject('polyout')
 
+pong = MaxObject('pong')
 """
 pong - Range limiting
 
@@ -6303,8 +6319,8 @@ Messages: int, float, list
 
 Attributes: mode, range
 """
-pong = MaxObject('pong')
 
+pow_ = MaxObject('pow')
 """
 pow - Computes input to the nth power
 
@@ -6322,8 +6338,8 @@ Outlets:
 
 Messages: bang, int, float, list, ft1
 """
-pow_ = MaxObject('pow')
 
+prepend = MaxObject('prepend')
 """
 prepend - Add a message in front of input
 
@@ -6340,8 +6356,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, set
 """
-prepend = MaxObject('prepend')
 
+preset = MaxObject('preset')
 """
 preset - Store and recall settings
 
@@ -6361,8 +6377,8 @@ Messages: bang, int, float, list, anything, clear, clearall, (mouse), name, read
 
 Attributes: active1, active2, bgcolor, bordercolor, bubblesize, circlecolor, clicked1, clicked2, dirty, embed, emptycolor, ignoreconnected, ignoreemptyinterp, margin, paramonly, pattrstorage, showtrack, spacing, stored1, stored2, style, textcolor
 """
-preset = MaxObject('preset')
 
+print_ = MaxObject('print')
 """
 print - Print any message in the Max Console
 
@@ -6378,8 +6394,8 @@ Messages: bang, int, float, list, anything, array, (mouse), dictionary, string
 
 Attributes: bettersymquotes, deltatime, floatprecision, level, popup, time
 """
-print_ = MaxObject('print')
 
+prob = MaxObject('prob')
 """
 prob - Create a weighted transition table
 
@@ -6396,15 +6412,15 @@ Messages: bang, int, list, clear, dump, reset
 
 Attributes: embed
 """
-prob = MaxObject('prob')
 
+project = MaxObject('project')
 """
 project
 
 Attributes: amxdtype, autolocalize, autoorganize, browsertext, devpath, devpathtype, hideprojectwindow, includepackages, readonly, showdependencies, sortmode
 """
-project = MaxObject('project')
 
+pv = MaxObject('pv')
 """
 pv - Share data within a patch hierarchy
 
@@ -6422,8 +6438,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, status, symbol
 """
-pv = MaxObject('pv')
 
+pvar = MaxObject('pvar')
 """
 pvar - Connect to a named object in a patcher
 
@@ -6441,8 +6457,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, loadbang, setname
 """
-pvar = MaxObject('pvar')
 
+qlim = MaxObject('qlim')
 """
 qlim - Queue-based message limiter
 
@@ -6462,8 +6478,8 @@ Messages: bang, int, float, list, anything
 
 Attributes: defer, quantize, threshold, usurp
 """
-qlim = MaxObject('qlim')
 
+qlist = MaxObject('qlist')
 """
 qlist - Store a collection of messages
 
@@ -6479,8 +6495,8 @@ Outlets:
 
 Messages: bang, append, clear, (mouse), fwd, insert, next, open, read, rewind, set, stop, tempo, wclose, write
 """
-qlist = MaxObject('qlist')
 
+qmetro = MaxObject('qmetro')
 """
 qmetro - Queue-based metronome
 
@@ -6500,8 +6516,8 @@ Messages: bang, int, float, list, anything, clock, reset, stop
 
 Attributes: active, autostart, autostarttime, defer, interval, quantize, transport
 """
-qmetro = MaxObject('qmetro')
 
+quickthresh = MaxObject('quickthresh')
 """
 quickthresh - Fast chord detection
 
@@ -6523,8 +6539,8 @@ Outlets:
 
 Messages: bang, int, float, ft1, ft2, ft3, in1, in2, in3, set
 """
-quickthresh = MaxObject('quickthresh')
 
+radiogroup = MaxObject('radiogroup')
 """
 radiogroup - Radio button or check box
 
@@ -6540,8 +6556,8 @@ Messages: bang, int, list, disableitem, enableitem, (mouse), set
 
 Attributes: activecolor, annotation_name, bgcolor, elementcolor, enabled, flagmode, inactive, inactivecolor, itemtype, offset, param_connect, parameter_enable, parameter_mappable, selection, shape, size, style
 """
-radiogroup = MaxObject('radiogroup')
 
+random = MaxObject('random')
 """
 random - Generate a random number
 
@@ -6562,8 +6578,8 @@ Messages: bang, int, float, list, reset
 
 Attributes: classic, cycle, floatoutput, range, seed
 """
-random = MaxObject('random')
 
+rdiv = MaxObject('rdiv')
 """
 rdiv - Divide input from a number
 
@@ -6581,8 +6597,8 @@ Outlets:
 
 Messages: bang, int, float, ft1, in1
 """
-rdiv = MaxObject('rdiv')
 
+receive = MaxObject('receive')
 """
 receive - Receive messages without patch cords
 
@@ -6599,8 +6615,8 @@ Outlets:
 
 Messages: (mouse), set
 """
-receive = MaxObject('receive')
 
+regexp = MaxObject('regexp')
 """
 regexp - Use regular expressions to process input
 
@@ -6624,8 +6640,8 @@ Messages: int, float, list, anything
 
 Attributes: binary, legacyoutputorder, re, substitute, tosymbol
 """
-regexp = MaxObject('regexp')
 
+relativepath = MaxObject('relativepath')
 """
 relativepath - Convert an absolute to a relative path
 
@@ -6639,8 +6655,8 @@ Outlets:
 
 Messages: anything
 """
-relativepath = MaxObject('relativepath')
 
+repl = MaxObject('repl')
 """
 repl - Send, receive and output Max Console commands
 
@@ -6661,8 +6677,8 @@ Messages: anything, array, string
 
 Attributes: defer, exec, global, mirror, name, print
 """
-repl = MaxObject('repl')
 
+rminus = MaxObject('rminus')
 """
 rminus - Subtraction object (inlets reversed)
 
@@ -6680,8 +6696,8 @@ Outlets:
 
 Messages: bang, int, float, ft1, in1
 """
-rminus = MaxObject('rminus')
 
+round_ = MaxObject('round')
 """
 round - Round to a value
 
@@ -6701,8 +6717,8 @@ Messages: int, float, list, anything
 
 Attributes: nearest
 """
-round_ = MaxObject('round')
 
+route = MaxObject('route')
 """
 route - Select outlet based on input matching
 
@@ -6721,8 +6737,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything
 """
-route = MaxObject('route')
 
+routepass = MaxObject('routepass')
 """
 routepass - Route a complete incoming message based on input matching
 
@@ -6741,8 +6757,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything
 """
-routepass = MaxObject('routepass')
 
+router = MaxObject('router')
 """
 router - Route messages to multiple locations
 
@@ -6760,8 +6776,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, clear, connect, disconnect, dump, patch, print
 """
-router = MaxObject('router')
 
+rpnin = MaxObject('rpnin')
 """
 rpnin - Output received RPN values
 
@@ -6783,8 +6799,8 @@ Messages: int, list, set
 
 Attributes: hires, permissive
 """
-rpnin = MaxObject('rpnin')
 
+rpnout = MaxObject('rpnout')
 """
 rpnout - Format 14-bit MIDI RPN messages
 
@@ -6806,8 +6822,8 @@ Messages: bang, int, list, in1, in2, in3, set
 
 Attributes: hires, running
 """
-rpnout = MaxObject('rpnout')
 
+rslider = MaxObject('rslider')
 """
 rslider - Display or change a range of numbers
 
@@ -6825,8 +6841,8 @@ Messages: bang, int, float, list, ft1, in1, (mouse), set, setminmax
 
 Attributes: annotation_name, bgcolor, bordercolor, drawline, fgcolor, floatoutput, listmode, min, mult, orientation, param_connect, parameter_enable, parameter_mappable, size, style, thickness
 """
-rslider = MaxObject('rslider')
 
+rtin = MaxObject('rtin')
 """
 rtin - Receive MIDI real time messages
 
@@ -6846,8 +6862,8 @@ Messages: anything, (mouse), (MIDI), port
 
 Attributes: matchport, name
 """
-rtin = MaxObject('rtin')
 
+savebang = MaxObject('savebang')
 """
 savebang - Send a bang on save
 
@@ -6861,8 +6877,8 @@ Outlets:
 
 Messages: bang, (mouse)
 """
-savebang = MaxObject('savebang')
 
+savedialog = MaxObject('savedialog')
 """
 savedialog - Open a dialog asking for a filename
 
@@ -6881,8 +6897,8 @@ Outlets:
 
 Messages: bang, anything, name, path, set, setpath
 """
-savedialog = MaxObject('savedialog')
 
+scale = MaxObject('scale')
 """
 scale - Map values to an output range
 
@@ -6910,8 +6926,8 @@ Messages: bang, int, float, list
 
 Attributes: classic
 """
-scale = MaxObject('scale')
 
+schedule = MaxObject('schedule')
 """
 schedule - Schedule messages on high priority scheduler thread
 
@@ -6930,8 +6946,8 @@ Messages: bang, int, float, list, anything, clear, sendmessage
 
 Attributes: defer, delay
 """
-schedule = MaxObject('schedule')
 
+screensize = MaxObject('screensize')
 """
 screensize - Output the monitor size
 
@@ -6946,8 +6962,8 @@ Outlets:
 
 Messages: bang
 """
-screensize = MaxObject('screensize')
 
+select = MaxObject('select')
 """
 select - Output bangs based on input matching
 
@@ -6969,8 +6985,8 @@ Messages: bang, int, float, list, anything, in1, symbol
 
 Attributes: fuzzy, matchfloat
 """
-select = MaxObject('select')
 
+send = MaxObject('send')
 """
 send - Send messages without patch cords
 
@@ -6984,8 +7000,8 @@ Inlets:
 
 Messages: bang, int, float, list, anything, (mouse)
 """
-send = MaxObject('send')
 
+seq = MaxObject('seq')
 """
 seq - Sequencer for recording and playing MIDI data
 
@@ -7006,8 +7022,8 @@ Messages: bang, int, float, addeventdelay, append, clear, delay, dump, hook, pri
 
 Attributes: overridetempo, sequencetempo, tempo
 """
-seq = MaxObject('seq')
 
+serial = MaxObject('serial')
 """
 serial - Send and receive from a serial port
 
@@ -7030,8 +7046,8 @@ Messages: bang, int, float, list, break, close, getport, open, port, print, refr
 
 Attributes: asyncread, autoopen, baud, break_duration, bufsize, chunk, databits, defer, drain, dtr, parity, poll, postbreak_duration, rts, serport, stopbits, xonxoff
 """
-serial = MaxObject('serial')
 
+setclock = MaxObject('setclock')
 """
 setclock - Create and control an alternative clock
 
@@ -7051,8 +7067,8 @@ Outlets:
 
 Messages: bang, int, float, clock, (mouse), ft1, reset, set
 """
-setclock = MaxObject('setclock')
 
+shiftleft = MaxObject('shiftleft')
 """
 shiftleft - Bit shift to the left
 
@@ -7070,8 +7086,8 @@ Outlets:
 
 Messages: bang, int, float, in1, set, list
 """
-shiftleft = MaxObject('shiftleft')
 
+shiftright = MaxObject('shiftright')
 """
 shiftright - Bit shift to the right
 
@@ -7089,8 +7105,8 @@ Outlets:
 
 Messages: bang, int, float, in1, set, list
 """
-shiftright = MaxObject('shiftright')
 
+sin = MaxObject('sin')
 """
 sin - Sine function
 
@@ -7107,8 +7123,8 @@ Outlets:
 
 Messages: bang, int, float
 """
-sin = MaxObject('sin')
 
+sinh = MaxObject('sinh')
 """
 sinh - Hyperbolic sine function
 
@@ -7125,8 +7141,8 @@ Outlets:
 
 Messages: bang, int, float
 """
-sinh = MaxObject('sinh')
 
+slide = MaxObject('slide')
 """
 slide - Smooth values logarithmically
 
@@ -7146,8 +7162,8 @@ Outlets:
 
 Messages: bang, int, float, ft1, ft2, reset, set
 """
-slide = MaxObject('slide')
 
+slider = MaxObject('slider')
 """
 slider - Move a slider to output values
 
@@ -7163,8 +7179,8 @@ Messages: bang, int, float, (mouse), set, setminmax
 
 Attributes: annotation_name, bgcolor, bordercolor, drawoffcolor, elementcolor, floatoutput, inputrangemode, knobcolor, knobshape, min, mult, orientation, param_connect, parameter_enable, parameter_mappable, relative, size, style, thickness
 """
-slider = MaxObject('slider')
 
+speedlim = MaxObject('speedlim')
 """
 speedlim - Limit the speed of message throughput
 
@@ -7184,8 +7200,8 @@ Messages: bang, int, float, list, anything
 
 Attributes: defer, quantize, threshold, usurp
 """
-speedlim = MaxObject('speedlim')
 
+spell = MaxObject('spell')
 """
 spell - Convert input to UTF-8 (Unicode) codes
 
@@ -7203,8 +7219,8 @@ Outlets:
 
 Messages: int, list, anything, symbol
 """
-spell = MaxObject('spell')
 
+split = MaxObject('split')
 """
 split - Look for a range of numbers
 
@@ -7225,8 +7241,8 @@ Outlets:
 
 Messages: int, float
 """
-split = MaxObject('split')
 
+spray = MaxObject('spray')
 """
 spray - Distribute a value to a numbered outlet
 
@@ -7246,8 +7262,8 @@ Outlets:
 
 Messages: int, list, offset
 """
-spray = MaxObject('spray')
 
+sprintf = MaxObject('sprintf')
 """
 sprintf - Format a message of words and numbers
 
@@ -7265,8 +7281,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, symbol
 """
-sprintf = MaxObject('sprintf')
 
+sqrt = MaxObject('sqrt')
 """
 sqrt - Square root function
 
@@ -7283,8 +7299,8 @@ Outlets:
 
 Messages: bang, int, float
 """
-sqrt = MaxObject('sqrt')
 
+standalone = MaxObject('standalone')
 """
 standalone - Configure parameters for standalone applications
 
@@ -7295,8 +7311,8 @@ Inlets:
 
 Attributes: allwindowsactive, appicon_mac, appicon_win, bundleidentifier, cantclosetoplevelpatchers, cefsupport, copysupport, database, gensupport, noloadbangdefeating, overdrive, preffilename, searchformissingfiles, statusvisible, usesearchpath
 """
-standalone = MaxObject('standalone')
 
+stepcounter = MaxObject('stepcounter')
 """
 stepcounter - Count messages in a sequence
 
@@ -7315,8 +7331,8 @@ Messages: bang, int, float, anything, reset
 
 Attributes: seq, startmode, syncupdate
 """
-stepcounter = MaxObject('stepcounter')
 
+string = MaxObject('string')
 """
 string - Create or duplicate a string object
 
@@ -7338,8 +7354,8 @@ Messages: bang, int, float, list, anything, append, atoms, clear, prepend, strin
 
 Attributes: length, name, parameter_enable, parameter_mappable
 """
-string = MaxObject('string')
 
+string_append = MaxObject('string.append')
 """
 string.append - Append a string to another string object, with an optional separator
 
@@ -7358,8 +7374,8 @@ Messages: bang, int, float, list, anything, string
 
 Attributes: separator
 """
-string_append = MaxObject('string.append')
 
+string_bytes = MaxObject('string.bytes')
 """
 string.bytes - Iterate the UTF-8 data in a string as bytes (ints)
 
@@ -7374,8 +7390,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, string
 """
-string_bytes = MaxObject('string.bytes')
 
+string_change = MaxObject('string.change')
 """
 string.change - Detect string changes
 
@@ -7394,8 +7410,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, string
 """
-string_change = MaxObject('string.change')
 
+string_compare = MaxObject('string.compare')
 """
 string.compare - Compare two string objects for equality
 
@@ -7415,8 +7431,8 @@ Messages: bang, int, float, list, anything, string
 
 Attributes: casemode, cmpmode
 """
-string_compare = MaxObject('string.compare')
 
+string_concat = MaxObject('string.concat')
 """
 string.concat - Concatenate two string objects
 
@@ -7431,8 +7447,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, string
 """
-string_concat = MaxObject('string.concat')
 
+string_contains = MaxObject('string.contains')
 """
 string.contains - Test whether a string object contains another string
 
@@ -7450,8 +7466,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, string
 """
-string_contains = MaxObject('string.contains')
 
+string_endswith = MaxObject('string.endswith')
 """
 string.endswith - Test whether a string object ends with a substring
 
@@ -7467,8 +7483,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, string
 """
-string_endswith = MaxObject('string.endswith')
 
+string_frombytes = MaxObject('string.frombytes')
 """
 string.frombytes - Construct a new string object from bytes (ints)
 
@@ -7483,8 +7499,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything
 """
-string_frombytes = MaxObject('string.frombytes')
 
+string_fromsymlist = MaxObject('string.fromsymlist')
 """
 string.fromsymlist - Construct a new string from a list of symbols
 
@@ -7498,8 +7514,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything
 """
-string_fromsymlist = MaxObject('string.fromsymlist')
 
+string_fromutf8 = MaxObject('string.fromutf8')
 """
 string.fromutf8 - Construct a new string object from UTF-8 characters, as integer values
 
@@ -7514,8 +7530,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything
 """
-string_fromutf8 = MaxObject('string.fromutf8')
 
+string_index = MaxObject('string.index')
 """
 string.index - Output the character at an index in a string object (0-based)
 
@@ -7534,8 +7550,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, in1, string
 """
-string_index = MaxObject('string.index')
 
+string_indexof = MaxObject('string.indexof')
 """
 string.indexof - Search for the index of a string
 
@@ -7550,8 +7566,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, string
 """
-string_indexof = MaxObject('string.indexof')
 
+string_iter = MaxObject('string.iter')
 """
 string.iter - Iterate the UTF-8 characters of a string object as individual symbols
 
@@ -7563,8 +7579,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, string
 """
-string_iter = MaxObject('string.iter')
 
+string_length = MaxObject('string.length')
 """
 string.length - Determine the length of a string object
 
@@ -7579,8 +7595,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, clear, string
 """
-string_length = MaxObject('string.length')
 
+string_prepend = MaxObject('string.prepend')
 """
 string.prepend - Prepend a string to another string object, with an optional separator
 
@@ -7599,8 +7615,8 @@ Messages: bang, int, float, list, anything, string
 
 Attributes: separator
 """
-string_prepend = MaxObject('string.prepend')
 
+string_regexp = MaxObject('string.regexp')
 """
 string.regexp - Use regular expressions to process input
 
@@ -7624,8 +7640,8 @@ Messages: bang, int, float, list, anything, string
 
 Attributes: re, substitute
 """
-string_regexp = MaxObject('string.regexp')
 
+string_remove = MaxObject('string.remove')
 """
 string.remove - Remove a range of characters from a string object
 
@@ -7645,8 +7661,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, in1, in2, string
 """
-string_remove = MaxObject('string.remove')
 
+string_replace = MaxObject('string.replace')
 """
 string.replace - Replace the first instance of a substring with a substitution string
 
@@ -7666,8 +7682,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, string
 """
-string_replace = MaxObject('string.replace')
 
+string_replaceall = MaxObject('string.replaceall')
 """
 string.replaceall - Replace all instances of a substring with a substitution string
 
@@ -7684,8 +7700,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, string
 """
-string_replaceall = MaxObject('string.replaceall')
 
+string_reverse = MaxObject('string.reverse')
 """
 string.reverse - Reverse a string
 
@@ -7700,8 +7716,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, string
 """
-string_reverse = MaxObject('string.reverse')
 
+string_rotate = MaxObject('string.rotate')
 """
 string.rotate - Rotate the characters within a string object
 
@@ -7719,8 +7735,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, in1, string
 """
-string_rotate = MaxObject('string.rotate')
 
+string_slice = MaxObject('string.slice')
 """
 string.slice - Generate a new string from a range of characters in an incoming string
 
@@ -7735,8 +7751,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, string
 """
-string_slice = MaxObject('string.slice')
 
+string_split = MaxObject('string.split')
 """
 string.split - Split a string object
 
@@ -7755,8 +7771,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, in1, string
 """
-string_split = MaxObject('string.split')
 
+string_sprintf = MaxObject('string.sprintf')
 """
 string.sprintf - Generate a string using C-style message formatting
 
@@ -7774,8 +7790,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, string
 """
-string_sprintf = MaxObject('string.sprintf')
 
+string_startswith = MaxObject('string.startswith')
 """
 string.startswith - Test whether a string object starts with a substring
 
@@ -7791,8 +7807,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, string
 """
-string_startswith = MaxObject('string.startswith')
 
+string_substring = MaxObject('string.substring')
 """
 string.substring - Generate a new string from a range of characters in an incoming string
 
@@ -7810,8 +7826,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, string
 """
-string_substring = MaxObject('string.substring')
 
+string_toarray = MaxObject('string.toarray')
 """
 string.toarray - Construct a new array object from a string object
 
@@ -7826,8 +7842,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, clear, string
 """
-string_toarray = MaxObject('string.toarray')
 
+string_tolist = MaxObject('string.tolist')
 """
 string.tolist - Construct a new list from a string object
 
@@ -7842,8 +7858,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, clear, string
 """
-string_tolist = MaxObject('string.tolist')
 
+string_tolower = MaxObject('string.tolower')
 """
 string.tolower - Convert uppercase characters in a string object to lowercase
 
@@ -7857,8 +7873,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, string
 """
-string_tolower = MaxObject('string.tolower')
 
+string_tosymbol = MaxObject('string.tosymbol')
 """
 string.tosymbol - Convert a string to a symbol
 
@@ -7873,8 +7889,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, string
 """
-string_tosymbol = MaxObject('string.tosymbol')
 
+string_toupper = MaxObject('string.toupper')
 """
 string.toupper - Convert lowercase characters in a string object to uppercase
 
@@ -7888,8 +7904,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, string
 """
-string_toupper = MaxObject('string.toupper')
 
+string_trim = MaxObject('string.trim')
 """
 string.trim - Trim whitespace from the beginning and end of a string object
 
@@ -7902,8 +7918,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, string
 """
-string_trim = MaxObject('string.trim')
 
+string_trimend = MaxObject('string.trimend')
 """
 string.trimend - Trim whitespace from the end of a string object
 
@@ -7918,8 +7934,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, string
 """
-string_trimend = MaxObject('string.trimend')
 
+string_trimstart = MaxObject('string.trimstart')
 """
 string.trimstart - Remove whitespace from the beginning of a string object
 
@@ -7933,8 +7949,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, string
 """
-string_trimstart = MaxObject('string.trimstart')
 
+string_utf8 = MaxObject('string.utf8')
 """
 string.utf8 - Iterate the UTF-8 characters in a string as integers
 
@@ -7948,8 +7964,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, string
 """
-string_utf8 = MaxObject('string.utf8')
 
+string_withpass = MaxObject('string.withpass')
 """
 string.withpass - Route a string by a matching substring
 
@@ -7968,8 +7984,8 @@ Messages: bang, int, float, list, anything, string
 
 Attributes: match
 """
-string_withpass = MaxObject('string.withpass')
 
+stripnote = MaxObject('stripnote')
 """
 stripnote - Filter out note-off messages
 
@@ -7985,8 +8001,8 @@ Outlets:
 
 Messages: int, float, ft1, in1
 """
-stripnote = MaxObject('stripnote')
 
+strippath = MaxObject('strippath')
 """
 strippath - Separate filename from a full pathname
 
@@ -8001,8 +8017,8 @@ Outlets:
 
 Messages: anything
 """
-strippath = MaxObject('strippath')
 
+substitute = MaxObject('substitute')
 """
 substitute - Substitute symbols within a message
 
@@ -8023,8 +8039,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, set
 """
-substitute = MaxObject('substitute')
 
+suckah = MaxObject('suckah')
 """
 suckah - Get a pixel from the display
 
@@ -8040,8 +8056,8 @@ Messages: list, (mouse)
 
 Attributes: boundmode, compatibility, outputalpha
 """
-suckah = MaxObject('suckah')
 
+suspend = MaxObject('suspend')
 """
 suspend - Reports when the application is in the background or foreground
 
@@ -8053,8 +8069,8 @@ Inlets:
 Outlets:
   0 (OUTLET_TYPE): 1 When Application Is In Foreground, 0 When In Background
 """
-suspend = MaxObject('suspend')
 
+sustain = MaxObject('sustain')
 """
 sustain - Hold note-off messages for release
 
@@ -8073,8 +8089,8 @@ Messages: int, float, list, clear, flush
 
 Attributes: repeatmode, sustain
 """
-sustain = MaxObject('sustain')
 
+swap = MaxObject('swap')
 """
 swap - Swap position of two numbers
 
@@ -8093,8 +8109,8 @@ Outlets:
 
 Messages: bang, int, float, ft1, in1, list
 """
-swap = MaxObject('swap')
 
+swatch = MaxObject('swatch')
 """
 swatch - Choose a color
 
@@ -8113,8 +8129,8 @@ Messages: bang, int, float, list, alpha, ft1, ft2, hsl, in1, in2, (mouse), set, 
 
 Attributes: annotation_name, compatibility, param_connect, parameter_enable, parameter_mappable, saturation
 """
-swatch = MaxObject('swatch')
 
+switch = MaxObject('switch')
 """
 switch - Accept messages from a specific inlet
 
@@ -8132,8 +8148,8 @@ Outlets:
 
 Messages: bang, int, float, next
 """
-switch = MaxObject('switch')
 
+sxformat = MaxObject('sxformat')
 """
 sxformat - Prepare MIDI system exclusive messages
 
@@ -8150,8 +8166,8 @@ Outlets:
 
 Messages: bang, int, in1, in2, in3, in4, in5, in6, in7, in8, in9, list
 """
-sxformat = MaxObject('sxformat')
 
+sysexin = MaxObject('sysexin')
 """
 sysexin - Receive MIDI system exclusive messages
 
@@ -8171,8 +8187,8 @@ Messages: anything, (mouse), (MIDI), port
 
 Attributes: matchport, name
 """
-sysexin = MaxObject('sysexin')
 
+tab = MaxObject('tab')
 """
 tab - Tab control
 
@@ -8190,8 +8206,8 @@ Messages: bang, int, float, (mouse), next, prev, set, setsymbol, symbol
 
 Attributes: activesafe, annotation_name, bgcolor, border, bordercolor, borderoncolor, button, clicktabcolor, clicktextcolor, colorselectedtext, contrastactivetab, fadetime, fadeunselect, gradient, hovertabcolor, hovertextcolor, htabcolor, htextcolor, margin, mode, multiline, param_connect, parameter_enable, parameter_mappable, rounded, segmented, spacing_x, spacing_y, style, tabcolor, tabs, textcolor, truncate, valign
 """
-tab = MaxObject('tab')
 
+tabcontroller = MaxObject('tabcontroller')
 """
 tabcontroller - Define and manage patcher tabs
 
@@ -8204,8 +8220,8 @@ Messages: add, addfolder, clear, dictionary, remove, setactive, setactivefilenam
 
 Attributes: disableinternals, exclusivemidi, folder, orientation, recursive, showroot
 """
-tabcontroller = MaxObject('tabcontroller')
 
+table = MaxObject('table')
 """
 table - Store and edit an array of numbers
 
@@ -8224,8 +8240,8 @@ Messages: bang, int, float, list, cancel, clear, const, (mouse), dump, flags, fq
 
 Attributes: annotation_name, embed, name, notename, parameter_enable, parameter_mappable, range, setresizes, signed, size
 """
-table = MaxObject('table')
 
+tan = MaxObject('tan')
 """
 tan - Tangent function
 
@@ -8242,8 +8258,8 @@ Outlets:
 
 Messages: bang, int, float
 """
-tan = MaxObject('tan')
 
+tanh = MaxObject('tanh')
 """
 tanh - Hyperbolic tangent function
 
@@ -8260,8 +8276,8 @@ Outlets:
 
 Messages: bang, int, float
 """
-tanh = MaxObject('tanh')
 
+tempo = MaxObject('tempo')
 """
 tempo - Output numbers at a metronomic tempo
 
@@ -8281,8 +8297,8 @@ Outlets:
 
 Messages: bang, int, float, clock, stop, tempo
 """
-tempo = MaxObject('tempo')
 
+text = MaxObject('text')
 """
 text - Format messages as a text file
 
@@ -8303,8 +8319,8 @@ Messages: int, float, list, anything, clear, cr, (mouse), dump, filetype, line, 
 
 Attributes: precision, stringout
 """
-text = MaxObject('text')
 
+text_codebox = MaxObject('text.codebox')
 """
 text.codebox - Display and edit text
 
@@ -8323,8 +8339,8 @@ Messages: bang, int, float, list, anything, append, atoms, clear, prepend, strin
 
 Attributes: autowatch, autowrite, bgcolor, editlocked, embed, filename, linenumbers, linenumberwidth, margin, style, syntax, textcolor, length, name
 """
-text_codebox = MaxObject('text.codebox')
 
+textbox = MaxObject('textbox')
 """
 textbox - Display and output numbers, lists, and messages
 
@@ -8341,8 +8357,8 @@ Messages: bang, int, float, list, anything, clear, max, min, (mouse), select, se
 
 Attributes: annotation_name, bgcolor, bordercolor, cantchange, format, hbgcolor, htextcolor, htricolor, maximum, minimum, mousefilter, numdecimalplaces, outputonclick, param_connect, parameter_enable, parameter_mappable, style, textcolor, triangle, tricolor, triscale
 """
-textbox = MaxObject('textbox')
 
+textbutton = MaxObject('textbutton')
 """
 textbutton - Button with text
 
@@ -8358,8 +8374,8 @@ Messages: bang, int, float, (mouse), set, setsymbol, symbol
 
 Attributes: active, align, annotation_name, bgcolor, bgoncolor, bgovercolor, bgoveroncolor, blinktime, border, bordercolor, borderoncolor, fontlink, legacytextcolor, mode, outputmode, param_connect, parameter_enable, parameter_mappable, rounded, spacing_x, spacing_y, style, text, textcolor, texton, textoncolor, textovercolor, textoveroncolor, tosymbol, truncate, underline, usebgoncolor, usetextovercolor
 """
-textbutton = MaxObject('textbutton')
 
+textedit = MaxObject('textedit')
 """
 textedit - Enter text
 
@@ -8378,8 +8394,8 @@ Messages: bang, int, float, list, (mouse), (typing), (drag), append, clear, dict
 
 Attributes: annotation_name, autoscroll, bangmode, bgcolor, border, bordercolor, clickmode, keymode, lines, nosymquotes, outputmode, param_connect, parameter_enable, parameter_mappable, readonly, rounded, separator, style, tabmode, textcolor, valuemode, wordwrap
 """
-textedit = MaxObject('textedit')
 
+themecolor = MaxObject('themecolor')
 """
 themecolor - Change and/or listen for changes in interface colors
 
@@ -8399,8 +8415,8 @@ Messages: bang, list, anything
 
 Attributes: color
 """
-themecolor = MaxObject('themecolor')
 
+thisobject = MaxObject('thisobject')
 """
 thisobject - Monitor and control named objects
 
@@ -8421,8 +8437,8 @@ Messages: bang, int, float, list, anything, targetattach, targetattrdict, target
 
 Attributes: attr, listen, listenvalue, prefix, target
 """
-thisobject = MaxObject('thisobject')
 
+thispatcher = MaxObject('thispatcher')
 """
 thispatcher - Send messages to a patcher
 
@@ -8437,8 +8453,8 @@ Outlets:
 
 Messages: anything, end, savewindow, setactivetab
 """
-thispatcher = MaxObject('thispatcher')
 
+threadcheck = MaxObject('threadcheck')
 """
 threadcheck - Report the thread of execution for a message
 
@@ -8455,8 +8471,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything
 """
-threadcheck = MaxObject('threadcheck')
 
+thresh = MaxObject('thresh')
 """
 thresh - Combine numbers, symbols and lists when received close together
 
@@ -8475,8 +8491,8 @@ Outlets:
 
 Messages: int, float, list, anything, symbol
 """
-thresh = MaxObject('thresh')
 
+timepoint = MaxObject('timepoint')
 """
 timepoint - Bang at a specific time
 
@@ -8495,8 +8511,8 @@ Messages: int, float, list, anything
 
 Attributes: time, transport
 """
-timepoint = MaxObject('timepoint')
 
+timer = MaxObject('timer')
 """
 timer - Report elapsed time between two events
 
@@ -8514,8 +8530,8 @@ Messages: bang, clock
 
 Attributes: format, transport
 """
-timer = MaxObject('timer')
 
+times = MaxObject('times')
 """
 times - Multiply two numbers
 
@@ -8533,8 +8549,8 @@ Outlets:
 
 Messages: bang, int, float, in1, set, list
 """
-times = MaxObject('times')
 
+togedge = MaxObject('togedge')
 """
 togedge - Report zero/non-zero transitions
 
@@ -8549,8 +8565,8 @@ Outlets:
 
 Messages: bang, int
 """
-togedge = MaxObject('togedge')
 
+toggle = MaxObject('toggle')
 """
 toggle - Switch between off and on (0 and 1)
 
@@ -8566,8 +8582,8 @@ Messages: bang, int, float, (drag), (mouse), outputvalue, read, set
 
 Attributes: annotation_name, bgcolor, bordercolor, checkedcolor, param_connect, parameter_enable, parameter_mappable, size, style, svg, thickness, uncheckedcolor
 """
-toggle = MaxObject('toggle')
 
+tosymbol = MaxObject('tosymbol')
 """
 tosymbol - Convert messages, numbers, or lists to a single symbol
 
@@ -8583,8 +8599,8 @@ Messages: bang, int, float, list, anything
 
 Attributes: separator
 """
-tosymbol = MaxObject('tosymbol')
 
+touchin = MaxObject('touchin')
 """
 touchin - Receive MIDI aftertouch values
 
@@ -8607,8 +8623,8 @@ Messages: anything, (mouse), (MIDI), port
 
 Attributes: matchport, name
 """
-touchin = MaxObject('touchin')
 
+touchout = MaxObject('touchout')
 """
 touchout - Transmit MIDI aftertouch messages
 
@@ -8628,8 +8644,8 @@ Messages: int, float, anything, (mouse), in1, port
 
 Attributes: matchport, name
 """
-touchout = MaxObject('touchout')
 
+translate = MaxObject('translate')
 """
 translate - Convert between different time formats
 
@@ -8649,8 +8665,8 @@ Messages: bang, int, float, list, anything
 
 Attributes: in, listen, listmode, mode, out, transport
 """
-translate = MaxObject('translate')
 
+transport = MaxObject('transport')
 """
 transport - Control a clock
 
@@ -8675,8 +8691,8 @@ Messages: bang, int, float, list, (mouse), dump, getclocksources, timesig
 
 Attributes: clocksource, name, resetbarcount, tempo
 """
-transport = MaxObject('transport')
 
+trigger = MaxObject('trigger')
 """
 trigger - Send input to many places
 
@@ -8695,8 +8711,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything
 """
-trigger = MaxObject('trigger')
 
+trough = MaxObject('trough')
 """
 trough - Output a number if it is less than previous numbers
 
@@ -8716,8 +8732,8 @@ Outlets:
 
 Messages: bang, int, float, ft1, in1
 """
-trough = MaxObject('trough')
 
+ubutton = MaxObject('ubutton')
 """
 ubutton - Transparent button
 
@@ -8736,8 +8752,8 @@ Messages: bang, int, float, anything, (mouse), set
 
 Attributes: annotation_name, dragtrack, hilite, hltcolor, param_connect, parameter_enable, parameter_mappable, rounded, stay, toggle
 """
-ubutton = MaxObject('ubutton')
 
+udpreceive = MaxObject('udpreceive')
 """
 udpreceive - Receive messages over a network
 
@@ -8757,8 +8773,8 @@ Messages: maxqueuesize, port
 
 Attributes: defer, outputformat, quiet
 """
-udpreceive = MaxObject('udpreceive')
 
+udpsend = MaxObject('udpsend')
 """
 udpsend - Send messages over a network
 
@@ -8770,8 +8786,8 @@ Args:
 
 Messages: bang, int, float, list, anything, FullPacket, host, maxpacketsize, maxqueuesize, osc_packet, port, rawbytes
 """
-udpsend = MaxObject('udpsend')
 
+umenu = MaxObject('umenu')
 """
 umenu - Pop-up menu
 
@@ -8789,8 +8805,8 @@ Messages: bang, int, float, (drag), append, checkitem, clear, clearchecks, count
 
 Attributes: align, allowdrag, annotation_name, applycolors, arrow, arrowbgcolor, arrowcolor, arrowframe, arrowlink, autopopulate, bgcolor, bgcolor2, bgfillcolor, blanksym, collection, color, depth, discolor, elementcolor, framecolor, hltcolor, items, labelclick, menumode, param_connect, parameter_enable, parameter_mappable, pattrmode, prefix, prefix_mode, rounded, showdotfiles, style, textcolor, textcolor2, togcolor, truncate, types, underline
 """
-umenu = MaxObject('umenu')
 
+universal = MaxObject('universal')
 """
 universal - Send messages to all objects of the same type
 
@@ -8806,8 +8822,8 @@ Messages: bang, int, float, list, anything, send
 
 Attributes: descend
 """
-universal = MaxObject('universal')
 
+unjoin = MaxObject('unjoin')
 """
 unjoin - Break a list into messages
 
@@ -8828,8 +8844,8 @@ Messages: int, float, list, anything
 
 Attributes: outsize
 """
-unjoin = MaxObject('unjoin')
 
+unpack = MaxObject('unpack')
 """
 unpack - Break a list into individual messages
 
@@ -8847,8 +8863,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything
 """
-unpack = MaxObject('unpack')
 
+urn = MaxObject('urn')
 """
 urn - Generate random numbers without duplicates
 
@@ -8868,8 +8884,8 @@ Outlets:
 
 Messages: bang, int, clear, in1, seed
 """
-urn = MaxObject('urn')
 
+uzi = MaxObject('uzi')
 """
 uzi - Send many bang messages
 
@@ -8890,8 +8906,8 @@ Outlets:
 
 Messages: bang, int, break, continue, in1, offset, pause, resume
 """
-uzi = MaxObject('uzi')
 
+v8 = MaxObject('v8')
 """
 v8 - Execute Javascript (Modern Engine)
 
@@ -8912,8 +8928,8 @@ Messages: bang, int, float, list, anything, array, assiststr, compile, (mouse), 
 
 Attributes: embed, parameter_enable, parameter_mappable
 """
-v8 = MaxObject('v8')
 
+v8_codebox = MaxObject('v8.codebox')
 """
 v8.codebox - Execute Javascript (Modern Engine)
 
@@ -8930,8 +8946,8 @@ Messages: wclose, open, int, float, bang, list, anything, compile, setprop, getp
 
 Attributes: bgcolor, linenumbers, linenumberwidth, margin, textcolor
 """
-v8_codebox = MaxObject('v8.codebox')
 
+v8ui = MaxObject('v8ui')
 """
 v8ui - Javascript user interfaces and graphics (Modern Engine)
 
@@ -8947,8 +8963,8 @@ Messages: bang, int, float, list, anything, (drag), array, assiststr, compile, (
 
 Attributes: border, embed, filename, jsarguments, nofsaa, param_connect, parameter_enable, parameter_mappable
 """
-v8ui = MaxObject('v8ui')
 
+value = MaxObject('value')
 """
 value - Share data between other value objects
 
@@ -8966,8 +8982,8 @@ Outlets:
 
 Messages: bang, int, float, list, anything, (mouse), symbol
 """
-value = MaxObject('value')
 
+vdp = MaxObject('vdp')
 """
 vdp - Control a videodisk player through a serial port
 
@@ -8991,8 +9007,8 @@ Outlets:
 
 Messages: int, chapter, clear, cmd, control, fps, frame, name, play, restrict, scan, search, setskip, skip, step, stop
 """
-vdp = MaxObject('vdp')
 
+vexpr = MaxObject('vexpr')
 """
 vexpr - Evaluate a math expression for a list
 
@@ -9015,8 +9031,8 @@ Messages: bang, int, float, list, anything
 
 Attributes: maxsize, scalarmode
 """
-vexpr = MaxObject('vexpr')
 
+vstscan = MaxObject('vstscan')
 """
 vstscan - Audio Plugin Scanner
 
@@ -9031,8 +9047,8 @@ Outlets:
 
 Messages: cancel, listau, listvst, listvst3, scan, skip
 """
-vstscan = MaxObject('vstscan')
 
+when = MaxObject('when')
 """
 when - Report the current transport time
 
@@ -9052,8 +9068,8 @@ Messages: bang, int, float, list, anything
 
 Attributes: transport
 """
-when = MaxObject('when')
 
+xbendin = MaxObject('xbendin')
 """
 xbendin - Interpret extra precision MIDI pitch bend values
 
@@ -9072,8 +9088,8 @@ Outlets:
 
 Messages: int
 """
-xbendin = MaxObject('xbendin')
 
+xbendout = MaxObject('xbendout')
 """
 xbendout - Format extra precision MIDI pitch bend messages
 
@@ -9092,8 +9108,8 @@ Outlets:
 
 Messages: bang, int, in1, in2, list
 """
-xbendout = MaxObject('xbendout')
 
+xctlin = MaxObject('xctlin')
 """
 xctlin - Output received 14-bit MIDI control values
 
@@ -9114,8 +9130,8 @@ Messages: int, list, set
 
 Attributes: lsbfirst
 """
-xctlin = MaxObject('xctlin')
 
+xctlout = MaxObject('xctlout')
 """
 xctlout - Format 14-bit MIDI controller messages
 
@@ -9136,8 +9152,8 @@ Messages: bang, int, float, list, in1, in2
 
 Attributes: lsbfirst, running
 """
-xctlout = MaxObject('xctlout')
 
+xmidiin = MaxObject('xmidiin')
 """
 xmidiin - Output raw MIDI data
 
@@ -9158,8 +9174,8 @@ Messages: anything, (mouse), (MIDI), lastport, port
 
 Attributes: matchport, name
 """
-xmidiin = MaxObject('xmidiin')
 
+xnotein = MaxObject('xnotein')
 """
 xnotein - Interpret MIDI note messages with release velocity
 
@@ -9177,8 +9193,8 @@ Outlets:
 
 Messages: int
 """
-xnotein = MaxObject('xnotein')
 
+xnoteout = MaxObject('xnoteout')
 """
 xnoteout - Format MIDI note messages with release velocity
 
@@ -9196,8 +9212,8 @@ Outlets:
 
 Messages: bang, int, list, in1, in2, in3
 """
-xnoteout = MaxObject('xnoteout')
 
+zl = MaxObject('zl')
 """
 zl - Process lists in many ways
 
@@ -9221,8 +9237,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl = MaxObject('zl')
 
+zl_change = MaxObject('zl.change')
 """
 zl.change - Filter out list repetitions
 
@@ -9241,8 +9257,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl_change = MaxObject('zl.change')
 
+zl_compare = MaxObject('zl.compare')
 """
 zl.compare - Compare two lists
 
@@ -9261,8 +9277,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl_compare = MaxObject('zl.compare')
 
+zl_delace = MaxObject('zl.delace')
 """
 zl.delace - De-interleave a list
 
@@ -9280,8 +9296,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl_delace = MaxObject('zl.delace')
 
+zl_ecils = MaxObject('zl.ecils')
 """
 zl.ecils - Slice a list in reverse order
 
@@ -9302,8 +9318,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl_ecils = MaxObject('zl.ecils')
 
+zl_filter = MaxObject('zl.filter')
 """
 zl.filter - Remove items in a list
 
@@ -9322,8 +9338,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl_filter = MaxObject('zl.filter')
 
+zl_group = MaxObject('zl.group')
 """
 zl.group - Store and output a list
 
@@ -9344,8 +9360,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl_group = MaxObject('zl.group')
 
+zl_indexmap = MaxObject('zl.indexmap')
 """
 zl.indexmap - Create new list from list of indexes
 
@@ -9366,8 +9382,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl_indexmap = MaxObject('zl.indexmap')
 
+zl_iter = MaxObject('zl.iter')
 """
 zl.iter - Successively output lists of specific size
 
@@ -9388,8 +9404,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl_iter = MaxObject('zl.iter')
 
+zl_join = MaxObject('zl.join')
 """
 zl.join - Combine two lists
 
@@ -9410,8 +9426,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl_join = MaxObject('zl.join')
 
+zl_lace = MaxObject('zl.lace')
 """
 zl.lace - Interleave two lists
 
@@ -9432,8 +9448,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl_lace = MaxObject('zl.lace')
 
+zl_len = MaxObject('zl.len')
 """
 zl.len - Get list length
 
@@ -9449,8 +9465,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl_len = MaxObject('zl.len')
 
+zl_lookup = MaxObject('zl.lookup')
 """
 zl.lookup - Output elements of a list
 
@@ -9471,8 +9487,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl_lookup = MaxObject('zl.lookup')
 
+zl_median = MaxObject('zl.median')
 """
 zl.median - Get the median value of a list of numbers
 
@@ -9488,8 +9504,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl_median = MaxObject('zl.median')
 
+zl_mth = MaxObject('zl.mth')
 """
 zl.mth - Extract item from list
 
@@ -9511,8 +9527,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl_mth = MaxObject('zl.mth')
 
+zl_nth = MaxObject('zl.nth')
 """
 zl.nth - Extract item from list
 
@@ -9534,8 +9550,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl_nth = MaxObject('zl.nth')
 
+zl_queue = MaxObject('zl.queue')
 """
 zl.queue - Output elements of a list in the order they are received
 
@@ -9553,8 +9569,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl_queue = MaxObject('zl.queue')
 
+zl_reg = MaxObject('zl.reg')
 """
 zl.reg - Store and output a list
 
@@ -9575,8 +9591,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl_reg = MaxObject('zl.reg')
 
+zl_rev = MaxObject('zl.rev')
 """
 zl.rev - Reverse a list
 
@@ -9592,8 +9608,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl_rev = MaxObject('zl.rev')
 
+zl_rot = MaxObject('zl.rot')
 """
 zl.rot - Rotate a list
 
@@ -9614,8 +9630,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl_rot = MaxObject('zl.rot')
 
+zl_scramble = MaxObject('zl.scramble')
 """
 zl.scramble - Scramble a list
 
@@ -9636,8 +9652,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl_scramble = MaxObject('zl.scramble')
 
+zl_sect = MaxObject('zl.sect')
 """
 zl.sect - Find common items between two lists
 
@@ -9658,8 +9674,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl_sect = MaxObject('zl.sect')
 
+zl_slice = MaxObject('zl.slice')
 """
 zl.slice - Slice a list in two
 
@@ -9680,8 +9696,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl_slice = MaxObject('zl.slice')
 
+zl_sort = MaxObject('zl.sort')
 """
 zl.sort - Arrange a list in alphanumeric order
 
@@ -9702,8 +9718,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl_sort = MaxObject('zl.sort')
 
+zl_stack = MaxObject('zl.stack')
 """
 zl.stack - Output elements of a list in reverse order
 
@@ -9721,8 +9737,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl_stack = MaxObject('zl.stack')
 
+zl_stream = MaxObject('zl.stream')
 """
 zl.stream - Make a list of a certain size
 
@@ -9743,8 +9759,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl_stream = MaxObject('zl.stream')
 
+zl_sub = MaxObject('zl.sub')
 """
 zl.sub - Output position for each occurance of right list in left
 
@@ -9765,8 +9781,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl_sub = MaxObject('zl.sub')
 
+zl_sum = MaxObject('zl.sum')
 """
 zl.sum - Sum a list of numbers
 
@@ -9784,8 +9800,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl_sum = MaxObject('zl.sum')
 
+zl_swap = MaxObject('zl.swap')
 """
 zl.swap - Swap two list indexes
 
@@ -9806,8 +9822,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl_swap = MaxObject('zl.swap')
 
+zl_thin = MaxObject('zl.thin')
 """
 zl.thin - Remove duplicates from list
 
@@ -9825,8 +9841,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl_thin = MaxObject('zl.thin')
 
+zl_union = MaxObject('zl.union')
 """
 zl.union - Combine two lists without duplicating shared items
 
@@ -9847,8 +9863,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl_union = MaxObject('zl.union')
 
+zl_unique = MaxObject('zl.unique')
 """
 zl.unique - Remove items from a list
 
@@ -9869,8 +9885,8 @@ Messages: bang, int, float, list, anything, mode, zlclear, zlreset
 
 Attributes: fuzzy, zlmaxsize
 """
-zl_unique = MaxObject('zl.unique')
 
+zmap = MaxObject('zmap')
 """
 zmap - Maps input range of values to output range
 
@@ -9894,7 +9910,6 @@ Outlets:
 
 Messages: bang, int, float, list, ft1, ft2, ft3, ft4
 """
-zmap = MaxObject('zmap')
 
 _sys.stdout = _old_stdout
 _devnull.close()

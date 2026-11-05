@@ -1,9 +1,9 @@
 """
 tools.patchfuncs.checking
 
-Methods related to checking MaxPatches (currently for unknown/abstraction/js links)
+Methods related to checking MaxPatches: unknown objects, abstraction/js links, and cords
 
-    check() --> get info on unknowns, abstractions, and js files
+    check() --> get info on unknowns, abstractions, js files, and audio-into-control cords
 
     get_unknowns() --> get unknown objects
     get_abstractions() --> get abstractions
@@ -12,11 +12,15 @@ Methods related to checking MaxPatches (currently for unknown/abstraction/js lin
 """
 import os
 
+from maxpylang.cordcheck import coverage
+
 def check(self, *flags):
     """
-    This method checks the patch for linked abstractions, unknown objects, and linked/unlinked js objects.
+    This method checks the patch for linked abstractions, unknown objects, linked/unlinked js objects,
+    and cords that send audio into an inlet that takes no audio.
 
-    :param \*flags: takes keywords ``'abstractions'``, ``'unknowns'``, ``'js'``. If no flags given, checks all three categories.
+    :param \*flags: takes keywords ``'abstractions'``, ``'unknowns'``, ``'js'``, ``'cords'``. If no flags given,
+        checks all four categories.
     :type \*flags: str, optional
 
     :returns: outputs a list of all the objects that fall under the specified categories, \
@@ -27,7 +31,7 @@ def check(self, *flags):
     flags = list(flags)
 
     if len(flags) == 0 or 'all' in flags:
-        flags += ['unknown', 'js', 'abstractions']
+        flags += ['unknown', 'js', 'abstractions', 'cords']
 
     if 'unknown' in flags or 'unknowns' in flags:
 
@@ -74,6 +78,14 @@ def check(self, *flags):
 
         else:
             print("PatchCheck: linked abstractions (files must be in same folder as patch file): no linked abstractions")
+        print()
+
+    if 'cords' in flags:
+        counts = coverage(self)
+        total = sum(counts.values())
+        plural = "" if total == 1 else "s"
+        print(f"PatchCheck: cords : {total} cord{plural}, {counts['problem']} sending audio into an inlet "
+              f"that takes none, {counts['unknown']} not checked (no type data)")
         print()
 
     return
