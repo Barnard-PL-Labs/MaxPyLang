@@ -9,7 +9,7 @@ import pytest
 
 import maxpylang as mp
 from maxpylang import ConnectionWarning
-from maxpylang.cordcheck import coverage, verdict
+from maxpylang.cordcheck import coverage, rate_of, verdict
 from maxpylang.objects import cycle_tilde, flonum
 
 SNIPPET = Path(__file__).parent / "typing_snippets" / "connections.py"
@@ -140,3 +140,49 @@ def test_save_reports_coverage(tmp_path, capsys):
     patch.save(str(tmp_path / "p"), verbose=False)
     assert ("PatchCheck: cords : 3 cords, 1 sending audio into an inlet that takes none, "
             "1 not checked (no type data)") in capsys.readouterr().out
+
+
+def test_multichannel_audio_into_control_warns():
+    patch = mp.MaxPatch(verbose=False)
+    mc, num = (patch.place(text, verbose=False)[0] for text in ("mc.cycle~", "flonum"))
+    with pytest.warns(ConnectionWarning, match=r"mc\.cycle~ \(obj-1\) outlet 0 sends audio"):
+        patch.connect([mc.outs[0], num.ins[0]], verbose=False)
+
+
+def test_outlet_of_unknown_rate_is_not_checked():
+    # play~'s outlets depend on its channel count, so the data cannot type them
+    assert rate_of("play~", "outs", 0) is None
+    patch = mp.MaxPatch(verbose=False)
+    play, num = (patch.place(text, verbose=False)[0] for text in ("play~ mybuffer", "flonum"))
+    assert verdict(play.outs[0], num.ins[0]) == "unknown"
+
+
+def placed_bad_chain():
+    """cycle~ -> snapshot~ -> flonum, all valid; replacing snapshot~ with `number` is not."""
+    patch = mp.MaxPatch(verbose=False)
+    osc, snap, num = (patch.place(text, verbose=False)[0] for text in ("cycle~", "snapshot~", "flonum"))
+    patch.connect([osc.outs[0], snap.ins[0]], [snap.outs[0], num.ins[0]], verbose=False)
+    return patch
+
+
+def state(patch):
+    json = patch.get_json()["patcher"]
+    return (sorted((b["box"]["id"], b["box"]["text"]) for b in json["boxes"]),
+            sorted((l["patchline"]["source"][0], l["patchline"]["destination"][0]) for l in json["lines"]))
+
+
+def test_replace_warning_names_the_replaced_box():
+    patch = placed_bad_chain()
+    with contextlib.redirect_stdout(io.StringIO()), pytest.warns(ConnectionWarning, match=r"number \(obj-2\) inlet 0"):
+        patch.replace("obj-2", "number")
+    assert state(patch)[0][1] == ("obj-2", "number")
+
+
+def test_replace_in_strict_mode_raises_before_changing_the_patch():
+    patch = placed_bad_chain()
+    before = state(patch)
+    with contextlib.redirect_stdout(io.StringIO()), warnings.catch_warnings():
+        warnings.simplefilter("error", ConnectionWarning)
+        with pytest.raises(ConnectionWarning):
+            patch.replace("obj-2", "number")
+    assert state(patch) == before

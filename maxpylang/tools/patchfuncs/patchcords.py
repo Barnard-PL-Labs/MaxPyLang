@@ -38,6 +38,18 @@ def connect(self, *connections, verbose=True):
     self.check_connection_format(connections)
     connections = self.check_connection_typing(connections)
 
+    link_cords(connections, verbose=verbose)
+
+    return
+
+
+def link_cords(connections, verbose=True):
+    """
+    Helper function for patchcords.
+
+    Records already-checked connections in the inlets and outlets they join.
+    """
+
     # update inlet sources, outlet destinations, midpoints
     for connection in connections:
         inlet = connection[1]
@@ -98,10 +110,15 @@ def swap_patchcords(self, new, old):
             old_connections.append([old_out, destination, midpoints])
             new_connections.append([new_out, destination, midpoints])
 
+    # check the new connections before changing anything, so a ConnectionWarning raised
+    # as an error (strict mode) leaves the patch as it was
+    self.check_connection_format(new_connections)
+    new_connections = self.check_connection_typing(new_connections)
+
     # delete old connections
     self.delete_cords(*old_connections)
     # connect new connections
-    self.connect(*new_connections)
+    link_cords(new_connections)
 
     return
 
