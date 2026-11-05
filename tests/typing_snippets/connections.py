@@ -1,5 +1,5 @@
 """
-Static checks on connect(), run by tests/test_static_types.py under ty and mypy.
+Static checks on connect(), run by tests/test_static_types.py under ty, mypy and pyright.
 
 Every line ending in `# error` must be flagged, and no other line may be.
 """

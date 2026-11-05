@@ -27,7 +27,10 @@ dependencies = [
 dev = [
     "pytest",
     "mypy",
-    "ty",
+    "pyright",
+    # ty 0.0.96 to 0.0.98 stop inferring a type variable through a union-typed
+    # parameter, so connect() rate mistakes pass silently. Unpin once fixed upstream.
+    "ty==0.0.95",
 ]
 
 [project.scripts]
