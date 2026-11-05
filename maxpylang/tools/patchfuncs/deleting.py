@@ -121,6 +121,7 @@ def delete_objs(self, *objs, verbose=True):
     #delete objects
     for obj in objs:
         obj_name = self._objs[obj].name #save for logging
+        self._objs[obj]._in_patch = False
         del self._objs[obj]
 
         if verbose:

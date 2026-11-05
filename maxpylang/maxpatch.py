@@ -4,9 +4,31 @@ Class representing a MaxPatch.
 from __future__ import annotations
 
 import os
+from typing import Any, TypeVar, Union, overload
 
 from .maxobject import MaxObject
+from .rates import R
+from .tools.patchfuncs.patchcords import connect as _connect
+from .tools.patchfuncs.placing import place as _place
 from .xlet import Inlet, Outlet
+
+_Obj = TypeVar("_Obj", bound=MaxObject)
+
+# One connection: (outlet, inlet), (outlet, inlet, midpoints), or the untyped list form.
+# The outlet and inlet share a rate variable, so a type checker rejects audio into an
+# inlet that takes no audio. Each argument position gets its own variable.
+_Conn = Union[tuple[Outlet[R], Inlet[R]], tuple[Outlet[R], Inlet[R], list[Any]], list[Any]]
+# An unpacked list, connect(*pairs), resolves to the 9+ overload. mypy joins the inlets of
+# pairs with different rates to `object`, so that overload leaves the inlet unconstrained.
+_AnyConn = Union[tuple[Outlet[Any], object], tuple[Outlet[Any], object, list[Any]], list[Any]]
+_R0 = TypeVar("_R0")
+_R1 = TypeVar("_R1")
+_R2 = TypeVar("_R2")
+_R3 = TypeVar("_R3")
+_R4 = TypeVar("_R4")
+_R5 = TypeVar("_R5")
+_R6 = TypeVar("_R6")
+_R7 = TypeVar("_R7")
 
 
 class MaxPatch:
@@ -106,12 +128,65 @@ class MaxPatch:
         set_position,
         inspect,
         save,
-        place,
-        connect,
         replace,
         delete,
         check,
     )
+
+    # FOR PLACING AND CONNECTING
+    # Real methods rather than class-body imports, so type checkers can read their signatures.
+
+    @overload
+    def place(self, obj: _Obj, /, *, randpick: bool = ..., num_objs: Any = ..., seed: Any = ...,
+              weights: Any = ..., spacing_type: str = ..., spacing: Any = ...,
+              starting_pos: Any = ..., verbose: bool = ...) -> list[_Obj]: ...
+    @overload
+    def place(self, *objs: MaxObject | str | list[Any], randpick: bool = ..., num_objs: Any = ...,
+              seed: Any = ..., weights: Any = ..., spacing_type: str = ..., spacing: Any = ...,
+              starting_pos: Any = ..., verbose: bool = ...) -> list[MaxObject]: ...
+
+    def place(self, *objs, randpick=False, num_objs=1, seed=None, weights=None, spacing_type="grid",
+              spacing=[80.0, 80.0], starting_pos=None, verbose=False):
+        return _place(self, *objs, randpick=randpick, num_objs=num_objs, seed=seed, weights=weights,
+                      spacing_type=spacing_type, spacing=spacing, starting_pos=starting_pos,
+                      verbose=verbose)
+
+    place.__doc__ = _place.__doc__
+
+    @overload
+    def connect(self, c0: _Conn[_R0], /, *, verbose: bool = ...) -> None: ...
+    @overload
+    def connect(self, c0: _Conn[_R0], c1: _Conn[_R1], /, *, verbose: bool = ...) -> None: ...
+    @overload
+    def connect(self, c0: _Conn[_R0], c1: _Conn[_R1], c2: _Conn[_R2], /, *,
+                verbose: bool = ...) -> None: ...
+    @overload
+    def connect(self, c0: _Conn[_R0], c1: _Conn[_R1], c2: _Conn[_R2], c3: _Conn[_R3], /, *,
+                verbose: bool = ...) -> None: ...
+    @overload
+    def connect(self, c0: _Conn[_R0], c1: _Conn[_R1], c2: _Conn[_R2], c3: _Conn[_R3],
+                c4: _Conn[_R4], /, *, verbose: bool = ...) -> None: ...
+    @overload
+    def connect(self, c0: _Conn[_R0], c1: _Conn[_R1], c2: _Conn[_R2], c3: _Conn[_R3],
+                c4: _Conn[_R4], c5: _Conn[_R5], /, *, verbose: bool = ...) -> None: ...
+    @overload
+    def connect(self, c0: _Conn[_R0], c1: _Conn[_R1], c2: _Conn[_R2], c3: _Conn[_R3],
+                c4: _Conn[_R4], c5: _Conn[_R5], c6: _Conn[_R6], /, *,
+                verbose: bool = ...) -> None: ...
+    @overload
+    def connect(self, c0: _Conn[_R0], c1: _Conn[_R1], c2: _Conn[_R2], c3: _Conn[_R3],
+                c4: _Conn[_R4], c5: _Conn[_R5], c6: _Conn[_R6], c7: _Conn[_R7], /, *,
+                verbose: bool = ...) -> None: ...
+    # Nine or more connections in one call are checked at runtime only.
+    @overload
+    def connect(self, c0: _AnyConn, c1: _AnyConn, c2: _AnyConn, c3: _AnyConn, c4: _AnyConn,
+                c5: _AnyConn, c6: _AnyConn, c7: _AnyConn, c8: _AnyConn, /, *more: _AnyConn,
+                verbose: bool = ...) -> None: ...
+
+    def connect(self, *connections, verbose=True):
+        return _connect(self, *connections, verbose=verbose)
+
+    connect.__doc__ = _connect.__doc__
 
     # FOR SAVING
     from .tools.patchfuncs.saving import get_json

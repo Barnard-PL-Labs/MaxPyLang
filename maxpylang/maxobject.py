@@ -57,6 +57,8 @@ class MaxObject():
         self._ins = []             #list of Inlets
         self._outs = []            #list of Outlets
         self._ext_file = None      #external file, for js or abstraction
+        self._in_patch = False     #set once placed, so placing again makes a copy
+        self._is_stub = False      #set on the maxpylang.objects stubs, which are never placed themselves
 
         if from_dict:
             self.build_from_dict(text)
@@ -88,6 +90,25 @@ class MaxObject():
         A list of Outlet objects attached to the MaxObject.
         """
         return self._outs
+
+    def __call__(self, *args, **attribs):
+        """
+        Make a new object of the same class with in-box arguments and attributes.
+
+        ``cycle_tilde(440)`` is ``MaxObject("cycle~ 440")``, and
+        ``metro(500, active=1)`` is ``MaxObject("metro 500 @active 1")``.
+        """
+        words = [self._name] + [str(arg) for arg in args]
+        for attrib, val in attribs.items():
+            vals = val if isinstance(val, (list, tuple)) else [val]
+            words += ["@" + attrib] + [str(v) for v in vals]
+
+        # an abstraction's inlets and outlets come from its contents, not its arguments
+        if self._ref_file == "abstraction":
+            return MaxObject(" ".join(words), abstraction=True,
+                             inlets=len(self._ins), outlets=len(self._outs))
+
+        return MaxObject(" ".join(words))
 
     from .tools.objfuncs.exposed import move, edit, link, inspect #exposed functions for user use
 
