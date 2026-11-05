@@ -3,10 +3,10 @@
 from maxpylang.tools.typedstubs import object_types
 
 
-def sig(inlets, outlets, methods=("int", "float"), in_kind="fixed", out_kind="fixed"):
+def sig(inlets, outlets, methods=("int", "float"), in_kind="fixed", out_kind="fixed", declared=""):
     arity = {"inlets": {"kind": in_kind, "value": len(inlets)},
              "outlets": {"kind": out_kind, "value": len(outlets)}}
-    return {"inlets": [{"rate": r} for r in inlets],
+    return {"inlets": [{"rate": r, "declared_type": declared} for r in inlets],
             "outlets": [{"type": t, "type_source": "patchers"} for t in outlets],
             "methods": list(methods), "arity": arity}
 
@@ -20,7 +20,13 @@ def test_documented_audio_inlet_is_signal_and_others_of_audio_objects_stay_open(
     assert object_types("cycle~", row) == {"ins": ["any", "signal"], "outs": ["signal"]}
 
 
-def test_uncertain_refpage_audio_rate_is_not_known():
+def test_uncertain_rate_with_a_declared_signal_type_takes_audio():
+    # lores~'s input: the refpage declares "signal"; the uncertainty is about messages
+    row = sig(["signal|control?"], [], methods=("signal",), declared="signal")
+    assert object_types("lores~", row)["ins"] == ["signal"]
+
+
+def test_uncertain_rate_without_a_declared_signal_type_is_not_known():
     row = sig(["signal|control?"], [], methods=("signal",))
     assert object_types("x~", row)["ins"] == ["any"]
 
