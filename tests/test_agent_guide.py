@@ -69,6 +69,7 @@ def test_example_runs(block, tmp_path):
     result = subprocess.run([sys.executable, str(script)], cwd=tmp_path, capture_output=True, text=True)
     assert result.returncode == 0, result.stdout + result.stderr
     assert "UnknownObjectWarning" not in result.stderr, result.stderr
+    assert "ConnectionWarning" not in result.stderr, result.stderr
 
 
 @pytest.mark.parametrize("checker", sorted(CHECKERS))

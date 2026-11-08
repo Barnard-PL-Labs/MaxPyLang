@@ -41,10 +41,11 @@ It catches, before anything runs:
 - **An inlet or outlet index that does not exist**, e.g. `flonum` has 1 inlet, so
   `num.ins[1]` is an error.
 
-It only sees objects placed from `maxpylang.objects` and connections written as tuples.
-Objects placed by string (`patch.place("cycle~ 440")`) and the list form
-(`[outlet, inlet]`) still run, but are not checked. Running the script with `python` does
-not check these mistakes: a bad cord is saved into the patch without a warning.
+A type checker only sees objects placed from `maxpylang.objects` and connections written as
+tuples. Running the script checks audio into a message-only inlet for every connection,
+whatever its form: each one raises a `ConnectionWarning` at the line that made it, and
+`save()` ends with a `PatchCheck: cords` line counting them. The cord is still saved, so fix
+every warning before using the patch.
 
 ## Core API
 

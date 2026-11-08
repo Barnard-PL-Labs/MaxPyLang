@@ -60,7 +60,7 @@ pip install pyright
 pyright your_script.py
 ```
 
-Running the script with `python` does not check these: the bad connection is saved into the patch.
+Running the script with `python` checks the first mistake too, for every connection, including objects placed by string and the list form: it prints a `ConnectionWarning` at the line that made the bad cord, and `save()` ends with a line counting them. The cord is still saved, so fix every warning.
 
 ## Citation
 
