@@ -106,6 +106,7 @@ def load_objs_from_dict(self, patch_dict, verbose=True):
     #for each obj, make obj from the obj json dict
     for box in patch_dict['patcher']['boxes']:
         obj = MaxObject(box, from_dict=True)
+        obj._in_patch = True
 
         #add obj to patch
         self._num_objs += 1

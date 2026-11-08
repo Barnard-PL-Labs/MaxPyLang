@@ -2,10 +2,16 @@
 Classes for Inlets and Outlets of MaxObjects.
 """
 
+from typing import Generic
 
-class Inlet():
+from .rates import R_co, R_contra
+
+
+class Inlet(Generic[R_contra]):
     """
     Class representing MaxObject Inlet. 
+
+    Generic over the rate it accepts (see maxpylang.rates), for static checking only.
     
     Keeps track of patchcords through a list of source Outlets.
     Also keeps track of midpoints of the cord, if any. 
@@ -59,9 +65,11 @@ class Inlet():
     
     
     
-class Outlet():
+class Outlet(Generic[R_co]):
     """
     Class representing MaxObject Outlets.
+
+    Generic over the rate it sends (see maxpylang.rates), for static checking only.
     
     Keeps track of patchcords through list of destination Inlets. 
     """
