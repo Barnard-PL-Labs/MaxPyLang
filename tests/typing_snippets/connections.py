@@ -2,6 +2,10 @@
 Static checks on connect(), run by tests/test_static_types.py under ty, mypy and pyright.
 
 Every line ending in `# error` must be flagged, and no other line may be.
+
+tests/test_cordcheck.py also runs it line by line: the runtime check must warn on the
+`# error` lines that send audio into a control-only inlet, and on the lines ending in
+`warns at runtime`, which a type checker cannot see.
 """
 
 import maxpylang as mp
@@ -42,10 +46,10 @@ patch.connect((mc.outs[0], dac.ins[0]))  # multichannel audio into an audio inle
 patch.connect((avg.outs[0], snap.ins[0]), (snap.outs[0], num.ins[0]))
 patch.connect((osc.outs[0], snd_sig.ins[0]), (tog.outs[0], met.ins[0]))
 patch.connect((osc.outs[0], dac.ins[0], [[10.0, 20.0]]), verbose=False)  # with midpoints
-patch.connect([osc.outs[0], num.ins[0]])  # list form: checked only at runtime
+patch.connect([osc.outs[0], num.ins[0]])  # list form: not typed statically; warns at runtime
 patch.connect([osc.outs[0], dac.ins[0]], (met.outs[0], osc.ins[1]))
 untyped = patch.place("sig~ 1")[0]
-patch.connect((untyped.outs[0], num.ins[0]))  # string-placed objects are not typed
+patch.connect((untyped.outs[0], num.ins[0]))  # string-placed objects are not typed; warns at runtime
 patch.connect((train.outs[1], tog.ins[0]))  # refpage says signal, but it sends a bang
 patch.connect((plug.outs[9], tog.ins[0]))  # outlet count changes with arguments, so not bounded
 mixed = [(osc.outs[0], dac.ins[0]), (tog.outs[0], met.ins[0])]

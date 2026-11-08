@@ -39,6 +39,13 @@ def test_pyi_types_fixed_and_open_counts():
     assert "cycle_tilde: _T_cycle_tilde" in pyi
 
 
+def test_signal_and_unknown_inlets_give_the_same_stubs():
+    # only the runtime check tells "takes audio" from "not known"; statically both accept audio
+    as_signal = {"msp": {"cycle~": {"ins": ["any", "signal"], "outs": ["signal"]}, "dac~": {"ins": "signal", "outs": []}}}
+    as_any = {"msp": {"cycle~": {"ins": ["any", "any"], "outs": ["signal"]}, "dac~": {"ins": "any", "outs": []}}}
+    assert typedstubs.build_pyi("msp", as_signal) == typedstubs.build_pyi("msp", as_any)
+
+
 def test_pyi_falls_back_to_any_for_objects_without_data():
     pyi = typedstubs.build_pyi("msp", {"msp": {}})
     assert "class _T_cycle_tilde(MaxObject):" in pyi

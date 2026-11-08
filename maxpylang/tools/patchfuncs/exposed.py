@@ -120,6 +120,9 @@ def replace(self, curr_obj_num: str, new_obj, retain=True, verbose=False,  **new
     #put in new attributes
     new_obj.edit(**new_attribs, verbose=verbose)
 
+    #give the new obj its final id first, so connection warnings name the right box
+    new_obj._dict['box']['id'] = curr_obj_num
+
     #update patchcords that remain 
     self.swap_patchcords(new_obj, old_obj)
 
