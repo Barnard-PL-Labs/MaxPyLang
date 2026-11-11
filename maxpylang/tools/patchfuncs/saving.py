@@ -61,7 +61,7 @@ def save(self, filename="default.maxpat", device_type=None, verbose=True, check=
     #(abstractions only get marked as abstractions if the file is found)
     #also log linked abstractions and linked js files
     if check:
-        self.check('unknown', 'js', 'abstractions', 'cords')
+        self.check('unknown', 'js', 'abstractions', 'cords', 'graph', device_type=device_type)
 
     #log messages
     if verbose:

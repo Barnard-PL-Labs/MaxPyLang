@@ -1,0 +1,16 @@
+{
+  "_doc": "Hand-curated roles for the whole-patch checks in maxpylang/graphcheck.py. Ported from maxpy-studio research/failure-taxonomy/analyze_patches.py, then narrowed for hot loops against Max's own shipped patches (ui, clocked, and urn and coll in conditional). Names are Max object names as typed in a box, aliases like `del` and `sel` included. Edit freely: tests/test_graphcheck.py and tests/test_max_corpus.py check the result.",
+  "decor": ["comment", "panel", "live.comment", "live.line", "fpic", "swatch"],
+  "audio_out": ["plugout~"],
+  "audio_out_outside_max_for_live": ["dac~", "ezdac~"],
+  "midi_out": ["noteout", "midiout", "ctlout", "pgmout", "bendout", "touchout", "xnoteout", "polyout"],
+  "side_effect": ["live.object", "live.remote~", "live.path", "live.observer", "live.param~", "send", "s", "forward", "send~", "outlet", "out", "out~", "pattrstorage", "buffer~", "record~", "poke~", "coll", "table", "dict", "value", "v", "pv", "print", "polybuffer~"],
+  "display": ["meter~", "live.meter~", "scope~", "live.scope~", "number~", "spectroscope~", "levelmeter~", "number", "flonum", "live.numbox", "multislider", "lcd", "jit.pwindow", "live.text", "live.toggle", "toggle", "button", "live.button", "live.dial", "live.slider", "dial", "slider"],
+  "named": ["buffer~", "table", "coll", "dict", "value", "v", "pv", "receive", "r", "receive~", "polybuffer~", "loadbang", "live.thisdevice"],
+  "opaque": ["p", "patcher", "bpatcher", "poly~", "mc.poly~", "pfft~", "gen~", "mc.gen~", "js", "jsui", "v8", "v8ui", "node.script", "rnbo~", "jweb", "amxd~"],
+  "loop_breakers": ["delay", "del", "pipe", "deferlow", "defer", "speedlim", "qlim", "thresh", "onebang", "change"],
+  "conditional": ["gate", "select", "sel", "route", "if", "split", "past", "ggate", "gswitch", "switch", "zl", "counter", "urn", "coll"],
+  "ui": ["number", "flonum", "slider", "umenu", "toggle", "gain~", "kslider", "multislider", "dial", "rslider", "tab", "nslider", "matrixctrl", "radiogroup", "textbutton", "pictslider", "incdec", "function", "number~", "button", "led", "attrui", "chooser", "textedit", "multirange", "jit.cellblock", "live.dial", "live.slider", "live.numbox", "live.menu", "live.tab", "live.text", "live.toggle", "live.gain~", "live.button", "mc.live.gain~", "hi", "lcd", "jsui", "v8ui", "themecolor"],
+  "clocked": ["line", "bline", "line~", "metro", "tempo", "transport", "makenote"],
+  "all_inlets_hot": ["pak", "bondo", "buddy", "timer", "gate", "switch"]
+}

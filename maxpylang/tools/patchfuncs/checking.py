@@ -10,17 +10,22 @@ Methods related to checking MaxPatches: unknown objects, abstraction/js links, a
     get_js_objs() --> get js objects, linked and unlinked
 
 """
+import collections
 import os
 
 from maxpylang.cordcheck import coverage
+from maxpylang.graphcheck import find_problems, from_patch, warn_problems
 
-def check(self, *flags):
+def check(self, *flags, device_type=None):
     """
     This method checks the patch for linked abstractions, unknown objects, linked/unlinked js objects,
-    and cords that send audio into an inlet that takes no audio.
+    cords that send audio into an inlet that takes no audio, and problems in the shape of the
+    patch: hot loops, audio feedback with no delay, and outputs that reach nothing.
 
     :param \*flags: takes keywords ``'abstractions'``, ``'unknowns'``, ``'js'``, ``'cords'``. If no flags given,
-        checks all four categories.
+        checks all five categories. ``'graph'`` checks the shape of the patch.
+    :param device_type: the Max for Live device type the patch is saved as, if any. Inside a
+        device, dac~ and ezdac~ are not outputs.
     :type \*flags: str, optional
 
     :returns: outputs a list of all the objects that fall under the specified categories, \
@@ -31,7 +36,7 @@ def check(self, *flags):
     flags = list(flags)
 
     if len(flags) == 0 or 'all' in flags:
-        flags += ['unknown', 'js', 'abstractions', 'cords']
+        flags += ['unknown', 'js', 'abstractions', 'cords', 'graph']
 
     if 'unknown' in flags or 'unknowns' in flags:
 
@@ -86,6 +91,17 @@ def check(self, *flags):
         plural = "" if total == 1 else "s"
         print(f"PatchCheck: cords : {total} cord{plural}, {counts['problem']} sending audio into an inlet "
               f"that takes none, {counts['unknown']} not checked (no type data)")
+        print()
+
+    if 'graph' in flags:
+        problems = find_problems(*from_patch(self), max_for_live=device_type is not None)
+        warn_problems(problems)
+        found = collections.Counter(problem.kind for problem in problems)
+        def count(n, one, many):
+            return f"{n} {one if n == 1 else many}"
+        print(f"PatchCheck: graph : {count(found['hot loop'], 'hot loop', 'hot loops')}, "
+              f"{count(found['audio feedback'], 'audio feedback loop', 'audio feedback loops')} with no delay, "
+              f"{count(found['dead output'], 'part', 'parts')} of the patch whose output reaches nothing")
         print()
 
     return
