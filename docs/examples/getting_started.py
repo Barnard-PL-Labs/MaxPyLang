@@ -4,7 +4,7 @@ from maxpylang.objects import cycle_tilde, ezdac_tilde
 
 patch = mp.MaxPatch()
 
-# set_position() moves the cursor where the next object goes. y grows downward.
+# set_position() moves a cursor; place() puts the object one grid step right of it. y grows downward.
 patch.set_position(30, 30)
 osc = patch.place(cycle_tilde(440))[0]  # place() returns a list; [0] is the object
 

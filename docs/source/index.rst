@@ -5,8 +5,7 @@ MaxPyLang
 MaxPyLang is a Python package for making Max (MaxMSP) patches with code. You write a Python
 script that places objects and connects them, and it saves a ``.maxpat`` file you open in Max,
 or a ``.amxd`` device for Ableton Live. Code makes it easy to do things that are slow by hand:
-place and connect hundreds of objects, generate patches randomly or procedurally, and edit
-patches you made in Max.
+place and connect hundreds of objects, and generate patches randomly or procedurally.
 
 Quick example
 =============
@@ -37,6 +36,7 @@ For coding agents, the whole site is also one Markdown file:
    guide/checks
    guide/editor-setup
    guide/agents
+   guide/known-issues
 
 .. toctree::
    :maxdepth: 1

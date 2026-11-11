@@ -19,7 +19,7 @@ source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install maxpylang
 ```
 
-This also installs `numpy` and `tabulate`.
+This also installs `numpy`, `tabulate` and `sphinx_rtd_theme`.
 
 ## Install from source
 
@@ -50,6 +50,6 @@ different Python from the one you are running. Activate the virtual environment,
 `python -m pip install maxpylang` with the same `python` you use for your script.
 
 **`SyntaxWarning: invalid escape sequence` on import.** Python 3.12 and newer print a few of
-these from maxpylang's own source the first time it loads. They are harmless.
+these from maxpylang's own source, usually only the first time it loads. They are harmless.
 
 **Old Python.** Check with `python3 --version`. MaxPyLang needs 3.9 or newer.

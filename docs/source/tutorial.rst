@@ -202,7 +202,8 @@ MaxPyLang makes it easy to generate patches programmatically:
 Loading Existing Patches
 =========================
 
-You can load and modify existing MaxMSP patches:
+You can load and modify existing MaxMSP patches. In 0.1.1 this works for patches written by
+MaxPyLang, but fails on most patches saved by Max; see :doc:`guide/known-issues`.
 
 .. code-block:: python
 

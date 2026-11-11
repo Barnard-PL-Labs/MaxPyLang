@@ -10,13 +10,14 @@ Creating a patch
    **Notes:**
 
    - If ``load_file`` is given, ``template`` is ignored. With neither, you get an empty patch.
-   - ``load_file`` reads ``.maxpat`` and Max for Live ``.amxd`` files.
+   - ``load_file`` reads ``.maxpat`` and Max for Live ``.amxd`` files. In 0.1.1 it fails on most
+     patches saved by Max, and on frozen devices; see :doc:`../guide/known-issues`.
    - To load abstractions or ``js`` objects, the :doc:`linked files<../topics/linked_files>` must be in the current directory.
    - To load a patch with :doc:`external package objects<../topics/ext_packages>`, import those packages first.
    - :doc:`Unknown objects<../topics/unknown_objs>` keep their patch cords when loaded, but cannot be edited.
      Swap them for known objects with :meth:`MaxPatch.replace`.
 
-   **Examples:**
+   **Examples** (the debug lines maxpylang 0.1.1 also prints are left out; see :doc:`../guide/known-issues`):
 
    Creating an empty patch:
 

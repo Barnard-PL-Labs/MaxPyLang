@@ -20,6 +20,12 @@ reverb = mp.MaxObject("my_reverb", abstraction=True, inlets=2, outlets=2)
 patch.place(reverb)
 ```
 
+:::{warning}
+maxpylang writes a `js` box with its inlet and outlet counts before the file name
+(`js 1 1 double.js`), while Max puts the file name first. Check `js` boxes in Max; see
+{doc}`../guide/known-issues`.
+:::
+
 `obj.link("file.js")` links a `js` box, or an abstraction, to a file after it is placed.
 `save()` lists every linked and unlinked file in its `PatchCheck` report.
 

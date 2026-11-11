@@ -20,8 +20,11 @@ A name maxpylang does not know, often a typo, gives a warning:
 UnknownObjectWarning: Unknown Max object: 'cycel~'
 ```
 
-The object is still placed, with **no inlets or outlets**, so every later `connect()` to it
-fails. Fix the name rather than carrying on. `obj.notknown()` returns `True` for such an
+The same warning, with a table of arguments, means an object was given too few arguments,
+or arguments of the wrong type: `'noteout': missing required arguments`.
+
+Either way the object is still placed, with **no inlets or outlets**, so every later
+`connect()` to it fails. Fix the name rather than carrying on. `obj.notknown()` returns `True` for such an
 object. To stop at the line with the typo, make the warning an error:
 
 ```python
@@ -35,7 +38,7 @@ See also {doc}`../topics/unknown_objs`.
 
 ## The `PatchCheck` report
 
-`save()` ends with a report like this:
+`save()` ends with a report like this (blank lines between the lines left out):
 
 ```text
 PatchCheck: unknown objects : no unknown objects
@@ -48,7 +51,7 @@ maxpatch saved to checked.maxpat
 | Line                     | Means                                                           | Do |
 |--------------------------|-----------------------------------------------------------------|----|
 | `unknown objects`        | objects maxpylang does not know; listed by id and text          | fix the names |
-| `unlinked js objects`    | `js` boxes whose `.js` file was not found                       | put the file next to the script, or `obj.link("file.js")` |
+| `unlinked js objects`    | `js` boxes whose `.js` file was not found                       | put the file in the folder you run the script from, or `obj.link("file.js")` |
 | `linked js objects`      | `js` files the patch uses                                       | copy them with the patch |
 | `linked abstractions`    | other `.maxpat` files the patch uses                            | copy them with the patch |
 
@@ -85,11 +88,14 @@ into an audio inlet are always allowed, because most audio inlets also take numb
 
 **What is not checked:**
 
-- cords written as lists, `[outlet, inlet]`;
-- objects placed by string, `patch.place("cycle~ 440")`;
-- more than eight cords in one `connect()` call;
-- objects whose inlet or outlet count depends on their arguments (`vst~ 4 4`), past index 0;
-- operators such as `times_tilde` (`*~`), whose types are not recorded yet.
+- objects placed by string, `patch.place("cycle~ 440")`: neither check;
+- cords written as lists, `[outlet, inlet]`, and calls with more than eight cords: the audio
+  check is skipped, but inlet numbers are still checked;
+- inlets or outlets whose count depends on the object's arguments, such as `vst~`'s outlets:
+  any number passes;
+- operators such as `times_tilde` (`*~`), whose types are not recorded yet;
+- bare stubs that need arguments (`delay`): they type-check as if they had inlets, but are
+  placed with none.
 
 :::{important}
 These checks run only in a type checker, not when you run the script. Running it with
