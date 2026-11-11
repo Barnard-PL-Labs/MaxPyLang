@@ -20,7 +20,8 @@ contains a box Max stores without a `text` field: UI objects such as `toggle`, `
 - Every Max-saved patch in this repository's `examples/` folder has such boxes, and none of
   them loads.
 
-There is no workaround short of a fix in maxpylang.
+A fix is in review ([pull request #20](https://github.com/Barnard-PL-Labs/MaxPyLang/pull/20)).
+Until it is merged and released, there is no workaround.
 
 ## Frozen Max for Live devices cannot be loaded
 
