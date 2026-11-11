@@ -3,7 +3,7 @@ Max for Live (.amxd) files
 ==========================
 
 Most code never calls these directly: ``patch.save("synth.amxd", device_type="instrument")``
-and ``mp.MaxPatch(load_file="synth.amxd")`` use them for you.
+and ``mp.MaxPatch(load_file="synth.amxd")`` use them for you. See :doc:`../guide/max-for-live`.
 
 .. autofunction:: maxpylang.save_amxd
 .. autofunction:: maxpylang.load_amxd

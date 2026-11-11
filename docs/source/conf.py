@@ -10,6 +10,9 @@ sys.path.insert(0, ROOT)
 
 import maxpylang  # noqa: E402
 
+# Local extensions, in docs/source/_ext.
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "_ext"))
+
 # -- Project information -----------------------------------------------------
 
 project = "MaxPyLang"
@@ -29,6 +32,7 @@ version = release
 extensions = [
     "sphinx.ext.autodoc",
     "myst_parser",  # lets pages be written in Markdown
+    "llms",         # writes llms.txt and llms-full.txt, for coding agents
 ]
 
 source_suffix = {".rst": "restructuredtext", ".md": "markdown"}
@@ -46,6 +50,9 @@ autodoc_typehints = "none"
 
 html_theme = "sphinx_rtd_theme"
 html_title = f"MaxPyLang {release}"
+html_baseurl = "https://barnard-pl-labs.github.io/MaxPyLang/"
+html_static_path = ["_static"]
+html_css_files = ["custom.css"]
 
 
 # -- Docstring formatting ----------------------------------------------------
