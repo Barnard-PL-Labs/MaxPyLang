@@ -32,9 +32,9 @@ metros = patch.place(metro(500), num_objs=4, starting_pos=[350, 90], spacing=[80
 for t, m in zip(toggles, metros):
     patch.connect((t.outs[0], m.ins[0]))
 
-# A third element bends the cord through midpoints, as [x, y] pairs.
+# A third element bends the cord through midpoints, as a flat list [x1, y1, x2, y2, ...].
 patch.set_position(200, 160)
 shown = patch.place(flonum)[0]
-patch.connect((count.outs[0], shown.ins[0], [[210.0, 140.0]]))
+patch.connect((count.outs[0], shown.ins[0], [210.0, 140.0]))
 
 patch.save("connecting")

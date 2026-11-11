@@ -24,8 +24,8 @@ installing from source.
 :language: python
 ```
 
-Run it with `python getting_started.py`. It prints a log of what it placed and connected,
-then a `PatchCheck` report (see {doc}`checks`), and writes `hello_world.maxpat`. Open that in
+Run it with `python getting_started.py`. It prints what it connected, a `PatchCheck` report
+(see {doc}`checks`) and the objects it loaded back, and writes `hello_world.maxpat`. Open that in
 Max, turn on audio with the speaker (`ezdac~`), and you hear a 440 Hz sine.
 
 ## What the script prints
@@ -39,13 +39,15 @@ maxpylang logs as it works. Each part can be turned off:
 | the `PatchCheck` report                 | `patch.save(..., check=False)`            |
 | `maxpatch saved to ...`                 | `patch.save(..., verbose=False)`          |
 
-`place()` also prints each object it places, as two lines like `('cycle~ 440',)` and
-`['cycle~ 440']`. These are left-over debug lines and cannot be turned off yet; ignore them.
+`place()` also prints each object it places, as two lines like `(cycle~ [cycle~ 440],)` and
+`[cycle~ [cycle~ 440]]`, and loading a patch prints one line per object. These are left-over debug
+lines and cannot be turned off yet; ignore them.
 
 ## The four ideas
 
 **A patch.** `mp.MaxPatch()` is an empty patch. `mp.MaxPatch(load_file="x.maxpat")` loads an
-existing one; it also reads Max for Live `.amxd` files.
+existing one; it also reads Max for Live `.amxd` files. In 0.1.1, loading fails on most
+patches saved by Max itself; patches written by maxpylang load fine. See {doc}`known-issues`.
 
 **Placing.** `patch.place(...)` adds objects and **always returns a list**, even for one
 object, so take `[0]`. You can describe an object two ways:
@@ -65,7 +67,12 @@ Live device instead; see {doc}`max-for-live`.
 
 Without positions, objects are placed on a grid in the order you place them. For a patch
 people will read, call `patch.set_position(x, y)` before each `place()`. Coordinates are in
-pixels from the top left, and `y` grows downward, so signal flows top to bottom:
+pixels from the top left, and `y` grows downward, so signal flows top to bottom.
+
+`set_position()` moves a cursor, and `place()` puts the object one grid step (80 px) to the
+right of it: after `set_position(30, 30)`, the object lands at (110, 30). A `y` of 0 is moved
+down to 80. Only the spacing between objects matters for reading a patch, so this offset is
+usually harmless. Good spacing:
 
 - about 60 px between objects in a chain,
 - parallel chains side by side at the same `y`,

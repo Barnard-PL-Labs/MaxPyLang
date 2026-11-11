@@ -30,6 +30,7 @@ later = patch.place(mp.MaxObject("my_reverb", abstraction=True, inlets=2, outlet
 patch.connect((half.outs[0], later.ins[0]))
 
 # 4. A js object reads its inlet and outlet counts from the .js file.
+#    Check js boxes in Max: maxpylang 0.1.1 writes the counts before the file name.
 Path("double.js").write_text("inlets = 1;\noutlets = 1;\nfunction msg_float(x) { outlet(0, x * 2); }\n")
 patch.set_position(400, 30)
 js = patch.place("js double.js")[0]

@@ -32,7 +32,10 @@ NOTES = """Key rules:
 - Connect with tuples, `patch.connect((src.outs[0], dst.ins[0]))`. Inlets and outlets are 0-based.
 - Prefer stubs from `maxpylang.objects` (`cycle_tilde(440)`) so a type checker can check cords.
 - Fix every `UnknownObjectWarning`: an unknown object has no inlets or outlets.
-- Running a script does not check cords; run mypy or pyright on it."""
+- Running a script does not check cords; run mypy or pyright on it.
+- In 0.1.1, loading patches saved by Max usually fails; build patches from scratch. See "Known issues".
+- Call stubs for objects that need arguments (`delay(500)`); a bare one is placed with no inlets, silently.
+- Live's live.* objects and `expr` are unknown to maxpylang; use dial, slider or number. `noteout` needs `noteout a 1`."""
 
 
 # -- page order and text ----------------------------------------------------
