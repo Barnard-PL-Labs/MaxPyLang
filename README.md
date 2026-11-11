@@ -4,7 +4,7 @@
 
 MaxPyLang is a Python package for metaprogramming of MaxMSP that uses Python to generate and edit Max patches. MaxPyLang allows users to move freely between text-based Python programming and visual programming in Max, making it much easier to implement dynamic patches, random patches, mass-placement and mass-connection of objects, and other easily text-programmed techniques.
 
-As a text-based interface to MaxMSP, MaxPyLang enables vibecoding of Max patches. Provide an example to your tool of choice (Claude code, Cursor, etc), and ask for the patch you would like. Tutorial coming soon.
+As a text-based interface to MaxMSP, MaxPyLang enables vibecoding of Max patches. Give your tool of choice (Claude Code, Cursor, etc.) [llms-full.txt](https://barnard-pl-labs.github.io/MaxPyLang/llms-full.txt) and ask for the patch you would like; see [Coding agents](https://barnard-pl-labs.github.io/MaxPyLang/guide/agents.html).
 
 ## Installation
 
@@ -18,9 +18,13 @@ pip install maxpylang
 
 ## Documentation
 - [Full Documentation](https://barnard-pl-labs.github.io/MaxPyLang/)
+- [Getting Started](https://barnard-pl-labs.github.io/MaxPyLang/guide/getting-started.html)
+- [Connecting Objects](https://barnard-pl-labs.github.io/MaxPyLang/guide/connecting.html)
+- [Max for Live](https://barnard-pl-labs.github.io/MaxPyLang/guide/max-for-live.html)
+- [Checks and Editor Setup](https://barnard-pl-labs.github.io/MaxPyLang/guide/checks.html): see wrong patch cords as you type
 - [API Reference](https://barnard-pl-labs.github.io/MaxPyLang/API/API.html)
 - [Examples](https://github.com/Barnard-PL-Labs/MaxPyLang/tree/main/examples)
-- [Tutorials](https://barnard-pl-labs.github.io/MaxPyLang/tutorial.html)
+- For coding agents: [llms-full.txt](https://barnard-pl-labs.github.io/MaxPyLang/llms-full.txt), the whole site as one Markdown file
 
 ## Quick Start
 
@@ -34,7 +38,7 @@ import maxpylang as mp
 patch = mp.MaxPatch()
 osc = patch.place("cycle~ 440")[0]
 dac = patch.place("ezdac~")[0]
-patch.connect([osc.outs[0], dac.ins[0]])
+patch.connect((osc.outs[0], dac.ins[0]))
 patch.save("hello_world.maxpat")
 ```
 

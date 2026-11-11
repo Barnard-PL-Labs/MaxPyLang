@@ -22,16 +22,29 @@ Quick example
     patch.save("hello_world")             # writes hello_world.maxpat
 
 Open ``hello_world.maxpat`` in Max and click the speaker to hear a 440 Hz tone.
+Start with :doc:`guide/getting-started`.
 
-Contents
-========
+For coding agents, the whole site is also one Markdown file:
+`llms-full.txt <llms-full.txt>`_ (index: `llms.txt <llms.txt>`_).
 
 .. toctree::
    :maxdepth: 1
+   :caption: Guide
+
+   guide/getting-started
+   guide/connecting
+   guide/max-for-live
+   guide/checks
+   guide/editor-setup
+   guide/agents
+
+.. toctree::
+   :maxdepth: 1
+   :caption: More
 
    install
    tutorial
    topics/topics
-   support
    API/API
+   support
    indices

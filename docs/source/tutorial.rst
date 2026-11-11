@@ -2,7 +2,9 @@
 Tutorial
 ========
 
-This tutorial will guide you through creating MaxMSP patches with MaxPyLang.
+This tutorial walks through MaxPyLang with short examples. For the full picture, including
+the type-checked style with stubs and tuples, see :doc:`guide/getting-started` and
+:doc:`guide/connecting`.
 
 Getting Started
 ===============
