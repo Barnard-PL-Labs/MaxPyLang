@@ -14,9 +14,7 @@ First, install MaxPyLang:
 
 .. code-block:: bash
 
-    git clone https://github.com/Barnard-PL-Labs/MaxPyLang.git
-    cd MaxPyLang
-    pip3 install .
+    pip install maxpylang
 
 Hello World
 -----------
@@ -209,7 +207,7 @@ You can load and modify existing MaxMSP patches:
     import maxpylang as mp
 
     # Load an existing patch
-    patch = mp.MaxPatch("existing_patch.maxpat")
+    patch = mp.MaxPatch(load_file="existing_patch.maxpat")
 
     # Add new objects
     new_obj = patch.place("print")[0]

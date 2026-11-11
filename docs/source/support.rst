@@ -7,7 +7,7 @@ Getting Help
 
 If you encounter bugs, have questions, or want to request features, please open an issue on our GitHub repository:
 
-`MaxPyLang Issues <https://github.com/Barnard-PL-Labs/MaxPy-Lang/issues>`_
+`MaxPyLang Issues <https://github.com/Barnard-PL-Labs/MaxPyLang/issues>`_
 
 When reporting a bug, please include:
 
@@ -29,5 +29,5 @@ We welcome contributions! If you'd like to contribute code, documentation, or ex
 Community
 =========
 
-- **GitHub Repository**: https://github.com/Barnard-PL-Labs/MaxPy-Lang
-- **Documentation**: https://barnard-pl-labs.github.io/MaxPy/
+- **GitHub Repository**: https://github.com/Barnard-PL-Labs/MaxPyLang
+- **Documentation**: https://barnard-pl-labs.github.io/MaxPyLang/
