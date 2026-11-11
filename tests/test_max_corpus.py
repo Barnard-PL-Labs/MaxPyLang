@@ -105,3 +105,32 @@ def test_no_shipped_cord_is_flagged(survey):
 def test_no_outlet_the_data_calls_audio_is_saved_as_a_message(survey):
     _, _, mismatches = survey
     assert mismatches == [], f"{len(mismatches)} outlets, e.g.\n" + "\n".join(mismatches[:20])
+
+
+def survey_graphs():
+    """Graph problems over every shipped patcher, counted by kind, with examples."""
+    from maxpylang.graphcheck import find_problems, from_json
+    counts, examples = {"patchers": 0, "objects": 0, "hot loop": 0, "audio feedback": 0, "dead output": 0}, []
+    for path, patcher in corpus():
+        nodes, edges = from_json(patcher)
+        counts["patchers"] += 1
+        counts["objects"] += len(nodes)
+        for problem in find_problems(nodes, edges):
+            counts[problem.kind] += 1
+            if problem.kind != "dead output":
+                examples.append(f"{path.relative_to(C74)}: {problem.message}")
+    return counts, examples
+
+
+@pytest.fixture(scope="module")
+def graph_survey():
+    return survey_graphs()
+
+
+def test_no_shipped_patch_has_a_hot_loop_or_audio_feedback(graph_survey):
+    counts, examples = graph_survey
+    print(f"\n{counts['patchers']} patchers, {counts['objects']} objects: {counts['hot loop']} hot loops, "
+          f"{counts['audio feedback']} audio feedback, {counts['dead output']} dead outputs (help files show "
+          f"objects on their own, so those are expected)")
+    assert counts["objects"] > 100_000, "the corpus looks incomplete"
+    assert examples == [], f"{len(examples)} false alarms, e.g.\n" + "\n".join(examples[:20])
