@@ -4,7 +4,7 @@
 
 MaxPyLang is a Python package for metaprogramming of MaxMSP that uses Python to generate and edit Max patches. MaxPyLang allows users to move freely between text-based Python programming and visual programming in Max, making it much easier to implement dynamic patches, random patches, mass-placement and mass-connection of objects, and other easily text-programmed techniques.
 
-As a text-based interface to MaxMSP, MaxPyLang enables vibecoding of Max patches. Provide an example to your tool of choice (Claude code, Cursor, etc), and ask for the patch you would like. Tutorial coming soon.
+As a text-based interface to MaxMSP, MaxPyLang enables vibecoding of Max patches with a coding agent (Claude Code, Cursor, Codex, etc). See [Using MaxPyLang with a coding agent](#using-maxpylang-with-a-coding-agent).
 
 ## Installation
 
@@ -15,6 +15,18 @@ python3 -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install maxpylang
 ```
+
+### Using MaxPyLang with a coding agent
+
+After installing, run this once in your project folder:
+
+```bash
+maxpylang setup-agent
+```
+
+If your shell cannot find `maxpylang`, run `python -m maxpylang setup-agent` instead.
+
+This writes a guide to the MaxPyLang API into `AGENTS.md`, which most coding agents read on their own, and adds one line (`@AGENTS.md`) to `CLAUDE.md` so Claude Code reads it too. Anything else in those files is kept. Run it again after upgrading MaxPyLang to refresh the guide.
 
 ## Documentation
 - [Full Documentation](https://barnard-pl-labs.github.io/MaxPyLang/)
@@ -30,13 +42,25 @@ You can then open this patch in MaxMSP and click the DAC to hear a 440 Hz tone.
 
 ```python
 import maxpylang as mp
+from maxpylang.objects import cycle_tilde, ezdac_tilde
 
 patch = mp.MaxPatch()
-osc = patch.place("cycle~ 440")[0]
-dac = patch.place("ezdac~")[0]
-patch.connect([osc.outs[0], dac.ins[0]])
+osc = patch.place(cycle_tilde(440))[0]
+dac = patch.place(ezdac_tilde)[0]
+patch.connect((osc.outs[0], dac.ins[0]))
 patch.save("hello_world.maxpat")
 ```
+
+### Checking your script
+
+Written this way (objects from `maxpylang.objects`, `(outlet, inlet)` tuples in `connect()`), a type checker catches two mistakes before the script runs: audio wired into an inlet that takes only messages (`cycle~` into `flonum`), and an inlet or outlet number that does not exist. In VS Code, set **Python › Analysis: Type Checking Mode** to `basic` to see them as you type (it is `off` by default). Or run:
+
+```bash
+pip install pyright
+pyright your_script.py
+```
+
+Running the script with `python` checks the first mistake too, for every connection, including objects placed by string and the list form: it prints a `ConnectionWarning` at the line that made the bad cord, and `save()` ends with a line counting them. The cord is still saved, so fix every warning.
 
 ## Citation
 
