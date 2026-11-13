@@ -110,15 +110,22 @@ def test_no_outlet_the_data_calls_audio_is_saved_as_a_message(survey):
 def survey_graphs():
     """Graph problems over every shipped patcher, counted by kind, with examples."""
     from maxpylang.graphcheck import find_problems, from_json
-    counts, examples = {"patchers": 0, "objects": 0, "hot loop": 0, "audio feedback": 0, "dead output": 0}, []
+    counts = {"patchers": 0, "objects": 0, "hot loop": 0, "audio feedback": 0, "dead output": 0,
+              "patches": 0, "patches with a dead output": 0}
+    examples = []
     for path, patcher in corpus():
         nodes, edges = from_json(patcher)
         counts["patchers"] += 1
         counts["objects"] += len(nodes)
-        for problem in find_problems(nodes, edges):
+        problems = find_problems(nodes, edges)
+        for problem in problems:
             counts[problem.kind] += 1
             if problem.kind != "dead output":
                 examples.append(f"{path.relative_to(C74)}: {problem.message}")
+        # help files show objects on their own, so only the .maxpat patchers are a fair measure
+        if path.suffix == ".maxpat":
+            counts["patches"] += 1
+            counts["patches with a dead output"] += any(p.kind == "dead output" for p in problems)
     return counts, examples
 
 
@@ -134,3 +141,15 @@ def test_no_shipped_patch_has_a_hot_loop_or_audio_feedback(graph_survey):
           f"objects on their own, so those are expected)")
     assert counts["objects"] > 100_000, "the corpus looks incomplete"
     assert examples == [], f"{len(examples)} false alarms, e.g.\n" + "\n".join(examples[:20])
+
+
+def test_few_shipped_patches_have_a_dead_output(graph_survey):
+    """Dead outputs are a heuristic, so some shipped patches are flagged: loose message boxes
+    kept as notes, buttons driven by script. Before the ends were widened (UI boxes, jit.gl,
+    the pattr family, thispatcher, ...) this was 1002 of 3185 patchers; it is 105 now. The
+    bound catches a change that brings the false alarms back."""
+    counts, _ = graph_survey
+    flagged, total = counts["patches with a dead output"], counts["patches"]
+    print(f"\n{flagged} of {total} shipped .maxpat patchers have a dead output")
+    assert total > 1000, "the corpus looks incomplete"
+    assert flagged <= 0.05 * total, f"{flagged} of {total} shipped patchers flagged"

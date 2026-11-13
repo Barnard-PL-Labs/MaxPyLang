@@ -208,7 +208,7 @@ synth = mp.MaxObject("my_synth")
 - Inlet/outlet indices are **0-based**
 - **Typos raise `UnknownObjectWarning`** — if you see this warning, fix the object name immediately. The object will have 0 inlets/outlets and won't work. Use `obj.notknown()` to check programmatically.
 - **Audio into a message-only inlet raises `ConnectionWarning`**, e.g. `cycle~` straight into a `flonum` or `metro`. Max keeps such a cord but it does not work. Fix every one, usually by putting `snapshot~` (audio to numbers) or `jit.catch~` (audio to Jitter) in between. `save()` ends with a `PatchCheck: cords` line counting them.
-- **`save()` raises a `GraphWarning` for problems in the shape of the patch**: a hot loop (a message cycle through hot inlets, which loops without end), audio feedback with no delay (put `tapin~`/`tapout~` in the loop), and objects whose output never reaches an output, display or side effect, which are usually a missing connection. Fix each one.
+- **`save()` raises a `GraphWarning` for problems in the shape of the patch**: a hot loop (a message cycle through hot inlets, which loops without end), audio feedback with no delay (put `tapin~`/`tapout~` in the loop), and objects whose output never reaches an output, display or side effect. Fix every hot loop and feedback loop. A dead output is usually a missing connection, so check each one and connect it or remove the object; leave it only if the object is meant to work with nothing after it.
 
 ## Patch Layout
 

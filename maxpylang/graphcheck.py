@@ -17,6 +17,11 @@ analysis (research/failure-taxonomy/analyze_patches.py) so both use the same def
 Objects whose insides maxpylang cannot see (subpatchers, abstractions, js, unknown objects)
 never cause a report: they might do anything.
 
+Dead outputs are a heuristic. Besides the listed roles, a chain ends well in any UI box that
+is fed and passes no audio on, a jit.gl object, a message box fed on its right inlet, or a
+message starting with ";". Against Max's own shipped patches this reports 105 of 3185
+patchers, mostly boxes with no cords at all; without those ends it reported 1002.
+
 Hot loops are reported conservatively. "Leftmost inlet is hot" does not hold for UI objects,
 which often take a value without sending it on, so a message cycle is not reported when it
 passes through anything that may stop it: a conditional object (sel, gate, route, urn, ...), a
@@ -179,14 +184,25 @@ def find_problems(nodes, edges, max_for_live=False):
     # dead outputs: walk back from everything that has an effect, then report what is left,
     # one warning per connected group
     sinks = _sinks(max_for_live)
+    fed = {dest for _, _, dest, _ in edges}
+    # a message box shows what arrives at its right inlet
+    shown_messages = {dest for _, _, dest, inlet in edges if inlet == 1 and "message" in nodes[dest].names}
 
     def is_end(n):
         node = nodes[n]
         # an object with no outlets must do something with its input, except dac~ and ezdac~
         # inside Max for Live, which do nothing there
         silent_dac = max_for_live and _is(node.names, "audio_out_outside_max_for_live")
+        # a UI box shows what it is given (umenu, led, kslider, plot~, ...), unless it passes
+        # audio on: gain~ with nothing after it is a missing connection
+        shows = (node.ui and n in fed and not silent_dac
+                 and not any(kind in SIGNAL_TYPES for kind in node.outlet_types))
+        # jit.gl objects draw into their context; a message starting with ";" sends by name
+        draws = any(name.startswith("jit.gl.") for name in node.names)
+        sends = "message" in node.names and node.text.lstrip().startswith(";")
         return (node.opaque or (not node.outlet_types and not silent_dac) or not node.names.isdisjoint(sinks)
-                or _is(node.names, "named") or _is(node.names, "decor"))
+                or _is(node.names, "named") or _is(node.names, "decor")
+                or shows or draws or sends or n in shown_messages)
 
     feeders, linked = collections.defaultdict(set), collections.defaultdict(set)
     for source, _, dest, _ in edges:

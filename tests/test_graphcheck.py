@@ -110,6 +110,42 @@ def test_comments_and_receives_are_never_dead():
     assert kinds(build("comment hello", "loadbang", "r foo")) == []
 
 
+@pytest.mark.parametrize("texts, cords", [
+    (["metro 33", "jit.movie", "jit.window"], [(1, 0, 2, 0), (2, 0, 3, 0)]),
+    (["toggle", "jit.world"], [(1, 0, 2, 0)]),
+    (["jit.movie", "jit.gl.videoplane"], [(1, 0, 2, 0)]),
+    (["counter", "umenu"], [(1, 0, 2, 0)]),
+    (["metro 100", "led"], [(1, 0, 2, 0)]),
+    (["notein", "kslider"], [(1, 0, 2, 0)]),
+    (["cycle~ 1", "plot~"], [(1, 0, 2, 0)]),
+    (["adc~", "sfrecord~ 2"], [(1, 0, 2, 0)]),
+    (["midiin", "seq"], [(1, 0, 2, 0)]),
+    (["flonum", "preset"], [(1, 0, 2, 0)]),
+    (["loadbang", "message", "thispatcher"], [(1, 0, 2, 0), (2, 0, 3, 0)]),
+    (["metro 500", "counter 0 7", "message"], [(1, 0, 2, 0), (2, 0, 3, 1)]),
+])
+def test_a_chain_that_ends_in_something_seen_or_stored_is_fine(texts, cords):
+    assert kinds(build(*texts, cords=cords)) == []
+
+
+def test_a_message_that_sends_by_name_is_an_end():
+    assert kinds(build("loadbang", "message ; dsp start", cords=[(1, 0, 2, 0)])) == []
+
+
+def test_a_message_box_fed_on_the_left_with_nothing_after_it_is_dead():
+    assert kinds(build("button", "message 440", cords=[(1, 0, 2, 0)])) == ["dead output"]
+
+
+def test_a_gain_slider_with_nothing_after_it_is_dead():
+    # gain~ is a UI box, but it passes audio on, so it does not count as a display
+    assert kinds(build("cycle~ 440", "gain~", cords=[(1, 0, 2, 0)])) == ["dead output"]
+
+
+def test_a_ui_box_with_no_cords_is_reported():
+    problems = find_problems(*from_patch(build("umenu")))
+    assert [p.message for p in problems] == ["umenu (obj-1) is not connected to anything."]
+
+
 def test_inside_max_for_live_the_dac_is_not_an_output():
     patch = build("cycle~ 440", "ezdac~", cords=[(1, 0, 2, 0)])
     assert kinds(patch) == [] and kinds(patch, max_for_live=True) == ["dead output"]
