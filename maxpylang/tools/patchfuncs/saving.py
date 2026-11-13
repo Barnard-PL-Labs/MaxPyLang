@@ -22,7 +22,9 @@ def save(self, filename="default.maxpat", device_type=None, verbose=True, check=
     device_type --> for Max for Live .amxd files: "instrument", "audio_effect", or "midi_effect"
                     required when saving as .amxd; when set, forces .amxd extension
     verbose --> print log message to console
-    check --> run check_patch before saving
+    check --> check the patch once it is written: unknown objects, js and abstraction links,
+              cords, and the shape of the patch (GraphWarning for a hot loop, audio feedback
+              with no delay, or output that reaches nothing)
     """
 
     ext = Path(filename).suffix

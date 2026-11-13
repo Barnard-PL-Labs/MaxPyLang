@@ -63,17 +63,37 @@ def test_a_delay_breaks_the_loop(breaker):
     assert kinds(patch) == []
 
 
-@pytest.mark.parametrize("stopper", ["sel 10", "number", "message set $1", "line"])
+@pytest.mark.parametrize("stopper", ["sel 10", "number", "message set $1", "prepend set", "line", "jit.op"])
 def test_a_cycle_that_may_stop_is_not_reported(stopper):
-    # conditional, UI, a set message, clocked
+    # conditional, UI, a set message, prepend set, clocked, Jitter
     patch = build("+ 1", stopper, "print", cords=[(1, 0, 2, 0), (2, 0, 1, 0), (1, 0, 3, 0)])
     assert "hot loop" not in kinds(patch)
+
+
+@pytest.mark.parametrize("stopper, outlet", [("sel 3", 1), ("number", 0)])
+def test_a_loop_is_still_reported_beside_a_cycle_that_may_stop(stopper, outlet):
+    # + 1 <-> + 1 loops without end whatever the second cycle through the stopper does
+    patch = build("+ 1", "+ 1", stopper, "print",
+                  cords=[(1, 0, 2, 0), (2, 0, 1, 0), (2, 0, 3, 0), (3, outlet, 1, 0), (2, 0, 4, 0)])
+    assert kinds(patch) == ["hot loop"]
 
 
 # ── audio feedback ────────────────────────────────────────────────────────────
 
 def test_a_signal_cycle_is_audio_feedback():
     patch = build("*~ 0.5", "+~ 0.1", "ezdac~", cords=[(1, 0, 2, 0), (2, 0, 1, 0), (2, 0, 3, 0)])
+    assert kinds(patch) == ["audio feedback"]
+
+
+def test_a_multichannel_cycle_is_audio_feedback():
+    patch = build("mc.*~ 0.5", "mc.+~ 0.1", "mc.dac~", cords=[(1, 0, 2, 0), (2, 0, 1, 0), (2, 0, 3, 0)])
+    assert kinds(patch) == ["audio feedback"]
+
+
+def test_feedback_is_still_reported_beside_a_cycle_through_something_unseen():
+    # *~ feeds itself directly; the second cycle through gen~ may have a delay, this one has none
+    patch = build("cycle~ 440", "*~ 0.5", "gen~", "ezdac~",
+                  cords=[(1, 0, 2, 0), (2, 0, 2, 1), (2, 0, 3, 0), (3, 0, 2, 0), (2, 0, 4, 0)])
     assert kinds(patch) == ["audio feedback"]
 
 
@@ -151,9 +171,15 @@ def test_inside_max_for_live_the_dac_is_not_an_output():
     assert kinds(patch) == [] and kinds(patch, max_for_live=True) == ["dead output"]
 
 
-def test_an_abstraction_may_do_anything():
-    synth = mp.MaxObject("my_synth", abstraction=True, inlets=1, outlets=0)
-    assert kinds(build("cycle~ 440", synth, cords=[(1, 0, 2, 0)])) == []
+@pytest.mark.parametrize("box", ["abstraction", "gen~", "js foo.js"])
+def test_an_object_maxpylang_cannot_see_into_is_never_reported(box):
+    # each has an outlet, so only being unseen keeps it from being a dead output
+    def unseen():
+        return mp.MaxObject("my_synth", abstraction=True, inlets=1, outlets=1) if box == "abstraction" else box
+    dead_end = build("cycle~ 440", unseen(), cords=[(1, 0, 2, 0)])
+    message_cycle = build("+ 1", unseen(), "print", cords=[(1, 0, 2, 0), (2, 0, 1, 0), (1, 0, 3, 0)])
+    signal_cycle = build("*~ 0.5", unseen(), "ezdac~", cords=[(1, 0, 2, 0), (2, 0, 1, 0), (1, 0, 3, 0)])
+    assert kinds(dead_end) == [] and kinds(message_cycle) == [] and kinds(signal_cycle) == []
 
 
 # ── at save ───────────────────────────────────────────────────────────────────
@@ -172,3 +198,13 @@ def test_a_clean_patch_saves_without_graph_warnings(tmp_path):
     with warnings.catch_warnings(), contextlib.redirect_stdout(io.StringIO()):
         warnings.simplefilter("error", GraphWarning)
         patch.save(str(tmp_path / "p"), verbose=False)
+
+
+def test_saving_a_device_takes_plugout_as_the_output_and_not_the_dac(tmp_path):
+    good = build("cycle~ 440", "plugout~", cords=[(1, 0, 2, 0)])
+    with warnings.catch_warnings(), contextlib.redirect_stdout(io.StringIO()):
+        warnings.simplefilter("error", GraphWarning)
+        good.save(str(tmp_path / "good.amxd"), device_type="instrument", verbose=False)
+    bad = build("cycle~ 440", "ezdac~", cords=[(1, 0, 2, 0)])
+    with pytest.warns(GraphWarning, match="reaches"), contextlib.redirect_stdout(io.StringIO()):
+        bad.save(str(tmp_path / "bad.amxd"), device_type="instrument", verbose=False)

@@ -156,12 +156,12 @@ def find_problems(nodes, edges, max_for_live=False):
     # audio feedback: a signal cycle. tapin~ -> tapout~ is a tapconnect cord, not a signal, so
     # it breaks the cycle; delay~ is inside the signal chain and does not.
     signal_adj = collections.defaultdict(set)
+    # Opaque objects are left out of the graph, not just out of the report: a cycle through
+    # one may have a delay inside, but a second cycle beside it that avoids it is still real.
     for source, outlet, dest, _ in edges:
-        if kind_of(source, outlet) in SIGNAL_TYPES:
+        if kind_of(source, outlet) in SIGNAL_TYPES and not nodes[source].opaque and not nodes[dest].opaque:
             signal_adj[source].add(dest)
     for component in cycles(list(nodes), signal_adj):
-        if any(nodes[n].opaque for n in component):
-            continue
         problems.append(Problem("audio feedback", f"audio feedback with no delay through {describe(component)}. "
                                 "Put a delay in the loop: tapin~ and tapout~, or send~ and receive~.", component))
 
@@ -172,11 +172,13 @@ def find_problems(nodes, edges, max_for_live=False):
             continue
         if _is(nodes[source].names, "loop_breakers") or _is(nodes[dest].names, "loop_breakers"):
             continue
+        # likewise, objects that may stop a cycle are left out, so a loop that avoids them
+        # is reported even when another cycle through them shares its objects
+        if _may_stop(nodes[source]) or _may_stop(nodes[dest]):
+            continue
         if _is_hot(nodes[dest], inlet):
             hot_adj[source].add(dest)
     for component in cycles(list(nodes), hot_adj):
-        if any(_may_stop(nodes[n]) for n in component):
-            continue
         problems.append(Problem("hot loop", f"hot loop through {describe(component)}: every cord lands on a hot "
                                 "inlet, so one message loops without end. Send one cord into a cold inlet, "
                                 "or put deferlow or delay in the loop.", component))
