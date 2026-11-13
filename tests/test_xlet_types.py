@@ -3,10 +3,10 @@
 from maxpylang.tools.typedstubs import object_types
 
 
-def sig(inlets, outlets, methods=("int", "float"), in_kind="fixed", out_kind="fixed"):
+def sig(inlets, outlets, methods=("int", "float"), in_kind="fixed", out_kind="fixed", declared=""):
     arity = {"inlets": {"kind": in_kind, "value": len(inlets)},
              "outlets": {"kind": out_kind, "value": len(outlets)}}
-    return {"inlets": [{"rate": r} for r in inlets],
+    return {"inlets": [{"rate": r, "declared_type": declared} for r in inlets],
             "outlets": [{"type": t, "type_source": "patchers"} for t in outlets],
             "methods": list(methods), "arity": arity}
 
@@ -15,9 +15,20 @@ def test_control_inlet_without_signal_method_takes_no_audio():
     assert object_types("toggle", sig(["control"], ["int"]))["ins"] == ["control"]
 
 
-def test_inlet_of_object_with_signal_method_stays_open():
+def test_documented_audio_inlet_is_signal_and_others_of_audio_objects_stay_open():
     row = sig(["control", "signal|control"], ["signal"], methods=("signal", "float"))
-    assert object_types("cycle~", row) == {"ins": ["any", "any"], "outs": ["signal"]}
+    assert object_types("cycle~", row) == {"ins": ["any", "signal"], "outs": ["signal"]}
+
+
+def test_uncertain_rate_with_a_declared_signal_type_takes_audio():
+    # lores~'s input: the refpage declares "signal"; the uncertainty is about messages
+    row = sig(["signal|control?"], [], methods=("signal",), declared="signal")
+    assert object_types("lores~", row)["ins"] == ["signal"]
+
+
+def test_uncertain_rate_without_a_declared_signal_type_is_not_known():
+    row = sig(["signal|control?"], [], methods=("signal",))
+    assert object_types("x~", row)["ins"] == ["any"]
 
 
 def test_inlet_of_object_without_documented_methods_stays_open():
@@ -31,7 +42,7 @@ def test_outlet_types_map_to_rates():
 
 def test_argument_dependent_count_keeps_a_shared_rate():
     row = sig(["signal|control"], ["signal", "signal"], in_kind="arg_dependent", out_kind="arg_dependent")
-    assert object_types("adc~", row) == {"ins": "any", "outs": "signal"}
+    assert object_types("adc~", row) == {"ins": "signal", "outs": "signal"}
 
 
 def test_argument_dependent_audio_outlets_need_saved_patch_evidence():
@@ -53,7 +64,7 @@ def test_containers_are_open_on_both_sides():
 
 
 def test_inlet_and_outlet_objects_pass_audio():
-    assert object_types("outlet", sig(["control"], [])) == {"ins": ["any"], "outs": []}
+    assert object_types("outlet", sig(["control"], [])) == {"ins": ["signal"], "outs": []}
     assert object_types("inlet", sig([], ["control"])) == {"ins": [], "outs": ["any"]}
 
 

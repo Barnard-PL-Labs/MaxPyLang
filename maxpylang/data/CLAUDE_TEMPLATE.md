@@ -207,6 +207,7 @@ synth = mp.MaxObject("my_synth")
 - `verbose=False` suppresses console output
 - Inlet/outlet indices are **0-based**
 - **Typos raise `UnknownObjectWarning`** — if you see this warning, fix the object name immediately. The object will have 0 inlets/outlets and won't work. Use `obj.notknown()` to check programmatically.
+- **Audio into a message-only inlet raises `ConnectionWarning`**, e.g. `cycle~` straight into a `flonum` or `metro`. Max keeps such a cord but it does not work. Fix every one, usually by putting `snapshot~` (audio to numbers) or `jit.catch~` (audio to Jitter) in between. `save()` ends with a `PatchCheck: cords` line counting them.
 
 ## Patch Layout
 

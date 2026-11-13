@@ -18,7 +18,8 @@ which reads Max's refpages and the inlet/outlet counts Max saved in its own patc
 
 Table format, per object: "ins" and "outs" are either a list with one rate per xlet (a
 fixed count) or a single rate shared by any number of xlets (a count that depends on
-arguments, attributes or contents). Inlet rates are "control" (takes no audio) or "any".
+arguments, attributes or contents). Inlet rates are "control" (takes no audio), "signal"
+(documented to take audio, and usually messages too) or "any" (not known).
 Outlet rates are "signal", "mc", "matrix", "control" or "any".
 """
 
@@ -41,7 +42,9 @@ DATA_PATH = _HERE.parent / "data" / "xlet_types.json"
 OBJ_INFO_DIR = _HERE.parent / "data" / "OBJ_INFO"
 REPO_ROOT = _HERE.parent.parent
 
-_INLET = {"control": "Control", "any": "Signal | Control"}
+# "signal" and "any" inlets both accept audio statically; the runtime check tells them apart
+# so its coverage score counts a cord into a documented audio inlet as checked.
+_INLET = {"control": "Control", "signal": "Signal | Control", "any": "Signal | Control"}
 _OUTLET = {"signal": "Signal", "mc": "MCSignal", "matrix": "Matrix", "control": "Control", "any": "Any"}
 
 
@@ -60,12 +63,19 @@ def build_xlet_types(signatures):
 
     objs = signatures["objects"]
     aliases = signatures.get("aliases", {})
+    # maxpylang names some objects differently from Max (times~ for *~, plus for +);
+    # obj_aliases.json maps the Max text to maxpylang's name, so invert it
+    max_names = {}
+    for max_text, name in _obj_aliases().items():
+        max_names.setdefault(name, []).append(max_text)
 
     table = {}
     for package in PACKAGES:
         table[package] = {}
         for _, max_name, _ in read_stub_module(package):
             sig = objs.get(max_name) or objs.get(aliases.get(max_name) or "")
+            for max_text in max_names.get(max_name, []):
+                sig = sig or objs.get(max_text)
             if sig is None:
                 continue
             types = object_types(max_name, sig)
@@ -73,6 +83,12 @@ def build_xlet_types(signatures):
             table[package][max_name] = types
 
     return table
+
+
+def _obj_aliases():
+    """{Max object text: maxpylang object name}, e.g. {"*~": "times~", "t": "trigger"}."""
+    with open(OBJ_INFO_DIR / "obj_aliases.json", encoding="utf-8") as f:
+        return json.load(f)
 
 
 # objects that pass on whatever they are given, audio included
@@ -84,8 +100,10 @@ def object_types(max_name, sig):
 
     types = {"ins": _side(sig, "inlets"), "outs": _side(sig, "outlets")}
     if max_name in _PASS_THROUGH:
-        for side, rates in types.items():
-            types[side] = ["any"] * len(rates) if isinstance(rates, list) else "any"
+        # they take anything, audio included; what comes out depends on what goes in
+        for side, rate in (("ins", "signal"), ("outs", "any")):
+            rates = types[side]
+            types[side] = [rate] * len(rates) if isinstance(rates, list) else rate
     return types
 
 
@@ -116,11 +134,22 @@ def _side(sig, key):
 
 
 def _inlet_rate(sig, inlet):
-    """An inlet takes no audio when its object has documented methods and none is signal."""
+    """
+    An inlet takes no audio ("control") when its object has documented methods and none is
+    signal. It takes audio ("signal") when its documented rate says so. A rate marked
+    uncertain ("signal|control?") is unsure about messages, not audio: it takes audio when
+    its refpage declares a signal type, as all of Max 9's do (lores~ and clip~'s input).
+    Otherwise it is not known ("any").
+    """
 
     methods = sig.get("methods") or []
-    if methods and "signal" not in methods and inlet["rate"] in ("control", "matrix"):
+    rate = inlet["rate"]
+    if methods and "signal" not in methods and rate in ("control", "matrix"):
         return "control"
+    if rate in ("signal", "signal|control"):
+        return "signal"
+    if rate == "signal|control?" and "signal" in (inlet.get("declared_type") or "").lower():
+        return "signal"
     return "any"
 
 
