@@ -22,11 +22,11 @@ def check(self, *flags, device_type=None):
     cords that send audio into an inlet that takes no audio, and problems in the shape of the
     patch: hot loops, audio feedback with no delay, and outputs that reach nothing.
 
-    :param \*flags: takes keywords ``'abstractions'``, ``'unknowns'``, ``'js'``, ``'cords'``. If no flags given,
+    :param \\*flags: takes keywords ``'abstractions'``, ``'unknowns'``, ``'js'``, ``'cords'``. If no flags given,
         checks all five categories. ``'graph'`` checks the shape of the patch.
     :param device_type: the Max for Live device type the patch is saved as, if any. Inside a
         device, dac~ and ezdac~ are not outputs.
-    :type \*flags: str, optional
+    :type \\*flags: str, optional
 
     :returns: outputs a list of all the objects that fall under the specified categories, \
     identified by object id, name, text, and linked file (if applicable).

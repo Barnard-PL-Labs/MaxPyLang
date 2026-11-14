@@ -24,7 +24,7 @@ def connect(self, *connections, verbose=True):
     """
     This method creates patchcords to connect objects. *currently fixing connection specification...*
 
-    :param \*connections: a list of connections to make. Each connection must be specified as a tuple \
+    :param \\*connections: a list of connections to make. Each connection must be specified as a tuple \
     (:class:`~maxpy.Outlet`, :class:`~maxpy.Inlet` (, ``list``)). The optional third element specifies midpoints \
     (curves) of the patchcord as a list of [x, y] coordinates.
 
