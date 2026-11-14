@@ -202,7 +202,6 @@ def place_pick_objs(self, objs, randpick, num_objs, seed, weights, verbose):
 
     picked_objs = []
 
-    print(objs)
     # picking randomly
     if randpick == True:
         if seed is None:  # generate seed if not given
@@ -227,7 +226,6 @@ def place_pick_objs(self, objs, randpick, num_objs, seed, weights, verbose):
             ):  # make copies of each obj, according to num_obj
                 picked_objs += [obj] * num
 
-    print(picked_objs)
     return picked_objs
 
 
