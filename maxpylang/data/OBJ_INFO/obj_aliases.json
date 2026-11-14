@@ -156,8 +156,6 @@
   "ggate": "gswitch2",
   "multiSlider": "multislider",
   "omsinfo": "midiinfo",
-  "xbendin2": "xbendin",
-  "xbendout2": "xbendout",
   "del": "delay",
   "hslider": "slider",
   "uslider": "slider",

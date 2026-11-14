@@ -303,12 +303,17 @@ def get_max_aliases(known, aliases):
     Only a name that is another spelling of one known object is returned. Left out:
     - a name that is an object in the database, or already an alias
     - a line whose class is the name itself: an object of its own that shares another
-      object's file (qmetro lives in metro's file, but is not metro)
+      object's file (qmetro lives in metro's file, but is not metro). Its target is then
+      its own name, which is not in the database, or it would be an object already
+    - the names in "not_aliases" in import_args.json: xbendin2 and xbendout2 map to the
+      files of xbendin and xbendout, but have one more outlet and inlet than they do
     - multichannel names (mc., mcs., mcp.): they carry multichannel signals, so they are
       not the object they wrap
     """
 
     init = Path(get_constant('max_refpath')).resolve().parents[1] / "init"
+    with open(import_args_file, 'r') as f:
+        not_aliases = json.load(f)['not_aliases']
 
     found = {}
     for mappings in sorted(init.glob("*objectmappings.txt")):
@@ -318,9 +323,9 @@ def get_max_aliases(known, aliases):
                 continue
             name, target = words[2], words[-1]
             target = aliases.get(target, target) #Max's file for + is plus; the database's too
-            if name == words[-1] or name in known or name in aliases or target not in known:
+            if name in known or name in aliases or target not in known:
                 continue
-            if name.startswith(("mc.", "mcs.", "mcp.")):
+            if name.startswith(("mc.", "mcs.", "mcp.")) or name in not_aliases:
                 continue
             found[name] = target
 

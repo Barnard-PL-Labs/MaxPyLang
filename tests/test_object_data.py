@@ -162,6 +162,13 @@ def test_the_cord_check_sees_through_a_short_name():
         patch.connect([osc.outs[0], signal_send.ins[0]], verbose=False)
 
 
+def test_a_name_with_different_inlets_from_its_file_is_not_an_alias():
+    # Max maps xbendin2 to xbendin's file, but it has a third outlet
+    for name in IMPORT_ARGS["not_aliases"]:
+        with pytest.warns(UnknownObjectWarning):
+            assert mp.MaxObject(name).notknown()
+
+
 def test_every_alias_points_at_an_object_in_the_database():
     aliases = json.loads((OBJ_INFO / "obj_aliases.json").read_text(encoding="utf-8"))
     known = {path.stem for path in OBJ_INFO.glob("*/*.json")}
@@ -175,6 +182,7 @@ def test_max_aliases_are_read_from_the_mappings_files(fake_max):
         "max objectfile s send;\n"                    # a short name
         "max objectfile + plus;\n"                    # already an alias
         "max objectfile qmetro metro qmetro;\n"       # its own class in another object's file
+        "max objectfile xbendin2 xbendin;\n"          # same file, one more outlet: listed in not_aliases
         "max objectfile list.group zl zl.group;\n"    # another spelling of zl.group
         "max objectfile flonum number number;\n"      # an object in the database
         "max objectfile mc.meter~ meter~;\n"          # multichannel: not the object it wraps
@@ -182,7 +190,7 @@ def test_max_aliases_are_read_from_the_mappings_files(fake_max):
         "max objectfile times2 *;\n"                  # target given by its alias
         "max definesubstitution x y;\n\n"
     )
-    known = {"send", "plus", "times", "metro", "zl.group", "number", "flonum", "meter~"}
+    known = {"send", "plus", "times", "metro", "zl.group", "number", "flonum", "meter~", "xbendin"}
     found = importobjs.get_max_aliases(known, {"+": "plus", "*": "times"})
     assert found == {"s": "send", "list.group": "zl.group", "times2": "times"}
 
