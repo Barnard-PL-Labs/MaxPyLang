@@ -187,7 +187,7 @@ from .maxpatch import MaxPatch
 from .importobjs import import_objs
 from .xlet import Inlet, Outlet
 from .amxd import save_amxd, load_amxd, DEVICE_TYPES
-from .exceptions import ConnectionWarning
+from .exceptions import ConnectionWarning, GraphWarning
 
 # The public API. maxpylang ships py.typed, so type checkers treat it as a library
 # and pyright only counts names listed here as exported.
@@ -201,6 +201,7 @@ __all__ = [
     "load_amxd",
     "DEVICE_TYPES",
     "ConnectionWarning",
+    "GraphWarning",
     "constants",
 ]
 
