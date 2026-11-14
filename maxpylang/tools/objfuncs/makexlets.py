@@ -173,7 +173,7 @@ def remove_xlets(self, num, xlet_type):
         for inlet in removed:      #remove patchcords
             for outlet in inlet.sources:
                 outlet._destinations.remove(inlet)
-                print("Patchcord removed:", outlet, "-\->", inlet)
+                print("Patchcord removed:", outlet, "--->", inlet)
 
 
     elif xlet_type == 'numoutlets':
@@ -183,7 +183,7 @@ def remove_xlets(self, num, xlet_type):
             for inlet in outlet.destinations:
                 del inlet.midpoints[inlet.sources.index(outlet)]
                 inlet._sources.remove(outlet)
-                print("Patchcord removed:", outlet, "-\->", inlet)
+                print("Patchcord removed:", outlet, "--->", inlet)
 
     return
 

@@ -9,6 +9,7 @@ the marker. Each reason names the bug.
 import contextlib
 import io
 import warnings
+from pathlib import Path
 
 import pytest
 
@@ -87,6 +88,12 @@ def test_randpick_picks_the_requested_number(patch):
 
 
 # ── objects ───────────────────────────────────────────────────────────────────
+
+def test_place_prints_nothing_when_not_verbose(patch, capsys):
+    patch.place("metro 500", "toggle", verbose=False)
+    patch.place("toggle", num_objs=3, verbose=False)
+    assert capsys.readouterr().out == ""
+
 
 def test_move_sets_the_position():
     obj = mp.MaxObject("metro 500")
@@ -226,3 +233,15 @@ def test_check_lists_unknown_objects(capsys):
     quiet(patch.place, "notarealobject", verbose=False)
     patch.check("unknown")
     assert "notarealobject" in capsys.readouterr().out
+
+
+# ── source ────────────────────────────────────────────────────────────────────
+
+def test_no_source_file_has_an_invalid_escape():
+    # Python 3.12 prints a SyntaxWarning for these on first import, and a later version
+    # will refuse to import the file.
+    package = Path(mp.__file__).parent
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        for path in sorted(package.rglob("*.py")):
+            compile(path.read_text(encoding="utf-8"), str(path), "exec")
