@@ -1,107 +1,105 @@
-==============
+========
 MaxPatch
-==============
+========
 
-Instantiation
-~~~~~~~~~~~~~
+Creating a patch
+~~~~~~~~~~~~~~~~
 
-.. autoclass:: maxpy.MaxPatch
+.. autoclass:: maxpylang.MaxPatch
 
-			**Notes:**
+   **Notes:**
 
-				- If ``load_file`` is given, ``template`` will be ignored. If neither files are given, a default empty MaxPatch will be created.
-				- To load in abstractions or js objects, the :doc:`linked files<../topics/linked_files>` must be in the current directory.
-				- To load in a patch with :doc:`external package objects<../topics/ext_packages>`, the packages should first be imported.
-				- :doc:`Unknown objects<../topics/unknown_objs>` will retain patchcord connections when loaded in, but cannot be edited. They can be replaced with known objects via :func:`MaxPatch.replace`.
+   - If ``load_file`` is given, ``template`` is ignored. With neither, you get an empty patch.
+   - ``load_file`` reads ``.maxpat`` and Max for Live ``.amxd`` files.
+   - To load abstractions or ``js`` objects, the :doc:`linked files<../topics/linked_files>` must be in the current directory.
+   - To load a patch with :doc:`external package objects<../topics/ext_packages>`, import those packages first.
+   - :doc:`Unknown objects<../topics/unknown_objs>` keep their patch cords when loaded, but cannot be edited.
+     Swap them for known objects with :meth:`MaxPatch.replace`.
 
+   **Examples:**
 
-			**Examples:**
+   Creating an empty patch:
 
-			Creating an empty patch:
+   >>> import maxpylang as mp
+   >>> patch = mp.MaxPatch()
+   Patcher: new patch created from template file: empty_template.json
 
-			>>> empty_patch = maxpy.MaxPatch()
-			Patcher: new patch created from template file: empty_template.json
+   Loading a patch that contains a button connected to a counter:
 
-			Loading in a patch containing a button connected to a counter:
-
-			>>> loaded_patch = maxpy.MaxPatch(load_file='my_patch.maxpat', verbose=True)
-			Patcher: loading patch from existing file: my_patch.maxpat
-			Patcher: button added, total objects 1
-			Patcher: counter added, total objects 2
-			Patcher: connected: ( button : outlet 0 ---> counter : inlet 0 )
-			Patcher: patch loaded from existing file: my_patch.maxpat
+   >>> loaded = mp.MaxPatch(load_file="my_patch.maxpat")
+   Patcher: loading patch from existing file: my_patch.maxpat
+   Patcher: button added, total objects 1
+   Patcher: counter added, total objects 2
+   Patcher: connected: ( button : outlet 0 ---> counter : inlet 0 )
+   Patcher: patch loaded from existing file: my_patch.maxpat
 
 Properties
 ~~~~~~~~~~
-.. currentmodule:: maxpy.maxpatch
-.. autoproperty:: MaxPatch.objs
-.. autoproperty:: MaxPatch.num_objs
-.. autoproperty:: MaxPatch.curr_position
-.. autoproperty:: MaxPatch.dict
+
+.. autoproperty:: maxpylang.MaxPatch.objs
+.. autoproperty:: maxpylang.MaxPatch.num_objs
+.. autoproperty:: maxpylang.MaxPatch.curr_position
+.. autoproperty:: maxpylang.MaxPatch.dict
 
 **Example:**
 
-		>>> loaded_patch.objs
-		{'obj-1': button [button], 'obj-2': counter [counter]}
-		>>> loaded_patch.num_objs
-		2
-		>>> loaded_patch.curr_position
-		[0.0, 0.0]
-		>>> loaded_patch.dict
-		{
-		'patcher':
-			{
-			'fileversion': 1,
-			...
-			'boxes': [ ... ],
-			'lines': [ ... ],
-			'dependency_cache': [],
-			'autosave': 0
-			}
-		}
+>>> loaded.objs
+{'obj-1': button [button], 'obj-2': counter [counter]}
+>>> loaded.num_objs
+2
+>>> loaded.curr_position
+[0.0, 0.0]
 
-Functions
-~~~~~~~~~
-.. currentmodule:: maxpy.maxpatch
-.. automethod:: MaxPatch.check
+Placing and connecting
+~~~~~~~~~~~~~~~~~~~~~~
 
-	**Notes:**
+.. automethod:: maxpylang.MaxPatch.place
 
-		- See :doc:`Linked Files<../topics/linked_files>`, :doc:`Unknown Objects<../topics/unknown_objs>`.
+   **Note:** ``place()`` always returns a **list**, even for one object. Use ``[0]``:
+   ``osc = patch.place("cycle~ 440")[0]``.
 
-	**Example:**
+.. automethod:: maxpylang.MaxPatch.set_position
 
-	>>> patch.objs
-	{'obj-1': not-an-obj [not-an-obj],
-	'obj-2': existing-abstraction [existing-abstraction],
-	'obj-3': js [js 5 4 existing.js],
-	'obj-4': js [js not-a-file.js]}
-	>>> patch.check()
-	PatchCheck: unknown objects :
-	   obj-1 : not-an-obj [not-an-obj]
-	PatchCheck: unlinked js objects :
-	   obj-4 : js [js not-a-file.js]
-	PatchCheck: linked js objects (files must be in same folder as patch file):
-	   obj-3 : js [js 5 4 existing.js] --> existing.js
-	PatchCheck: linked abstractions (files must be in same folder as patch file):
-	   obj-2 : existing-abstraction [existing-abstraction] --> existing-abstraction.maxpat
+.. automethod:: maxpylang.MaxPatch.connect
 
+   **Example:**
 
-.. currentmodule:: maxpy.maxpatch
-.. automethod:: MaxPatch.connect
+   >>> osc = patch.place("cycle~ 440")[0]
+   >>> dac = patch.place("ezdac~")[0]
+   >>> patch.connect((osc.outs[0], dac.ins[0]), (osc.outs[0], dac.ins[1]))
+   Patcher: connected: ( cycle~ : outlet 0 ---> ezdac~ : inlet 0 )
+   Patcher: connected: ( cycle~ : outlet 0 ---> ezdac~ : inlet 1 )
 
-	**Notes:**
+   A connection can be a tuple ``(outlet, inlet)`` or a list ``[outlet, inlet]``. Only the tuple
+   form is checked by a type checker.
 
-		- The current scheme for specifying connections is somewhat clunky (see example below). This will be fixed at some point...
+Saving
+~~~~~~
 
-	**Example:**
+.. automethod:: maxpylang.MaxPatch.save
 
-	>>> patch.objs
+Editing
+~~~~~~~
 
-.. automethod:: MaxPatch.delete
-.. automethod:: MaxPatch.inspect
-.. automethod:: MaxPatch.place
-.. automethod:: MaxPatch.reorder
-.. automethod:: MaxPatch.replace
-.. automethod:: MaxPatch.save
-.. automethod:: MaxPatch.set_position
+.. automethod:: maxpylang.MaxPatch.replace
+.. automethod:: maxpylang.MaxPatch.delete
+.. automethod:: maxpylang.MaxPatch.reorder
+
+Inspecting and checking
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. automethod:: maxpylang.MaxPatch.inspect
+.. automethod:: maxpylang.MaxPatch.check
+
+   ``save()`` runs this for you unless you pass ``check=False``. See also
+   :doc:`Linked files<../topics/linked_files>` and :doc:`Unknown objects<../topics/unknown_objs>`.
+
+   **Example:**
+
+   >>> patch.place("not-an-obj")
+   >>> patch.check()
+   PatchCheck: unknown objects :
+                  obj-3 : not-an-obj [not-an-obj]
+   PatchCheck: unlinked js objects : no unlinked js objects
+   PatchCheck: linked js objects (files must be in same folder as patch file): no linked js objects
+   PatchCheck: linked abstractions (files must be in same folder as patch file): no linked abstractions
