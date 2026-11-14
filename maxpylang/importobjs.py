@@ -170,6 +170,7 @@ def save_obj_info(package_paths, package_info_folders, defaults="max"):
     if os.path.exists(aliases_file):
         with open(aliases_file, 'r') as f:
             obj_aliases.update(json.load(f))
+    imported_aliases = {}
     
     #store object info, by package
     for package, info_folder in package_info_folders.items():
@@ -191,7 +192,7 @@ def save_obj_info(package_paths, package_info_folders, defaults="max"):
         
         #check for obj aliases
         print("\tgetting aliases...")
-        obj_aliases.update(get_obj_aliases(default_obj_info, obj_names))
+        imported_aliases.update(get_obj_aliases(default_obj_info, obj_names))
         print("\taliases retrieved\n")
 
         #get objarg info (required and optional args, types, size) 
@@ -230,6 +231,15 @@ def save_obj_info(package_paths, package_info_folders, defaults="max"):
         print("\t", len(obj_names), "object info files saved\n")
         print(package, "imported successfully,", len(obj_names), "objects imported\n")
         
+    #add Max's own short names (s, r, p, f, i, del...) for every object now in the database,
+    #then the aliases found while importing, which win where the two disagree
+    known = {Path(x).stem for x in glob.glob(os.path.join(obj_info_folder, "*", "*.json"))}
+    obj_aliases.update(get_max_aliases(known, obj_aliases))
+    obj_aliases.update(imported_aliases)
+
+    #an alias must not hide an object: Max saves a bare fswap as "swap", which is an object too
+    obj_aliases = {alias: name for alias, name in obj_aliases.items() if alias not in known}
+
     #save aliases
     with open(aliases_file, 'w') as f:
         json.dump(obj_aliases, f, indent=2)
@@ -276,6 +286,44 @@ def get_obj_aliases(default_info, names):
     
     return aliases
 
+
+
+def get_max_aliases(known, aliases):
+    """
+    Helper for saving obj info.
+
+    Returns the short and old names Max itself maps to another object (s to send, p to
+    patcher, list.group to zl.group), read from the objectmappings files in Max's init
+    folder. Each line there is `max objectfile NAME FILE [CLASS ...];`.
+
+    known --> names of the objects in the database
+    aliases --> the aliases already saved; one of these is never replaced
+
+    Only a name that is another spelling of one known object is returned. Left out:
+    - a name that is an object in the database, or already an alias
+    - a line whose class is the name itself: an object of its own that shares another
+      object's file (qmetro lives in metro's file, but is not metro)
+    - multichannel names (mc., mcs., mcp.): they carry multichannel signals, so they are
+      not the object they wrap
+    """
+
+    init = Path(get_constant('max_refpath')).resolve().parents[1] / "init"
+
+    found = {}
+    for mappings in sorted(init.glob("*objectmappings.txt")):
+        for line in mappings.read_text(encoding="utf-8", errors="replace").splitlines():
+            words = line.strip().rstrip(";").split()
+            if len(words) not in (4, 5) or words[:2] != ["max", "objectfile"]:
+                continue
+            name, target = words[2], words[-1]
+            target = aliases.get(target, target) #Max's file for + is plus; the database's too
+            if name == words[-1] or name in known or name in aliases or target not in known:
+                continue
+            if name.startswith(("mc.", "mcs.", "mcp.")):
+                continue
+            found[name] = target
+
+    return found
 
 
 #************************************************************

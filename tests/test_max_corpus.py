@@ -158,9 +158,10 @@ def test_few_shipped_patches_have_a_dead_output(graph_survey):
 # ── the object database ───────────────────────────────────────────────────────
 
 def test_few_shipped_boxes_hold_an_object_maxpylang_does_not_know():
-    """Every check is silent on an object the database does not know. Before the Max for
-    Live objects were imported this was 13.6% of shipped boxes; it is 9.0% now, and most of
-    what is left is Max's short names (p, r, s, i, f), which are not aliases here yet."""
+    """Every check is silent on an object the database does not know. This was 13.6% of
+    shipped boxes, then 9.0% once the Max for Live objects were imported, and it is 2.5%
+    with Max's short names (p, r, s, i, f) as aliases. What is left is mostly abstractions
+    that ship beside their patch, rnbo~, and objects new in Max 9."""
     database = Path(__file__).resolve().parents[1] / "maxpylang" / "data" / "OBJ_INFO"
     known = {path.stem for path in database.glob("*/*.json")} | set(_ALIASES)
     total, unknown = 0, {}
@@ -178,7 +179,7 @@ def test_few_shipped_boxes_hold_an_object_maxpylang_does_not_know():
     top = sorted(unknown.items(), key=lambda item: -item[1])[:15]
     print(f"\n{sum(unknown.values())} of {total} shipped boxes ({share:.1%}) hold an unknown object; most common: {top}")
     assert total > 100_000, "the corpus looks incomplete"
-    assert share <= 0.10, f"{share:.1%} of shipped boxes hold an unknown object"
+    assert share <= 0.04, f"{share:.1%} of shipped boxes hold an unknown object"
     assert not [name for name in unknown if name.startswith("live.") and unknown[name] > 200]
 
 
