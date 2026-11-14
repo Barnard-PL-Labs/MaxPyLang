@@ -4,7 +4,10 @@
       "id": "obj-1",
       "maxclass": "newobj",
       "numinlets": 2,
-      "numoutlets": 0,
+      "numoutlets": 1,
+      "outlettype": [
+        ""
+      ],
       "patching_rect": [
         100.0,
         100.0,
