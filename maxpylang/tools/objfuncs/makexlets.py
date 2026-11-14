@@ -114,8 +114,8 @@ def parse_io_num(self, info, default_num):
         #counts read from the argument text itself, not from one argument's value
         if term['argtype'] in ('dollar', 'format', 'word'):
             text = " ".join(str(x) for x in self._args)
-            if term['argtype'] == 'dollar':     #expr $i1 + $f2: the highest $ index
-                base_num = max([int(n) for n in re.findall(r"\$[ifs](\d+)", text)] or [1])
+            if term['argtype'] == 'dollar':     #expr $i1 + $f2: the highest $ index, 9 at most
+                base_num = min(9, max([int(n) for n in re.findall(r"\$[ifs](\d{1,2})", text)] or [1]))
             elif term['argtype'] == 'format':   #sprintf %d %s: one per format specifier
                 specs = re.findall(r"%[-+ #0]*\d*(?:\.\d+)?(?:ll|l|h)?[a-zA-Z]", text.replace("%%", ""))
                 base_num = max(1, len(specs))

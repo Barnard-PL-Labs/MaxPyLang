@@ -42,7 +42,8 @@ def import_objs(*packages, overwrite=False, defaults="max"):
         "max": Max opens a patch of bare objects and saves it. Needs an authorized Max,
                because an unauthorized one cannot save.
         "shipped": read from the patches Max ships (help files and examples), which Max
-               saved itself. Needs no running Max.
+               saved itself. Needs no running Max. An estimate: see get_shipped_obj_info
+               for how a box is chosen and how far it agrees with a Max save.
     
     With defaults="max", make sure the Max application is OPEN when running this command!
     If import fails, set wait_time higher and re-import. 
@@ -387,10 +388,23 @@ def get_shipped_obj_info(refs, names):
     Builds each object's default box from the patches Max ships, for when Max cannot be
     asked to save one.
 
-    An object's box is the most common shape (inlets, outlets, outlet types) among its
-    bare boxes in those patches. An object in import_args.json has no working bare box,
-    so its boxes with arguments are counted instead. An object that appears in no shipped
-    patch gets the inlets and outlets its refpage documents.
+    An object's box is chosen among its bare boxes in those patches (text is just the name,
+    or a UI box). An object in import_args.json has no working bare box, so its boxes with
+    arguments are used instead. Among those boxes:
+    - only the ones saved by the newest Max version count. An object can gain an outlet
+      between versions (live.remote~), and old patches would outvote the current help file.
+    - a shape with the inlet and outlet counts of the refpage wins. A box can set an
+      attribute that changes its counts (live.comment @suppressinlet 1), and such boxes can
+      outnumber the plain ones.
+    - otherwise the most common shape wins.
+
+    An object with no such box gets the inlets and outlets its refpage documents. Boxes of
+    it with arguments are used only for their outlet types, and only when their counts are
+    the refpage's: their counts may come from the arguments.
+
+    This is an estimate of what Max would save, not the same thing. Against the defaults
+    Max saved for the max, msp and jit packages it agrees on 574 of 583 objects that have a
+    bare box; the rest are mostly containers (gen~, jit.pix, bpatcher).
 
     Returns dictionary of {object_name: default_patching_box}
     """
@@ -402,7 +416,7 @@ def get_shipped_obj_info(refs, names):
     bare = {name: collections.Counter() for name in names}
     with_args = {name: collections.Counter() for name in names}
     sizes = collections.defaultdict(collections.Counter)
-    for box in shipped_boxes(c74):
+    for version, box in shipped_boxes(c74, versions=True):
         if 'numinlets' not in box or 'numoutlets' not in box:
             continue
         words = box.get('text', '').split()
@@ -412,23 +426,37 @@ def get_shipped_obj_info(refs, names):
             continue
         shape = (is_ui, box['numinlets'], box['numoutlets'], tuple(box.get('outlettype', [])),
                  box.get('parameter_enable'))
-        (bare if is_ui or len(words) == 1 else with_args)[name][shape] += 1
+        (bare if is_ui or len(words) == 1 else with_args)[name][(version, shape)] += 1
         if is_ui or len(words) == 1: #a box with arguments is as wide as its arguments
             sizes[name][tuple(box.get('patching_rect', [])[2:4])] += 1
 
     obj_info = {}
     for ref, name in zip(refs, names):
+        root = ET.parse(ref).getroot()
+        documented = (len(root.findall("./inletlist/inlet")), len(root.findall("./outletlist/outlet")))
+
         seen = with_args[name] if name in import_args else bare[name]
-        seen = seen or bare[name] + with_args[name]
+        shapes = collections.Counter()
         if seen:
-            is_ui, numinlets, numoutlets, outlettype, parameter_enable = seen.most_common(1)[0][0]
+            newest = max(version for version, _ in seen)
+            for (version, shape), count in seen.items():
+                if version == newest:
+                    shapes[shape] += count
         else:
-            root = ET.parse(ref).getroot()
+            for (_, shape), count in (bare[name] + with_args[name]).items():
+                if shape[1:3] == documented:
+                    shapes[shape] += count
+
+        if shapes:
+            #most common first; a shape with the refpage's counts ahead of that; ties by value
+            best = min(shapes, key=lambda shape: (shape[1:3] != documented, -shapes[shape], repr(shape)))
+            is_ui, numinlets, numoutlets, outlettype, parameter_enable = best
+        else:
             is_ui, parameter_enable = False, None
-            numinlets = len(root.findall("./inletlist/inlet"))
-            numoutlets = len(root.findall("./outletlist/outlet"))
+            numinlets, numoutlets = documented
             outlettype = [""] * numoutlets
-            print("\t", name, "is in no shipped patch, using its refpage:", numinlets, "in,", numoutlets, "out")
+            print("\t", name, "has no usable box in a shipped patch, using its refpage:",
+                  numinlets, "in,", numoutlets, "out")
 
         box = {'id': 'obj-1', 'maxclass': name if is_ui else 'newobj',
                'numinlets': numinlets, 'numoutlets': numoutlets}
@@ -445,20 +473,27 @@ def get_shipped_obj_info(refs, names):
     return obj_info
 
 
-def shipped_boxes(node):
+def shipped_boxes(node, versions=False):
     """
     Every box in the patches under a folder (given as a Path), nested patchers included.
     A dict or list is searched as parsed patch json. gen~ and RNBO patchers hold their
     own operators, so they are skipped along with everything inside them.
+
+    versions --> for a folder, yield (major version of the Max that saved the file, box)
     """
 
     if isinstance(node, Path):
         for path in sorted(node.rglob("*")):
             if path.suffix in (".maxpat", ".maxhelp"):
                 try:
-                    yield from shipped_boxes(json.loads(path.read_text(encoding="utf-8", errors="replace")))
+                    data = json.loads(path.read_text(encoding="utf-8", errors="replace"))
                 except (ValueError, OSError):
                     continue
+                patcher = data.get("patcher") if isinstance(data, dict) else None
+                appversion = patcher.get("appversion") if isinstance(patcher, dict) else None
+                major = appversion.get("major", 0) if isinstance(appversion, dict) else 0
+                for box in shipped_boxes(data):
+                    yield (major, box) if versions else box
     elif isinstance(node, dict):
         if "boxes" in node and "lines" in node:
             if node.get("classnamespace", "box") != "box":
@@ -471,6 +506,7 @@ def shipped_boxes(node):
     elif isinstance(node, list):
         for value in node:
             yield from shipped_boxes(value)
+
 
 
 def add_barebones_objs(refs, patch):

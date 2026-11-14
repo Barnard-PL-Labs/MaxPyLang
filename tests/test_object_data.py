@@ -49,6 +49,8 @@ def counts(text):
     ("live.path", (1, 3)),
     ("live.observer", (2, 2)),
     ("live.thisdevice", (1, 3)),
+    ("live.comment", (1, 0)),      # most shipped boxes hide the inlet with @suppressinlet 1
+    ("live.remote~", (2, 1)),      # the outlet is new in Max 9; older shipped patches have none
     ("live.param~ cutoff", (0, 1)),
 ])
 def test_max_for_live_objects_are_known(text, expected):
@@ -191,7 +193,9 @@ def test_max_aliases_are_read_from_the_mappings_files(fake_max):
     ("expr $i1 + $i2", (2, 1)),
     ("expr $f3 * 2.", (3, 1)),
     ("expr 1 + 1", (1, 1)),
-    ("expr $i1 + $i10", (10, 1)),
+    ("expr $i1 + $i9", (9, 1)),
+    ("expr $i1 + $i12", (9, 1)),   # Max stops at 9 inlets
+    ("expr $i99999999999999999999", (9, 1)),
     ("vexpr $f1 + $f2", (2, 1)),
     ("if $i1 > 0 then 1 else 0", (1, 1)),
     ("if $i2 then $i1", (2, 1)),
@@ -200,6 +204,7 @@ def test_max_aliases_are_read_from_the_mappings_files(fake_max):
     ("sprintf set %i", (1, 1)),
     ("sprintf %ld:%02d", (2, 1)),
     ("sprintf 100%% %s", (1, 1)),
+    ("sprintf %%d %s", (1, 1)),    # %% is a literal percent sign, not a specifier
     ("sprintf hello", (1, 1)),
 ])
 def test_inlets_follow_the_expression_or_format(text, expected):
@@ -241,6 +246,17 @@ def fake_max(tmp_path, monkeypatch):
     constants = {"max_refpath": str(refs) + "/"}
     monkeypatch.setattr(importobjs, "get_constant", constants.__getitem__)
     return tmp_path / "C74"
+
+
+def write_patch(path, boxes, major=9):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"patcher": {"appversion": {"major": major},
+                                            "boxes": [{"box": b} for b in boxes], "lines": []}}))
+
+
+def shipped_box(fake_max, name, inlets=0, outlets=0):
+    ref = refpage(fake_max / "docs" / "refpages" / "max-ref", name, inlets=inlets, outlets=outlets)
+    return importobjs.get_shipped_obj_info([ref], [name])[name]["box"]
 
 
 def newobj(text, numinlets, numoutlets, outlettype=None, width=60.0):
@@ -302,7 +318,44 @@ def test_an_object_in_no_shipped_patch_gets_its_refpage_counts(fake_max, capsys)
     ref = refpage(fake_max / "docs" / "refpages" / "max-ref", "rare~", inlets=2, outlets=1)
     box = importobjs.get_shipped_obj_info([ref], ["rare~"])["rare~"]["box"]
     assert (box["numinlets"], box["numoutlets"], box["outlettype"]) == (2, 1, [""])
-    assert "rare~ is in no shipped patch" in capsys.readouterr().out
+    assert "rare~ has no usable box" in capsys.readouterr().out
+
+
+def test_shipped_defaults_count_only_the_newest_max_version(fake_max):
+    # an object can gain an outlet between versions; old patches must not outvote the new one
+    write_patch(fake_max / "old" / "a.maxpat", [newobj("remote~", 2, 0)] * 4, major=8)
+    write_patch(fake_max / "help" / "remote~.maxhelp", [newobj("remote~", 2, 1, [""])] * 3, major=9)
+    box = shipped_box(fake_max, "remote~")
+    assert (box["numinlets"], box["numoutlets"], box["outlettype"]) == (2, 1, [""])
+
+
+def test_shipped_defaults_prefer_the_shape_the_refpage_documents(fake_max):
+    # boxes that set an attribute hiding the inlet outnumber the plain ones
+    hidden = {"maxclass": "note", "numinlets": 0, "numoutlets": 0, "suppressinlet": 1,
+              "patching_rect": [0.0, 0.0, 60.0, 20.0]}
+    plain = {"maxclass": "note", "numinlets": 1, "numoutlets": 0, "patching_rect": [0.0, 0.0, 60.0, 20.0]}
+    write_patch(fake_max / "help" / "note.maxhelp", [hidden] * 5 + [plain] * 2)
+    assert shipped_box(fake_max, "note", inlets=1)["numinlets"] == 1
+    # with no shape matching the refpage, the most common one stands
+    assert shipped_box(fake_max, "note", inlets=3)["numinlets"] == 0
+
+
+def test_shipped_defaults_do_not_take_counts_from_boxes_with_arguments(fake_max, capsys):
+    # every shipped scissors has arguments, and its outlets follow them
+    write_patch(fake_max / "help" / "a.maxhelp",
+                [newobj("scissors 2 2", 1, 5, ["m"] * 5)] * 8 + [newobj("scissors 4 2", 1, 9, ["m"] * 9)] * 3)
+    box = shipped_box(fake_max, "scissors", inlets=1, outlets=2)
+    assert (box["numinlets"], box["numoutlets"], box["outlettype"]) == (1, 2, ["", ""])
+    assert "scissors has no usable box" in capsys.readouterr().out
+    # a box with arguments whose counts are the refpage's still gives the outlet types
+    box = shipped_box(fake_max, "scissors", inlets=1, outlets=5)
+    assert (box["numoutlets"], box["outlettype"]) == (5, ["m"] * 5)
+
+
+def test_shipped_defaults_break_a_tie_the_same_way_every_time(fake_max):
+    write_patch(fake_max / "help" / "a.maxhelp", [newobj("twist~", 1, 1, ["signal"]), newobj("twist~", 2, 1, ["signal"])])
+    assert shipped_box(fake_max, "twist~", inlets=2, outlets=1)["numinlets"] == 2
+    assert shipped_box(fake_max, "twist~", inlets=5, outlets=5)["numinlets"] == 1
 
 
 def test_import_rejects_an_unknown_defaults_source():
