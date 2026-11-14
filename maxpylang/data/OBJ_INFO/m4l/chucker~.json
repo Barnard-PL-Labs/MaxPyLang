@@ -1,0 +1,159 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "newobj",
+      "numinlets": 3,
+      "numoutlets": 3,
+      "outlettype": [
+        "signal",
+        "signal",
+        "signal"
+      ],
+      "patching_rect": [
+        100.0,
+        100.0,
+        50.0,
+        22.0
+      ],
+      "text": "chucker~"
+    }
+  },
+  "args": {
+    "required": [
+      {
+        "name": "buffer-size-in-ms",
+        "type": [
+          "int"
+        ]
+      }
+    ],
+    "optional": []
+  },
+  "attribs": [
+    {
+      "name": "COMMON"
+    }
+  ],
+  "in/out": {},
+  "doc": {
+    "digest": "Segment audio and reorder it on looped playback",
+    "description": "chucker~ takes a specified amount of audio data, stores the data in an internal buffer, divides the buffered data into equal sections, and allows the sections to be reordered on playback.",
+    "inlets": [
+      {
+        "id": "0",
+        "type": "INLET_TYPE",
+        "digest": "Left Audio Input"
+      },
+      {
+        "id": "1",
+        "type": "INLET_TYPE",
+        "digest": "Right Audio Input"
+      },
+      {
+        "id": "2",
+        "type": "INLET_TYPE",
+        "digest": "Audio Sync Input",
+        "description": "The right inlet of the object accepts a signal input in the range 0. - 1.0 (typically from the right outlet of a groove~ object) to control the playback of the object's buffered contents."
+      }
+    ],
+    "outlets": [
+      {
+        "id": "0",
+        "type": "OUTLET_TYPE",
+        "digest": "signal: Out left outlet: The segmented and reordered playback of the left channel of the chucker~ object's buffered contents."
+      },
+      {
+        "id": "1",
+        "type": "OUTLET_TYPE",
+        "digest": "Right Audio Output",
+        "description": "signal: Out middle outlet: The segmented and reordered playback of the right channel of the chucker~ object's buffered contents."
+      },
+      {
+        "id": "2",
+        "type": "OUTLET_TYPE",
+        "digest": "Current Step Number",
+        "description": "signal: Out right outlet: The current step number in the playback cycle is sent out the right outlet as a signal value.\n\t\t\t\t\n\t\t\t\tNote: This is the step number, not the index of the segment being played back."
+      }
+    ],
+    "methods": [
+      {
+        "name": "directions",
+        "digest": "Set playback direction for steps",
+        "description": "The word directions, followed by a 1 or 2 to indicate left or right channel and a list of integer values whose length is equal to the number of steps, sets the direction of playback for the sections. Playback direction is specified as follows:\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t1: forward (the default)\n\t\t\t\t\n\t\t\t\t0: mute\n\t\t\t\t\n\t\t\t\t-1: reverse",
+        "args": [
+          {
+            "name": "direction-specifier",
+            "optional": "0",
+            "type": "list"
+          }
+        ]
+      },
+      {
+        "name": "fademode",
+        "digest": "Set the fade method",
+        "description": "Sets the fade method for segment smoothing. Modes include:\n\t\t\t\t\n\t\t\t\t0: Classic (same as Max 5)\n\t\t\t\t\n\t\t\t\t1: Pre-fade (fades use buffered audio, fade executes prior to segment transition)\n\t\t\t\t\n\t\t\t\t2: Post-fade (fades use buffered audio, fade executes after segment transition)",
+        "args": [
+          {
+            "name": "mode",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "freeze",
+        "digest": "Loop the current buffer segment on playback",
+        "description": "The message freeze 1 causes the current buffer segment to loop on playback. Sending the message freeze 0 resumes normal playback.",
+        "args": [
+          {
+            "name": "buffer-segment",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "nstep",
+        "digest": "Set the number of buffer segments",
+        "description": "The word nsteps, followed by an integer in the range 1 - 64, sets the number of equal portions into which the chucker~ object's internal buffer is segmented for playback.",
+        "args": [
+          {
+            "name": "number-of-steps",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "signal",
+        "digest": "Function depends on inlet",
+        "description": "In left inlet: Left channel audio input.\n\t\t\t\t\n\t\t\t\tIn middle inlet: Right channel audio input.\n\t\t\t\t\n\t\t\t\tIn right inlet: An audio signal in the range 0. - 1.0 provides the audio sync input. This task is typically done using a phasor~ object's output as input."
+      },
+      {
+        "name": "smooth",
+        "digest": "Set a crossfade amount between segments",
+        "description": "The word smooth, followed by a floating point number in the range 0. - 1.0, sets an amount of smoothing (crossfading) between the individual segments being reordered for playback.",
+        "args": [
+          {
+            "name": "smooth-amount",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "steps",
+        "digest": "Set the playback order for the sections",
+        "description": "The word steps, followed by a 1 or 2 to indicate left or right channel and a list of integer values whose range is between 1 and the number of steps and whose length is equal to the number of steps, sets the order of playback for the sections.\n\t\t\t\t\n\t\t\t\te.g. the message steps 1 4 3 2 1, steps 2 1 2 3 4, when sent to a chucker~ object whose number of steps is set to 4, will play the four left channel segments in reverse order, and the right channel in regular order. order",
+        "args": [
+          {
+            "name": "channel and range",
+            "optional": "0",
+            "type": "list"
+          }
+        ]
+      }
+    ]
+  }
+}

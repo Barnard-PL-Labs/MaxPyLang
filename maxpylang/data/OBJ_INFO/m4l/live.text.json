@@ -1,0 +1,320 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "live.text",
+      "numinlets": 1,
+      "numoutlets": 2,
+      "outlettype": [
+        "",
+        ""
+      ],
+      "parameter_enable": 1,
+      "patching_rect": [
+        100.0,
+        100.0,
+        40.0,
+        20.0
+      ]
+    }
+  },
+  "args": {
+    "required": [],
+    "optional": []
+  },
+  "attribs": [
+    {
+      "name": "COMMON"
+    },
+    {
+      "name": "active",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "activebgcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "activebgoncolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "activetextcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "activetextoncolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "annotation_name",
+      "type": "symbol",
+      "size": "1"
+    },
+    {
+      "name": "appearance",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "automation",
+      "type": "symbol",
+      "size": "1"
+    },
+    {
+      "name": "automationon",
+      "type": "symbol",
+      "size": "1"
+    },
+    {
+      "name": "bgcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "bgoncolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "blinktime",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "bordercolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "focusbordercolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "inactivelcdcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "labeltextcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "lcdbgcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "lcdcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "mode",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "outputmode",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "param_connect",
+      "type": "symbol",
+      "size": "1"
+    },
+    {
+      "name": "parameter_mappable",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "pictures",
+      "type": "symbol",
+      "size": "2"
+    },
+    {
+      "name": "remapsvgcolors",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "rounded",
+      "type": "float",
+      "size": "1"
+    },
+    {
+      "name": "text",
+      "type": "symbol",
+      "size": "1"
+    },
+    {
+      "name": "textcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "textoffcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "texton",
+      "type": "symbol",
+      "size": "1"
+    },
+    {
+      "name": "transition",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "usepicture",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "usesvgviewbox",
+      "type": "int",
+      "size": "1"
+    }
+  ],
+  "in/out": {},
+  "doc": {
+    "digest": "A user interface button/toggle",
+    "description": "live.text object is a user interface object used to create buttons and toggles.",
+    "inlets": [
+      {
+        "id": "0",
+        "type": "INLET_TYPE",
+        "digest": "Messages in"
+      }
+    ],
+    "outlets": [
+      {
+        "id": "0",
+        "type": "OUTLET_TYPE",
+        "digest": "Item Index"
+      },
+      {
+        "id": "1",
+        "type": "OUTLET_TYPE",
+        "digest": "Item Symbol"
+      }
+    ],
+    "methods": [
+      {
+        "name": "bang",
+        "digest": "A bang message will toggle the state of the object.",
+        "description": "A bang message will toggle the state of the object. If it is off, it will switch on and output a 1. If it is on, it will switch off and output a 0."
+      },
+      {
+        "name": "int",
+        "digest": "Toggle the button, send its text and a 0/1 message",
+        "description": "In the toggle mode, any non-zero number will toggle the button to the \"on\" position, send the button text out the middle outlet and send a 1 out the left outlet. A zero sets the toggle to the \"off\" position, sends the button text out the middle outlet and sends a 0 out the left outlet.",
+        "args": [
+          {
+            "name": "input",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "float",
+        "digest": "Toggle the button, send its text and a 0/1 message",
+        "description": "Converted to int.",
+        "args": [
+          {
+            "name": "input",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "assign",
+        "digest": "Display and output a value",
+        "description": "The word assign, followed by a floating point value, causes that value to be displayed and sent out the live.text object's outlet. The value, however, will not be stored. If the Parameter Visibility attribute is set to Stored Only, the assign message will not add the new value to the Live application\u2019s undo chain.",
+        "args": [
+          {
+            "name": "assign-input",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "init",
+        "digest": "Restore and output the initial value",
+        "description": "Restore and output the initial value."
+      },
+      {
+        "name": "(mouse)",
+        "digest": "Highlight the text, send the text and a bang",
+        "description": "In button mode, a mouse click on live.text highlights it for as long as the mouse is held down, sending the text out the second outlet and a bang message out the left outlet.\n\t\t\t\t\n\t\t\t\tIn toggle mode, a mouse click behaves the same as a live.toggle. When the mouse is clicked, the live.text object will send a 1 out the left outlet if the cursor is inside of the live.text object's rectangle, and a 0 if it is not. The button text is also sent out the second outlet on mouse click."
+      },
+      {
+        "name": "outputvalue",
+        "digest": "Send the current value out the outlet",
+        "description": "Sends the current value out the outlet."
+      },
+      {
+        "name": "rawfloat",
+        "digest": "A raw normalized value (between 0. and 1.)",
+        "description": "A raw normalized value (between 0. and 1.) received in the inlet is converted to a real value, and then functions like any other received int value in toggle mode.",
+        "args": [
+          {
+            "name": "input-value",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "set",
+        "digest": "Toggle the state without sending output",
+        "description": "In the toggle mode, the set messages toggles the \"on\" or \"off\" state without sending anything out the outlets. The word set, followed by any non-zero number, sets toggle to on. The message set 0 sets it to \"off\".",
+        "args": [
+          {
+            "name": "set-input",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "setsymbol",
+        "digest": "Choose a button by name and toggle it without causing output",
+        "description": "In the toggle mode, the word setsymbol, followed by a symbol that specifies a button text item, causes live.text to display that symbol and act as though the object were toggled to that state.",
+        "args": [
+          {
+            "name": "button-text-item",
+            "optional": "0",
+            "type": "list"
+          }
+        ]
+      },
+      {
+        "name": "symbol",
+        "digest": "Choose a button by name and toggle it",
+        "description": "In the toggle mode, the word symbol, followed by a symbol that specifies a button text item, causes live.text to display that symbol and sends the current values out the outlets.",
+        "args": [
+          {
+            "name": "button-text-item",
+            "optional": "0",
+            "type": "list"
+          }
+        ]
+      }
+    ]
+  }
+}

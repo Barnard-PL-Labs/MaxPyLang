@@ -1,0 +1,122 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "newobj",
+      "numinlets": 2,
+      "numoutlets": 2,
+      "outlettype": [
+        "int",
+        "int"
+      ],
+      "patching_rect": [
+        100.0,
+        100.0,
+        50.0,
+        22.0
+      ],
+      "text": "ddg.mono"
+    }
+  },
+  "args": {
+    "required": [],
+    "optional": [
+      {
+        "name": "note priority",
+        "type": [
+          "int"
+        ]
+      }
+    ]
+  },
+  "attribs": [
+    {
+      "name": "COMMON"
+    },
+    {
+      "name": "legatomode",
+      "type": "atom_long",
+      "size": "1"
+    },
+    {
+      "name": "mode",
+      "type": "atom_long",
+      "size": "1"
+    }
+  ],
+  "in/out": {},
+  "doc": {
+    "digest": "Monophonic Synth Controller for Virtual Synths",
+    "description": "ddg.mono provides MIDI message handling for virtual monophonic synths in Max. It implements last/high/low note priority and legato/retrigger phrasing.",
+    "inlets": [
+      {
+        "id": "0",
+        "type": "int",
+        "digest": "MIDI Note in"
+      },
+      {
+        "id": "1",
+        "type": "int",
+        "digest": "MIDI Velocity in"
+      }
+    ],
+    "outlets": [
+      {
+        "id": "0",
+        "type": "int",
+        "digest": "MIDI Note out"
+      },
+      {
+        "id": "1",
+        "type": "int",
+        "digest": "MIDI Velocity out"
+      }
+    ],
+    "methods": [
+      {
+        "name": "int",
+        "digest": "Function depends on inlet",
+        "description": "In first inlet: The number is treated as a pitch value for a MIDI note-on message. Output of the received number and its corresponding velocity value is dependent on the mode attribute and the triggering modes (set using the legato or retrig messages).\n\t\t\t\t\n\t\t\t\t\n\t\t\t\tIn second inlet: The number is stored as a velocity to be paired with pitch numbers received in the left inlet.",
+        "args": [
+          {
+            "name": "MIDI-note-value",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "clear",
+        "digest": "Clear all notes",
+        "description": "The clear message will send a note-off message to stop any notes which are currently playing."
+      },
+      {
+        "name": "in1",
+        "digest": "Store as a velocity to pair with pitch values",
+        "description": "In right inlet: The number is stored as a velocity to be paired with pitch numbers received in the left inlet.",
+        "args": [
+          {
+            "name": "MIDI-velocity-value",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "laststep",
+        "digest": "Send a note-off for the last note played",
+        "description": "The laststep message will cause the ddg.mono object to send a note-off message for the last note played."
+      },
+      {
+        "name": "legato",
+        "digest": "Send output only when a new note is played",
+        "description": "The legato message will cause the ddg.mono object to send its output only when a new note is played."
+      },
+      {
+        "name": "retrig",
+        "digest": "Send output on each key press (retrigger)",
+        "description": "The retrig message will cause the ddg.mono object to send its output on each key press (i.e., retriggering previously played notes)."
+      }
+    ]
+  }
+}

@@ -1,0 +1,261 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "live.menu",
+      "numinlets": 1,
+      "numoutlets": 3,
+      "outlettype": [
+        "",
+        "",
+        "float"
+      ],
+      "parameter_enable": 1,
+      "patching_rect": [
+        100.0,
+        100.0,
+        52.0,
+        15.0
+      ]
+    }
+  },
+  "args": {
+    "required": [],
+    "optional": []
+  },
+  "attribs": [
+    {
+      "name": "COMMON"
+    },
+    {
+      "name": "active",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "activebgcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "annotation_name",
+      "type": "symbol",
+      "size": "1"
+    },
+    {
+      "name": "appearance",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "bordercolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "focusbordercolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "hltcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "hlttextcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "inactivelcdcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "lcdbgcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "lcdcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "param_connect",
+      "type": "symbol",
+      "size": "1"
+    },
+    {
+      "name": "parameter_mappable",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "pictures",
+      "type": "symbol",
+      "size": "256"
+    },
+    {
+      "name": "remapsvgcolors",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "textcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "tricolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "usepicture",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "usesvgviewbox",
+      "type": "int",
+      "size": "1"
+    }
+  ],
+  "in/out": {},
+  "doc": {
+    "digest": "Dropdown menu",
+    "description": "The live.menu object can be used to display text associated with incoming numbers and provide a general user interface. Item numbering starts from zero (0).",
+    "inlets": [
+      {
+        "id": "0",
+        "type": "INLET_TYPE",
+        "digest": "Messages in"
+      }
+    ],
+    "outlets": [
+      {
+        "id": "0",
+        "type": "OUTLET_TYPE",
+        "digest": "Item Index"
+      },
+      {
+        "id": "1",
+        "type": "OUTLET_TYPE",
+        "digest": "Item Symbol"
+      },
+      {
+        "id": "2",
+        "type": "OUTLET_TYPE",
+        "digest": "Parameter Raw Value (0.-1.)"
+      }
+    ],
+    "methods": [
+      {
+        "name": "bang",
+        "digest": "Send the current item out the outlets",
+        "description": "Sends the current item out the outlets."
+      },
+      {
+        "name": "int",
+        "digest": "Display a menu item and output its index and symbol",
+        "description": "An integer specifies a menu item to be displayed, and causes the live.menu object to display that item and output information about its index and the symbol associated with that menu index. Menu item numbering starts at 0.",
+        "args": [
+          {
+            "name": "item-index",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "float",
+        "digest": "Display a menu item and output its index and symbol",
+        "description": "Converted to int.",
+        "args": [
+          {
+            "name": "item-index",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "assign",
+        "digest": "Display and output a value",
+        "description": "The word assign, followed by a floating point value, causes that value to be displayed and sent out the live.menu object's outlet. The value, however, will not be stored. If the Parameter Visibility attribute is set to Stored Only, the assign message will not add the new value to the Live application\u2019s undo chain.",
+        "args": [
+          {
+            "name": "assign-input",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "init",
+        "digest": "Restore and output the initial value",
+        "description": "Restore and output the initial value."
+      },
+      {
+        "name": "(mouse)",
+        "digest": "Click to select a menu itam",
+        "description": "Clicking with the mouse lets you select a menu item to be displayed and outputs information about its index and the symbol associated with that menu index."
+      },
+      {
+        "name": "outputvalue",
+        "digest": "Send the current value out the outlet",
+        "description": "Sends the current value out the outlet."
+      },
+      {
+        "name": "rawfloat",
+        "digest": "Store a raw normalized value, convert to real, display, and output",
+        "description": "A raw normalized value (between 0. and 1.) received in the inlet is converted to a real value, stored, displayed by live.menu, and the current item is sent out the outlets.",
+        "args": [
+          {
+            "name": "input-value",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "set",
+        "digest": "Display a menu item without triggering output",
+        "description": "The word set, followed by a number, specifies a menu item to be displayed by the live.menu object without triggering any output.",
+        "args": [
+          {
+            "name": "item index",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "setsymbol",
+        "digest": "Select a menu item for display without triggering output",
+        "description": "The word setsymbol, followed by a message, selects a menu item to be displayed by name without triggering any output.",
+        "args": [
+          {
+            "name": "menu item",
+            "optional": "0",
+            "type": "list"
+          }
+        ]
+      },
+      {
+        "name": "symbol",
+        "digest": "Select a menu item for display by name",
+        "description": "The word symbol, followed by a message, selects a menu item to be displayed by name. If the item is found, the menu item is displayed and information about its index and the symbol associated with that menu index.",
+        "args": [
+          {
+            "name": "menu item",
+            "optional": "0",
+            "type": "list"
+          }
+        ]
+      }
+    ]
+  }
+}

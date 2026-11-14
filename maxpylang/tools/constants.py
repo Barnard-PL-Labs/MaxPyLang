@@ -13,6 +13,7 @@ maxpy_path = os.path.abspath(os.path.join(os.path.realpath(__file__), os.pardir,
 #paths to files and folders in data folder
 data_folder = os.path.join(maxpy_path, "data")
 import_tools = os.path.join(data_folder, "import_tools.json")
+import_args_file = os.path.join(data_folder, "import_args.json")
 obj_info_folder = os.path.join(data_folder, "OBJ_INFO/")
 obj_io_folder = os.path.join(data_folder, "OBJ_IO/")
 patch_templates_path = os.path.join(data_folder, "PATCH_TEMPLATES/")

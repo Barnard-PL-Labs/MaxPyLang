@@ -1,0 +1,45 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "newobj",
+      "numinlets": 1,
+      "numoutlets": 0,
+      "patching_rect": [
+        100.0,
+        100.0,
+        98.0,
+        23.0
+      ],
+      "text": "live.miditool.out"
+    }
+  },
+  "args": {
+    "required": [],
+    "optional": []
+  },
+  "attribs": [
+    {
+      "name": "COMMON"
+    }
+  ],
+  "in/out": {},
+  "doc": {
+    "digest": "Set or replace notes of MIDI clips in Live. Designed for use in a MIDI Tool Generator or MIDI Tool Transformation.",
+    "description": "The live.miditool.out object is used in a MIDI Tool Generator or MIDI Tool Transformation and is responsible for setting or replacing notes of the currently selected clip in Live. In combination with the live.miditool.in object, you can develop a generative or transformative process that can be controlled and triggered from the Tool Tabs.",
+    "methods": [
+      {
+        "name": "dictionary",
+        "digest": "Sets the currently selected clip to the notes contained in the dictionary.",
+        "description": "When live.miditool.out receives a dictionary, it will set the currently selected clip to the notes contained in the dictionary. The dictionary must be formatted in the same way as the dictionary sent out from the live.miditool.in object.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\tFor an AMXD with the \"Note Transformation\" type, the notes in the dictionary become the new state of the clip. For an AMXD with the \"Note Generator\" type, the notes in the dictionary are added to the clip and can be superimposed on existing notes.",
+        "args": [
+          {
+            "name": "ARG_NAME_0",
+            "type": "list",
+            "optional": "0"
+          }
+        ]
+      }
+    ]
+  }
+}

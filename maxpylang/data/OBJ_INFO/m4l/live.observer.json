@@ -1,0 +1,105 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "newobj",
+      "numinlets": 2,
+      "numoutlets": 2,
+      "outlettype": [
+        "",
+        ""
+      ],
+      "patching_rect": [
+        100.0,
+        100.0,
+        72.0,
+        18.0
+      ],
+      "text": "live.observer"
+    }
+  },
+  "args": {
+    "required": [],
+    "optional": [
+      {
+        "name": "property",
+        "type": [
+          "symbol"
+        ]
+      }
+    ]
+  },
+  "attribs": [
+    {
+      "name": "COMMON"
+    }
+  ],
+  "in/out": {},
+  "doc": {
+    "digest": "Monitor changes in Live objects",
+    "description": "live.observer\n    is used to listen to changes in the values of properties of Live\n    objects. This object works in conjunction with the \n    live.path\n     object, which sends \n    \n       id \n      nn\n    \n     messages into the right inlet of \n    live.observer\n     . \n    \n    \n     After an object id and property is specified, its value is sent out the\n    left outlet. From this moment on, the value is sent on each change of the\n    property ('notification') as well as in response to bang messages. \n    \n    \n     The left outlet is reserved for value messages, all other output is sent to\n    the right outlet. \n    \n    \n     Not all properties can be observed, please consult the \n     Live Object Model\n     to see which can. Also, it is not possible to modify the live set from a\n    notification, i.e. while you are receiving a value message spontaneously\n    sent by a \n    live.observer\n     's outlet. \n    \n    \n     Besides properties, it is also possible to observer children of Live\n    objects. Their values are object ids or lists of them.\n    \n    \n\tNote: The Live API runs in the main thread in Live, and all messages to and from the API are automatically deferred.",
+    "methods": [
+      {
+        "name": "property",
+        "digest": "Arguments: \n        \n        \n          property\n        \n         the name of a property of the current object \n        \n        \n         Operation: \n        \n         Selects the property to be observed.",
+        "description": "Arguments: \n        \n        \n          property\n        \n         the name of a property of the current object \n        \n        \n         Operation: \n        \n         Selects the property to be observed. Outputs the current value to the\n        left outlet if a proper Live object is selected. \n        \n        \n         Remark: \n        \n         Not all properties can be observed. \n        \n         The types of the properties are given in the Live Object Model. \n        \n        \n        \n          \n            Outlet\n            Output\n            Example\n          \n          \n            left\n            \n              \n                value\n              \n            \n            \n              3.1415926",
+        "args": [
+          {
+            "name": "property",
+            "optional": "0",
+            "type": "symbol"
+          }
+        ]
+      },
+      {
+        "name": "property",
+        "digest": "Arguments: \n        \n        \n          child\n        \n         the name of a child of the current object \n        \n        \n         Operation: \n        \n         Selects the child id to be observed. Outputs the id (or \"id 0\")",
+        "description": "Arguments: \n        \n        \n          child\n        \n         the name of a child of the current object \n        \n        \n         Operation: \n        \n         Selects the child id to be observed. Outputs the id (or \"id 0\") to the\n        left outlet if the selected Live object has such a child. \n        \n        \n         Remark: \n        \n         Not all children can be observed. \n        \n        \n        \n          \n            Outlet\n            Output\n            Example\n          \n          \n            left\n            \n              \n                 id \n                nn\n              \n            \n            \n              id 17",
+        "args": [
+          {
+            "name": "child",
+            "optional": "0",
+            "type": "symbol"
+          }
+        ]
+      },
+      {
+        "name": "property",
+        "digest": "Arguments: \n        \n        \n          child\n        \n         the name of a child list of the current object \n        \n        \n         Operation: \n        \n         Selects the child list to be observed. Outputs the id list (or nothing)",
+        "description": "Arguments: \n        \n        \n          child\n        \n         the name of a child list of the current object \n        \n        \n         Operation: \n        \n         Selects the child list to be observed. Outputs the id list (or nothing)\n        to the left outlet if the selected Live object has such a list child. \n        \n        \n         Remark: \n        \n         Not all child lists can be observed. \n        \n        \n        \n          \n            Outlet\n            Output\n            Example\n          \n          \n            left\n            \n              \n                 id \n                nn\n                 ... id \n                mm\n              \n            \n            \n              id 4 id 5",
+        "args": [
+          {
+            "name": "list-child",
+            "optional": "0",
+            "type": "symbol"
+          }
+        ]
+      },
+      {
+        "name": "getproperty",
+        "digest": "Operation: \n        \n         Sends the name of the selected property (or child resp. list-child)",
+        "description": "Operation: \n        \n         Sends the name of the selected property (or child resp. list-child) out\n        the right outlet. \n        \n        \n        \n          \n            Outlet\n            Output\n            Example\n          \n          \n            right\n            \n              \n                 property \n                property\n              \n               or \n              \n                \n                 property \n                child\n              \n            \n            \n              \n                 property name or \n                \n                 property selected_track"
+      },
+      {
+        "name": "gettype",
+        "digest": "Operation: \n        \n         Sends the type of currently observed property or child to the right\n        outlet.",
+        "description": "Operation: \n        \n         Sends the type of currently observed property or child to the right\n        outlet. The types of the properties and children are given in the Live\n        Object Model. \n        \n        \n         For list-children it just sends \n        type tuple\n         , w/o further type information. \n        \n          \n            Outlet\n            Output\n            Example\n          \n          \n            right\n            \n              \n                 type \n                property-type\n                 or \n                \n                 type \n                object-type\n              \n            \n            \n              type int\n               or \n              \n              type Track"
+      },
+      {
+        "name": "getid",
+        "digest": "Operation: \n        \n         Sends the id of the currently observed Live object to the right outlet.",
+        "description": "Operation: \n        \n         Sends the id of the currently observed Live object to the right outlet.\n        \n        \n        \n        \n          \n            Outlet\n            Output\n            Example\n          \n          \n            right\n            \n              \n                 id \n                nn\n              \n            \n            \n              id 20"
+      },
+      {
+        "name": "bang",
+        "digest": "Operation: \n        \n         Sends current value of selected property of current object to the left\n        outlet.",
+        "description": "Operation: \n        \n         Sends current value of selected property of current object to the left\n        outlet. Does nothing if no property or no Live object is selected or if\n        they don't match. \n        \n        \n        \n          \n            Outlet\n            Output\n            Example\n          \n          \n            left\n            \n              \n                value\n              \n            \n            \n              Drums"
+      },
+      {
+        "name": "id nn",
+        "digest": "Operation: \n        \n         Sets the current object.",
+        "description": "Operation: \n        \n         Sets the current object. The message has the same effect if sent to\n        both the right or the left inlet. For clarity it is suggested to always\n        use the right inlet to supply the object id. \n        \n        \n         - no output -"
+      }
+    ]
+  }
+}

@@ -1,0 +1,241 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "live.dial",
+      "numinlets": 1,
+      "numoutlets": 2,
+      "outlettype": [
+        "",
+        "float"
+      ],
+      "parameter_enable": 1,
+      "patching_rect": [
+        100.0,
+        100.0,
+        44.0,
+        47.0
+      ]
+    }
+  },
+  "args": {
+    "required": [],
+    "optional": []
+  },
+  "attribs": [
+    {
+      "name": "COMMON"
+    },
+    {
+      "name": "active",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "activedialcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "activefgdialcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "activeneedlecolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "annotation_name",
+      "type": "symbol",
+      "size": "1"
+    },
+    {
+      "name": "appearance",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "bordercolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "dialcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "fgdialcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "focusbordercolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "needlecolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "needlemode",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "panelcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "param_connect",
+      "type": "symbol",
+      "size": "1"
+    },
+    {
+      "name": "parameter_mappable",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "showname",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "shownumber",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "textcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "triangle",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "tribordercolor",
+      "type": "atom",
+      "size": "1"
+    },
+    {
+      "name": "tricolor",
+      "type": "float",
+      "size": "4"
+    }
+  ],
+  "in/out": {},
+  "doc": {
+    "digest": "Output numbers by moving a dial onscreen",
+    "description": "live.dial works like a circular slider that outputs numbers according to its degree of rotation.",
+    "inlets": [
+      {
+        "id": "0",
+        "type": "int/float",
+        "digest": "Parameter Value (0.00-127.00)"
+      }
+    ],
+    "outlets": [
+      {
+        "id": "0",
+        "type": "int/float",
+        "digest": "Parameter Value (0.00-127.00)"
+      },
+      {
+        "id": "1",
+        "type": "int/float",
+        "digest": "Parameter Raw Value (0.-1.)"
+      }
+    ],
+    "methods": [
+      {
+        "name": "bang",
+        "digest": "Send the current value out the outlet",
+        "description": "Sends the current value out the outlet."
+      },
+      {
+        "name": "int",
+        "digest": "Store, display, and output a value",
+        "description": "The number received in the inlet is stored and displayed by the live.dial object and sent out the outlet.",
+        "args": [
+          {
+            "name": "input",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "float",
+        "digest": "Store, display, and output a value",
+        "description": "The number received in the inlet is stored and displayed in the live.dial and sent out the outlet.",
+        "args": [
+          {
+            "name": "input",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "assign",
+        "digest": "Display and output a value",
+        "description": "The word assign, followed by a floating point value, causes that value to be displayed and sent out the live.dial object's outlet. The value, however, will not be stored. If the Parameter Visibility attribute is set to Stored Only, the assign message will not add the new value to the Live application\u2019s undo chain.",
+        "args": [
+          {
+            "name": "assign-input",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "init",
+        "digest": "Restore and output the initial value",
+        "description": "Restores and outputs the initial value."
+      },
+      {
+        "name": "(mouse)",
+        "digest": "Click and drag to change the dial value.",
+        "description": "Click and drag in the dial to change the value. Hold down the Shift key for more precise mouse control."
+      },
+      {
+        "name": "outputvalue",
+        "digest": "Send the current value out the outlet",
+        "description": "Sends the current value out the outlet."
+      },
+      {
+        "name": "rawfloat",
+        "digest": "Store a raw normalized value, convert to real, display, and output",
+        "description": "A raw normalized value (between 0. and 1.) received in the inlet is converted to a real value, stored, displayed by live.dial, and the current value is sent out the outlet.",
+        "args": [
+          {
+            "name": "input",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "set",
+        "digest": "Set a value without causing output",
+        "description": "Sets the current value without causing any output.",
+        "args": [
+          {
+            "name": "set-input",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,168 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "live.button",
+      "numinlets": 1,
+      "numoutlets": 1,
+      "outlettype": [
+        ""
+      ],
+      "parameter_enable": 1,
+      "patching_rect": [
+        100.0,
+        100.0,
+        15.0,
+        15.0
+      ]
+    }
+  },
+  "args": {
+    "required": [],
+    "optional": []
+  },
+  "attribs": [
+    {
+      "name": "COMMON"
+    },
+    {
+      "name": "active",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "activebgcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "activebgoncolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "annotation_name",
+      "type": "symbol",
+      "size": "1"
+    },
+    {
+      "name": "bgcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "bgoncolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "blinktime",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "bordercolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "focusbordercolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "param_connect",
+      "type": "symbol",
+      "size": "1"
+    },
+    {
+      "name": "parameter_mappable",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "transition",
+      "type": "int",
+      "size": "1"
+    }
+  ],
+  "in/out": {},
+  "doc": {
+    "digest": "Flash on any message, send a bang",
+    "description": "live.button is used to trigger other messages and processes.",
+    "inlets": [
+      {
+        "id": "0",
+        "type": "INLET_TYPE",
+        "digest": "Messages in"
+      }
+    ],
+    "outlets": [
+      {
+        "id": "0",
+        "type": "OUTLET_TYPE",
+        "digest": "Bang for Transition From 0 to 1"
+      }
+    ],
+    "methods": [
+      {
+        "name": "bang",
+        "digest": "Performs the same function as anything.",
+        "description": "Performs the same function as anything."
+      },
+      {
+        "name": "int",
+        "digest": "Performs the same function as anything.",
+        "description": "Performs the same function as anything.",
+        "args": [
+          {
+            "name": "input",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "float",
+        "digest": "Performs the same function as anything.",
+        "description": "Performs the same function as anything.",
+        "args": [
+          {
+            "name": "input",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "anything",
+        "digest": "Flash the button and send a bang message",
+        "description": "When any message is received in the inlet, the button flashes briefly and a bang is sent out the outlet.",
+        "args": [
+          {
+            "name": "input",
+            "optional": "0",
+            "type": "list"
+          }
+        ]
+      },
+      {
+        "name": "assign",
+        "digest": "Display and output a value",
+        "description": "The word assign, followed by a floating point value, causes that value to be displayed and sent out the live.button object's outlet. The value, however, will not be stored. If the Parameter Visibility attribute is set to Stored Only, the assign message will not add the new value to the Live application\u2019s undo chain.",
+        "args": [
+          {
+            "name": "assign-input",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "(mouse)",
+        "digest": "Click to flash the button and send a bang message",
+        "description": "Clicking on the live.button object will cause it to flash briefly and send a bang message out the outlet."
+      }
+    ]
+  }
+}

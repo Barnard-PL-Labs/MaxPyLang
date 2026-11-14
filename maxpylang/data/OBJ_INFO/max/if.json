@@ -3,8 +3,11 @@
     "box": {
       "id": "obj-149",
       "maxclass": "newobj",
-      "numinlets": 0,
-      "numoutlets": 0,
+      "numinlets": 1,
+      "numoutlets": 1,
+      "outlettype": [
+        ""
+      ],
       "patching_rect": [
         100.0,
         100.0,
@@ -17,33 +20,9 @@
   "args": {
     "required": [
       {
-        "name": "if",
+        "name": "expression",
         "type": [
-          "symbol"
-        ]
-      },
-      {
-        "name": "then, else",
-        "type": [
-          "symbol"
-        ]
-      },
-      {
-        "name": "$i1, $f1, $s1",
-        "type": [
-          "symbol"
-        ]
-      },
-      {
-        "name": "send",
-        "type": [
-          "symbol"
-        ]
-      },
-      {
-        "name": "out2",
-        "type": [
-          "symbol"
+          "any"
         ]
       }
     ],
@@ -54,5 +33,20 @@
       "name": "COMMON"
     }
   ],
-  "in/out": {}
+  "in/out": {
+    "numinlets": [
+      {
+        "argtype": "dollar",
+        "type": null
+      }
+    ],
+    "numoutlets": [
+      {
+        "argtype": "word",
+        "word": "out2",
+        "add_amt": 1,
+        "type": ""
+      }
+    ]
+  }
 }

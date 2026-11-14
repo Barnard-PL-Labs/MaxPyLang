@@ -1,0 +1,99 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "newobj",
+      "numinlets": 1,
+      "numoutlets": 3,
+      "outlettype": [
+        "",
+        "",
+        ""
+      ],
+      "patching_rect": [
+        100.0,
+        100.0,
+        51.0,
+        18.0
+      ],
+      "text": "live.path"
+    }
+  },
+  "args": {
+    "required": [],
+    "optional": [
+      {
+        "name": "initial path",
+        "type": [
+          "symbol"
+        ]
+      }
+    ]
+  },
+  "attribs": [
+    {
+      "name": "COMMON"
+    }
+  ],
+  "in/out": {},
+  "doc": {
+    "digest": "Navigate to objects in the Live application",
+    "description": "live.path is used to navigate to Live objects on which the live.object, live.observer and live.remote~ objects operate. The navigation is purely path-based and is independent of the objects currently present in Live (navigating to a nonexistent path will result in the message id 0 being sent out the left and middle outputs rather than an error message).\n\t\t\n\t\t\n\t\tNote: The Live API runs in the main thread in Live, and all messages to and from the API are automatically deferred.",
+    "methods": [
+      {
+        "name": "getid"
+      },
+      {
+        "name": "getcount",
+        "digest": "Arguments:\n\t\t\t\t\n\t\t\t\tchild-name is the name of a child of the object at the current path.",
+        "description": "Arguments:\n\t\t\t\t\n\t\t\t\tchild-name is the name of a child of the object at the current path.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\tOperation:\n\t\t\t\t\n\t\t\t\tSends a count message to the right outlet, containing the name of the child and its number of entries.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\tRemarks:\n\t\t\t\t\n\t\t\t\tThe given child must be a list.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tOutlet\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tOutput\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tExample\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tright\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tcount child-name  count  \n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tcount clip_slots 2",
+        "args": [
+          {
+            "name": "child-name",
+            "optional": "0",
+            "type": "symbol"
+          }
+        ]
+      },
+      {
+        "name": "getchildren",
+        "digest": "Operation:\n\t\t\t\t\n\t\t\t\tSends a list of children of the object at the current path, if any, to the right outlet.",
+        "description": "Operation:\n\t\t\t\t\n\t\t\t\tSends a list of children of the object at the current path, if any, to the right outlet.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\tRemarks:\n\t\t\t\t\n\t\t\t\tThe child names are the same names as used in the goto message.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tOutlet\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tOutput\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tExample\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tright\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tchildren list-of-child-names  \n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tchildren canonical_parent clip_slots"
+      },
+      {
+        "name": "getpath",
+        "digest": "Operation:\n\t\t\t\t\n\t\t\t\tSends a path message with the current path to the right outlet.",
+        "description": "Operation:\n\t\t\t\t\n\t\t\t\tSends a path message with the current path to the right outlet.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tOutlet\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tOutput\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tExample\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tright\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tpath path  \n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tpath live_set scenes 1"
+      },
+      {
+        "name": "bang, getid",
+        "digest": "Operation:\n\t\t\t\t\n\t\t\t\tSends the id of the object at the current path to left and middle outlets.",
+        "description": "Operation:\n\t\t\t\t\n\t\t\t\tSends the id of the object at the current path to left and middle outlets. Sends id 0 if there is no object at the current path.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tOutlet\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tOutput\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tExample\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tleft\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tid nn  \n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tid 5 \n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tmiddle\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tid nn  \n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tid 5"
+      },
+      {
+        "name": "path",
+        "digest": "Same as goto but limited to absolute paths that start with a root object name like live_app, live_set, this_device or control_surfaces N .",
+        "description": "Same as goto but limited to absolute paths that start with a root object name like live_app, live_set, this_device or control_surfaces N .",
+        "args": [
+          {
+            "name": "absolute-path",
+            "optional": "0",
+            "type": "symbol"
+          }
+        ]
+      },
+      {
+        "name": "goto",
+        "digest": "Arguments:\n\t\t\t\t\n\t\t\t\t path  is an absolute path (starts with live_app, live_set or control_surfaces N)",
+        "description": "Arguments:\n\t\t\t\t\n\t\t\t\t path  is an absolute path (starts with live_app, live_set or control_surfaces N) or a relative path, or up \t\t\t\t\n\t\t\t\t\n\t\t\t\tOperation:\n\t\t\t\t\n\t\t\t\tNavigates to given path and sends id of the object at that path out the left and middle outlets. If there is no object at the path, id 0 is sent.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\tRemarks:\n\t\t\t\t\n\t\t\t\tYou cannot go to a list property, only to one of its members.\n\t\t\t\t\n\t\t\t\tinvalid: goto live_set scenes \t\t\t\t\n\t\t\t\tcorrect: goto live_set scenes 3 \t\t\t\t\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tOutlet\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tOutput\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tExample\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tleft\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tid nn  \n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tid 5 \n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tmiddle\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tid nn  \n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tid 5",
+        "args": [
+          {
+            "name": "path",
+            "optional": "0",
+            "type": "symbol"
+          }
+        ]
+      }
+    ]
+  }
+}

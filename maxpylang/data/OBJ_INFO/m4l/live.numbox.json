@@ -1,0 +1,221 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "live.numbox",
+      "numinlets": 1,
+      "numoutlets": 2,
+      "outlettype": [
+        "",
+        "float"
+      ],
+      "parameter_enable": 1,
+      "patching_rect": [
+        100.0,
+        100.0,
+        70.0,
+        15.0
+      ]
+    }
+  },
+  "args": {
+    "required": [],
+    "optional": []
+  },
+  "attribs": [
+    {
+      "name": "COMMON"
+    },
+    {
+      "name": "active",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "activebgcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "activeslidercolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "activetricolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "activetricolor2",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "annotation_name",
+      "type": "symbol",
+      "size": "1"
+    },
+    {
+      "name": "appearance",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "bordercolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "focusbordercolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "inactivelcdcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "lcdbgcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "lcdcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "param_connect",
+      "type": "symbol",
+      "size": "1"
+    },
+    {
+      "name": "parameter_mappable",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "textcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "tricolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "tricolor2",
+      "type": "float",
+      "size": "4"
+    }
+  ],
+  "in/out": {},
+  "doc": {
+    "digest": "Display and output a number",
+    "description": "The live.numbox object is a number box used to display, input, and output numbers.",
+    "inlets": [
+      {
+        "id": "0",
+        "type": "int/float",
+        "digest": "Parameter Value (0.00-127.00)"
+      }
+    ],
+    "outlets": [
+      {
+        "id": "0",
+        "type": "int/float",
+        "digest": "Parameter Value (0.00-127.00)"
+      },
+      {
+        "id": "1",
+        "type": "int/float",
+        "digest": "Parameter Raw Value (0.-1.)"
+      }
+    ],
+    "methods": [
+      {
+        "name": "bang",
+        "digest": "Send the current value out the outlet",
+        "description": "Sends the current value out the outlet."
+      },
+      {
+        "name": "int",
+        "digest": "Store, display, and send a number",
+        "description": "The number received in the inlet is stored and displayed by the live.numbox object and sent out the outlet.",
+        "args": [
+          {
+            "name": "input",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "float",
+        "digest": "Store, display, and send a number",
+        "description": "The number received in the inlet is stored and displayed by the live.numbox object and sent out the outlet.",
+        "args": [
+          {
+            "name": "input",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "assign",
+        "digest": "Display and output a value",
+        "description": "The word assign, followed by a floating point value, causes that value to be displayed and sent out the live.numbox object's outlet. The value, however, will not be stored. If the Parameter Visibility attribute is set to Stored Only, the assign message will not add the new value to the Live application\u2019s undo chain.",
+        "args": [
+          {
+            "name": "assign-input",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "init",
+        "digest": "Restores and outputs the initial value",
+        "description": "Restores and outputs the initial value."
+      },
+      {
+        "name": "(mouse)",
+        "digest": "Click and drag to change number values",
+        "description": "Click and drag the live.numbox display to change the value. Hold down the Shift key for more precise mouse control.\n\t\t\t\t\n\t\t\t\tIf the live.numbox object is set to store an initial value (set by checking the Initial Enable option in the object's Inspector), double-clicking in the triangle region will restore that value."
+      },
+      {
+        "name": "outputvalue",
+        "digest": "Send the current value out the outlet",
+        "description": "Sends the current value out the outlet."
+      },
+      {
+        "name": "rawfloat",
+        "digest": "Store a raw normalized value, convert to real, display, and output",
+        "description": "A raw normalized value (between 0. and 1.) received in the inlet is converted to a real value, stored, displayed by live.numbox, and the current value is sent out the outlet.",
+        "args": [
+          {
+            "name": "input",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "set",
+        "digest": "Sets the current value without causing any output",
+        "description": "Sets the current value without causing any output.",
+        "args": [
+          {
+            "name": "set-input",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      }
+    ]
+  }
+}

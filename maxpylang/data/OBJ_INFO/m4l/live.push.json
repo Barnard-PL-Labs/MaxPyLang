@@ -1,0 +1,68 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "newobj",
+      "numinlets": 1,
+      "numoutlets": 0,
+      "patching_rect": [
+        100.0,
+        100.0,
+        50.0,
+        22.0
+      ],
+      "text": "live.push"
+    }
+  },
+  "args": {
+    "required": [],
+    "optional": []
+  },
+  "attribs": [
+    {
+      "name": "COMMON"
+    },
+    {
+      "name": "play_flat_zone",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "play_in_tune_location",
+      "type": "symbol",
+      "size": "1"
+    },
+    {
+      "name": "play_note_colors",
+      "type": "symbol",
+      "size": "128"
+    },
+    {
+      "name": "play_pad_map",
+      "type": "symbol",
+      "size": "1"
+    },
+    {
+      "name": "play_slide_height",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "play_usage",
+      "type": "symbol",
+      "size": "1"
+    }
+  ],
+  "in/out": {},
+  "doc": {
+    "digest": "Configuration of Push 2 and 3",
+    "description": "live.push allows a Max for Live device to override the settings of a connected Push instrument. The Push settings are only overridden if the Max for Live device containing live.push is selected, or if the device is the first in the device chain. This behavior can be configured with the play_usage attribute.",
+    "inlets": [
+      {
+        "id": "0",
+        "type": "INLET_TYPE",
+        "digest": "messages in"
+      }
+    ]
+  }
+}

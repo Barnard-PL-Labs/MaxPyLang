@@ -51,5 +51,6 @@ def check_type(types: list, arg: str):
 
     Returns True if the argument matches any of the types.
     Returns False if the argument matches none of the types. 
+    An empty list means the refpage gives the argument no type, so anything matches.
     """
-    return any([typecheck_funcs[t](arg) for t in types])
+    return not types or any([typecheck_funcs[t](arg) for t in types])

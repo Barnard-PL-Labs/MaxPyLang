@@ -153,3 +153,60 @@ def test_few_shipped_patches_have_a_dead_output(graph_survey):
     print(f"\n{flagged} of {total} shipped .maxpat patchers have a dead output")
     assert total > 1000, "the corpus looks incomplete"
     assert flagged <= 0.05 * total, f"{flagged} of {total} shipped patchers flagged"
+
+
+# ── the object database ───────────────────────────────────────────────────────
+
+def test_few_shipped_boxes_hold_an_object_maxpylang_does_not_know():
+    """Every check is silent on an object the database does not know. Before the Max for
+    Live objects were imported this was 13.6% of shipped boxes; it is 9.0% now, and most of
+    what is left is Max's short names (p, r, s, i, f), which are not aliases here yet."""
+    database = Path(__file__).resolve().parents[1] / "maxpylang" / "data" / "OBJ_INFO"
+    known = {path.stem for path in database.glob("*/*.json")} | set(_ALIASES)
+    total, unknown = 0, {}
+    for _, patcher in corpus():
+        for box in patcher["boxes"]:
+            box = box.get("box", {})
+            words = (box.get("text") or "").split()
+            name = (words[0] if words else "") if box.get("maxclass", "newobj") == "newobj" else box["maxclass"]
+            if not name:
+                continue
+            total += 1
+            if name not in known:
+                unknown[name] = unknown.get(name, 0) + 1
+    share = sum(unknown.values()) / total
+    top = sorted(unknown.items(), key=lambda item: -item[1])[:15]
+    print(f"\n{sum(unknown.values())} of {total} shipped boxes ({share:.1%}) hold an unknown object; most common: {top}")
+    assert total > 100_000, "the corpus looks incomplete"
+    assert share <= 0.10, f"{share:.1%} of shipped boxes hold an unknown object"
+    assert not [name for name in unknown if name.startswith("live.") and unknown[name] > 200]
+
+
+def test_inlets_read_from_an_expression_or_format_match_the_shipped_boxes():
+    """expr, vexpr and if take one inlet per $ index, sprintf one per format specifier, and
+    `if ... out2` has a second outlet. An expr with no $ is left out: gen~ has an expr of
+    its own (in1 + in2), and some gen patchers are saved without their namespace."""
+    import warnings
+
+    import maxpylang as mp
+
+    wrong, checked = [], 0
+    for path, patcher in corpus():
+        for box in patcher["boxes"]:
+            box = box.get("box", {})
+            text = box.get("text") or ""
+            words = text.split()
+            if box.get("maxclass") != "newobj" or not words or words[0] not in ("expr", "vexpr", "if", "sprintf"):
+                continue
+            if "numinlets" not in box or len(words) < 2 or (words[0] == "expr" and "$" not in text):
+                continue
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                obj = mp.MaxObject(text.split(" @")[0])
+            checked += 1
+            if (len(obj.ins), len(obj.outs)) != (box["numinlets"], box["numoutlets"]):
+                wrong.append(f"{path.relative_to(C74)}: {text!r} has {box['numinlets']} in, {box['numoutlets']} out;"
+                             f" maxpylang gives {len(obj.ins)} in, {len(obj.outs)} out")
+    print(f"\n{checked} shipped expr, vexpr, if and sprintf boxes checked")
+    assert checked > 500, "the corpus looks incomplete"
+    assert wrong == [], f"{len(wrong)} boxes, e.g.\n" + "\n".join(wrong[:20])

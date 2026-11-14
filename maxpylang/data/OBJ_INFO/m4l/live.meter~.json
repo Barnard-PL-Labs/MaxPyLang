@@ -1,0 +1,178 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "live.meter~",
+      "numinlets": 1,
+      "numoutlets": 2,
+      "outlettype": [
+        "float",
+        "int"
+      ],
+      "patching_rect": [
+        100.0,
+        100.0,
+        5.0,
+        100.0
+      ]
+    }
+  },
+  "args": {
+    "required": [],
+    "optional": []
+  },
+  "attribs": [
+    {
+      "name": "COMMON"
+    },
+    {
+      "name": "active",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "bgcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "clip_size",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "coldcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "display_range",
+      "type": "float",
+      "size": "2"
+    },
+    {
+      "name": "drawpeakhold",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "hotcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "inactivecoldcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "inactivewarmcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "interval",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "mode",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "orientation",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "overloadcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "threshold_db",
+      "type": "float",
+      "size": "1"
+    },
+    {
+      "name": "threshold_linear",
+      "type": "float",
+      "size": "1"
+    },
+    {
+      "name": "warmcolor",
+      "type": "float",
+      "size": "4"
+    }
+  ],
+  "in/out": {},
+  "doc": {
+    "digest": "Live-style visual peak level indicator",
+    "description": "live.meter~ is a simple mono Live-style signal level meter that can be attached to any signal whose level is between -1 and 1 (other signals should be scaled first).",
+    "inlets": [
+      {
+        "id": "0",
+        "type": "float/signal",
+        "digest": "Input to Meter",
+        "description": "(signal) Input Between 0-1 to Meter"
+      }
+    ],
+    "outlets": [
+      {
+        "id": "0",
+        "type": "float",
+        "digest": "Amplitude (in dB)",
+        "description": "Peak Value For Each Metering Interval"
+      },
+      {
+        "id": "1",
+        "type": "int",
+        "digest": "Channel for Amplitude Output"
+      }
+    ],
+    "methods": [
+      {
+        "name": "int",
+        "digest": "Display an input value",
+        "description": "Converted to float.",
+        "args": [
+          {
+            "name": "signal-value",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "float",
+        "digest": "Display an input value",
+        "description": "When no signal is connected to the live.meter~ object's inlet, a float number will set the meter to react as though a signal with equal amplitude peak-value has been passed to its input. Corresponding LEDs will light up and the peak-level value will be passed out the outlet (0.0 will show silence, 0.0 through 1.0 will light up to any but the overload LED, and anything above 1.0 will light all LEDs including overload).",
+        "args": [
+          {
+            "name": "signal-value",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "db",
+        "digest": "Display a deciBel input value",
+        "description": "The word db, followed by a floating point number that specficies a deciBel value, will set the live.meter~ object to react as though a signal with that dB peak-value has been passed to its input. Corresponding LEDs will light up and the value will be passed out the outlet.",
+        "args": [
+          {
+            "name": "db-value",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "signal",
+        "digest": "Display peak amplitude of the signal",
+        "description": "The peak amplitude of the incoming signal is displayed by the on-screen level meter."
+      }
+    ]
+  }
+}

@@ -1,0 +1,253 @@
+"""
+The object database (maxpylang/data/OBJ_INFO): objects that were missing from it or stored
+with no inlets, and the importer route that fills it without a running Max.
+
+Every check stays silent on an object the database does not know, so a gap here is a gap
+in the cord and graph checks too.
+"""
+
+import json
+import warnings
+from pathlib import Path
+
+import pytest
+
+import maxpylang as mp
+from maxpylang import importobjs
+from maxpylang.exceptions import ConnectionWarning, UnknownObjectWarning
+from maxpylang.tools import typechecks
+
+OBJ_INFO = Path(mp.__file__).parent / "data" / "OBJ_INFO"
+IMPORT_ARGS = json.loads((Path(mp.__file__).parent / "data" / "import_args.json").read_text())
+
+# Their inlets and outlets come from what they load (a Java class, a subpatch), not from
+# the box, so a bare one has none.
+LOADS_ITS_XLETS = {"mxj", "mxj~", "pfft~", "mc.pfft~"}
+
+
+def build(text):
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UnknownObjectWarning)
+        return mp.MaxObject(text)
+
+
+def counts(text):
+    obj = build(text)
+    return len(obj.ins), len(obj.outs)
+
+
+# ── Max for Live ──────────────────────────────────────────────────────────────
+
+@pytest.mark.parametrize("text, expected", [
+    ("live.dial", (1, 2)),
+    ("live.slider", (1, 2)),
+    ("live.numbox", (1, 2)),
+    ("live.toggle", (1, 1)),
+    ("live.menu", (1, 3)),
+    ("live.gain~", (2, 5)),
+    ("live.object", (2, 1)),
+    ("live.path", (1, 3)),
+    ("live.observer", (2, 2)),
+    ("live.thisdevice", (1, 3)),
+    ("live.param~ cutoff", (0, 1)),
+])
+def test_max_for_live_objects_are_known(text, expected):
+    assert counts(text) == expected
+
+
+def test_a_live_ui_object_is_saved_as_its_own_box_class():
+    box = build("live.dial")._dict["box"]
+    assert box["maxclass"] == "live.dial" and box["parameter_enable"] == 1
+    assert build("live.object")._dict["box"]["maxclass"] == "newobj"
+
+
+def test_max_for_live_stubs_are_importable():
+    from maxpylang.objects import live_dial, live_gain_tilde
+    assert live_dial.name == "live.dial" and len(live_gain_tilde.outs) == 5
+
+
+def test_a_device_with_live_objects_saves_with_no_warning(tmp_path):
+    patch = mp.MaxPatch(verbose=False)
+    dial, mul, osc, out = patch.place("live.dial", "*~", "cycle~ 220", "plugout~", verbose=False)
+    patch.connect([osc.outs[0], mul.ins[0]], [dial.outs[0], mul.ins[1]],
+                  [mul.outs[0], out.ins[0]], [mul.outs[0], out.ins[1]], verbose=False)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        patch.save(str(tmp_path / "device.amxd"), device_type="instrument", verbose=False)
+
+
+def test_audio_into_a_live_dial_is_flagged():
+    patch = mp.MaxPatch(verbose=False)
+    osc, dial = patch.place("cycle~ 220", "live.dial", verbose=False)
+    with pytest.warns(ConnectionWarning, match="takes no audio"):
+        patch.connect([osc.outs[0], dial.ins[0]], verbose=False)
+
+
+# ── objects Max will not create bare ──────────────────────────────────────────
+
+@pytest.mark.parametrize("text, expected", [
+    ("send foo", (1, 0)),
+    ("value foo", (1, 1)),
+    ("pv foo", (1, 1)),
+    ("udpsend 127.0.0.1 7400", (1, 0)),
+    ("peek~ buf", (3, 1)),
+    ("poke~ buf", (3, 1)),
+    ("index~ buf", (2, 2)),
+    ("lookup~ buf", (3, 1)),
+    ("fftin~ 1", (1, 3)),
+    ("fftout~ 1", (2, 0)),
+    ("adstatus sr", (2, 2)),
+    ("plugsend~ bus", (1, 0)),
+    ("plugreceive~ bus", (1, 1)),
+])
+def test_objects_that_need_an_argument_have_their_inlets(text, expected):
+    assert counts(text) == expected
+
+
+def test_a_message_can_be_wired_into_send():
+    patch = mp.MaxPatch(verbose=False)
+    button, send = patch.place("button", "send tick", verbose=False)
+    patch.connect([button.outs[0], send.ins[0]], verbose=False)
+    assert send.ins[0].sources == [button.outs[0]]
+
+
+def test_no_object_with_a_required_argument_is_stored_empty():
+    """Max saves an error box, with no inlets or outlets, for an object it cannot create
+    without arguments. The importer gives those objects the arguments in import_args.json."""
+    empty = []
+    for path in sorted(OBJ_INFO.glob("*/*.json")):
+        spec = json.loads(path.read_text(encoding="utf-8"))
+        box = spec["default"]["box"]
+        if spec["args"]["required"] and not box["numinlets"] and not box["numoutlets"]:
+            empty.append(path.stem)
+    assert set(empty) == LOADS_ITS_XLETS
+
+
+def test_every_import_argument_makes_a_known_object():
+    for name, args in IMPORT_ARGS["args"].items():
+        assert sum(counts(f"{name} {args}")) > 0, name
+
+
+# ── counts read from the argument text ────────────────────────────────────────
+
+@pytest.mark.parametrize("text, expected", [
+    ("expr $i1 + $i2", (2, 1)),
+    ("expr $f3 * 2.", (3, 1)),
+    ("expr 1 + 1", (1, 1)),
+    ("expr $i1 + $i10", (10, 1)),
+    ("vexpr $f1 + $f2", (2, 1)),
+    ("if $i1 > 0 then 1 else 0", (1, 1)),
+    ("if $i2 then $i1", (2, 1)),
+    ("if $i1 then 1 else out2 2", (1, 2)),
+    ("sprintf %d %s", (2, 1)),
+    ("sprintf set %i", (1, 1)),
+    ("sprintf %ld:%02d", (2, 1)),
+    ("sprintf 100%% %s", (1, 1)),
+    ("sprintf hello", (1, 1)),
+])
+def test_inlets_follow_the_expression_or_format(text, expected):
+    obj = build(text)
+    assert (len(obj.ins), len(obj.outs)) == expected
+    assert (obj._dict["box"]["numinlets"], obj._dict["box"]["numoutlets"]) == expected
+
+
+def test_a_bare_expr_is_still_an_error():
+    with pytest.warns(UnknownObjectWarning, match="missing required arguments"):
+        mp.MaxObject("expr")
+
+
+def test_an_argument_with_no_documented_type_accepts_anything():
+    assert typechecks.check_type([], "anything")
+    assert not typechecks.check_type(["int"], "word")
+
+
+# ── importing without a running Max ───────────────────────────────────────────
+
+def patch_file(path, boxes):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"patcher": {"boxes": [{"box": b} for b in boxes], "lines": []}}))
+
+
+def refpage(folder, name, inlets=0, outlets=0):
+    xml = (f'<c74object name="{name}"><inletlist>{"<inlet/>" * inlets}</inletlist>'
+           f'<outletlist>{"<outlet/>" * outlets}</outletlist></c74object>')
+    path = folder / f"{name}.maxref.xml"
+    path.write_text(xml)
+    return str(path)
+
+
+@pytest.fixture
+def fake_max(tmp_path, monkeypatch):
+    """A folder laid out like Max's C74 folder: refpages, and patches Max 'saved'."""
+    refs = tmp_path / "C74" / "docs" / "refpages"
+    (refs / "max-ref").mkdir(parents=True)
+    constants = {"max_refpath": str(refs) + "/"}
+    monkeypatch.setattr(importobjs, "get_constant", constants.__getitem__)
+    return tmp_path / "C74"
+
+
+def newobj(text, numinlets, numoutlets, outlettype=None, width=60.0):
+    box = {"maxclass": "newobj", "text": text, "numinlets": numinlets, "numoutlets": numoutlets,
+           "patching_rect": [10.0, 10.0, width, 22.0]}
+    if outlettype is not None:
+        box["outlettype"] = outlettype
+    return box
+
+
+def test_shipped_defaults_take_the_most_common_bare_box(fake_max):
+    patch_file(fake_max / "help" / "a.maxhelp", [
+        newobj("metro", 2, 1, ["bang"]), newobj("metro", 2, 1, ["bang"]),
+        newobj("metro 500 @active 1", 2, 1, ["bang"], width=140.0),
+        newobj("metro", 1, 1, ["bang"]),
+    ])
+    ref = refpage(fake_max / "docs" / "refpages" / "max-ref", "metro")
+    box = importobjs.get_shipped_obj_info([ref], ["metro"])["metro"]["box"]
+    assert box == {"id": "obj-1", "maxclass": "newobj", "numinlets": 2, "numoutlets": 1,
+                   "outlettype": ["bang"], "patching_rect": [100.0, 100.0, 60.0, 22.0], "text": "metro"}
+
+
+def test_shipped_defaults_use_boxes_with_arguments_for_objects_max_will_not_create_bare(fake_max):
+    patch_file(fake_max / "examples" / "a.maxpat", [
+        newobj("send", 0, 0), newobj("send", 0, 0), newobj("send", 0, 0),
+        newobj("send foo", 1, 0), newobj("send bar", 1, 0),
+    ])
+    ref = refpage(fake_max / "docs" / "refpages" / "max-ref", "send")
+    box = importobjs.get_shipped_obj_info([ref], ["send"])["send"]["box"]
+    assert (box["numinlets"], box["numoutlets"], box["text"]) == (1, 0, "send")
+    assert "outlettype" not in box
+
+
+def test_shipped_defaults_keep_a_ui_box_as_its_own_class(fake_max):
+    dial = {"maxclass": "live.dial", "numinlets": 1, "numoutlets": 2, "outlettype": ["", "float"],
+            "parameter_enable": 1, "patching_rect": [5.0, 5.0, 44.0, 47.0], "varname": "cutoff"}
+    patch_file(fake_max / "help" / "m4l" / "live.dial.maxhelp", [dial])
+    ref = refpage(fake_max / "docs" / "refpages" / "max-ref", "live.dial")
+    box = importobjs.get_shipped_obj_info([ref], ["live.dial"])["live.dial"]["box"]
+    assert box == {"id": "obj-1", "maxclass": "live.dial", "numinlets": 1, "numoutlets": 2,
+                   "outlettype": ["", "float"], "parameter_enable": 1,
+                   "patching_rect": [100.0, 100.0, 44.0, 47.0]}
+
+
+def test_shipped_defaults_read_nested_patchers_but_not_gen(fake_max):
+    inner = {"boxes": [{"box": newobj("metro", 2, 1, ["bang"])}], "lines": []}
+    gen = {"classnamespace": "dsp.gen", "boxes": [{"box": newobj("metro", 9, 9, [""] * 9)}] * 5, "lines": []}
+    patch_file(fake_max / "help" / "a.maxhelp", [
+        {"maxclass": "newobj", "text": "p inner", "numinlets": 0, "numoutlets": 0, "patcher": inner},
+        {"maxclass": "newobj", "text": "gen~", "numinlets": 1, "numoutlets": 1, "patcher": gen},
+    ])
+    ref = refpage(fake_max / "docs" / "refpages" / "max-ref", "metro")
+    box = importobjs.get_shipped_obj_info([ref], ["metro"])["metro"]["box"]
+    assert (box["numinlets"], box["numoutlets"]) == (2, 1)
+
+
+def test_an_object_in_no_shipped_patch_gets_its_refpage_counts(fake_max, capsys):
+    patch_file(fake_max / "help" / "a.maxhelp", [newobj("metro", 2, 1, ["bang"])])
+    ref = refpage(fake_max / "docs" / "refpages" / "max-ref", "rare~", inlets=2, outlets=1)
+    box = importobjs.get_shipped_obj_info([ref], ["rare~"])["rare~"]["box"]
+    assert (box["numinlets"], box["numoutlets"], box["outlettype"]) == (2, 1, [""])
+    assert "rare~ is in no shipped patch" in capsys.readouterr().out
+
+
+def test_import_rejects_an_unknown_defaults_source():
+    with pytest.raises(ValueError, match="defaults"):
+        importobjs.import_objs("max", defaults="guess")

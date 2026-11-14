@@ -11,7 +11,7 @@ OBJECTS = Path(__file__).resolve().parents[1] / "maxpylang" / "objects"
 
 
 def test_objects_init_matches_generator():
-    assert (OBJECTS / "__init__.py").read_text() == build_objects_init(["jit", "max", "msp"])
+    assert (OBJECTS / "__init__.py").read_text() == build_objects_init(["jit", "m4l", "max", "msp"])
 
 
 @pytest.mark.parametrize("package", typedstubs.PACKAGES)

@@ -1,0 +1,62 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "live.line",
+      "numinlets": 1,
+      "numoutlets": 0,
+      "patching_rect": [
+        100.0,
+        100.0,
+        5.0,
+        100.0
+      ]
+    }
+  },
+  "args": {
+    "required": [],
+    "optional": []
+  },
+  "attribs": [
+    {
+      "name": "COMMON"
+    },
+    {
+      "name": "arrows",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "border",
+      "type": "float",
+      "size": "1"
+    },
+    {
+      "name": "justification",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "linecolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "orientation",
+      "type": "int",
+      "size": "1"
+    }
+  ],
+  "in/out": {},
+  "doc": {
+    "digest": "Straight line",
+    "description": "live.line displays a straight line. It is useful for delimiting zones in your interface.",
+    "inlets": [
+      {
+        "id": "0",
+        "type": "INLET_TYPE",
+        "digest": "Messages in"
+      }
+    ]
+  }
+}

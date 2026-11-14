@@ -1,0 +1,73 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "newobj",
+      "numinlets": 1,
+      "numoutlets": 2,
+      "outlettype": [
+        "",
+        "bang"
+      ],
+      "patching_rect": [
+        100.0,
+        100.0,
+        62.0,
+        22.0
+      ],
+      "text": "live.colors"
+    }
+  },
+  "args": {
+    "required": [],
+    "optional": []
+  },
+  "attribs": [
+    {
+      "name": "COMMON"
+    }
+  ],
+  "in/out": {},
+  "doc": {
+    "digest": "Get the colors of the active Ableton Live Theme via a Max for Live device.",
+    "description": "Get the dynamic colors from the active Ableton Live application color theme and use these color names to ensure compatibility between various Max objects and Ableton Live themes. These colors adapt dynamically to the active Live theme, eliminating the need to change RGBA values, since each color name is a token that references specific colors across Live themes.\n\t\t\n\t\t\n\t\tIn Max 8.2 or later, you can change a Max object's color by setting dynamic colors using the color picker in the Max object's inspector window, instead of using live.colors.",
+    "inlets": [
+      {
+        "id": "0",
+        "type": "INLET_TYPE",
+        "digest": "Message in"
+      }
+    ],
+    "outlets": [
+      {
+        "id": "0",
+        "type": "OUTLET_TYPE",
+        "digest": "Color in RGBA Format (float numbers from 0. to 1.)"
+      },
+      {
+        "id": "1",
+        "type": "OUTLET_TYPE",
+        "digest": "Bang when the Live colors change"
+      }
+    ],
+    "methods": [
+      {
+        "name": "anything",
+        "digest": "The dynamic color name in Live",
+        "description": "Sends the color for Color Name from the live.colors object's left outlet in RGBA format (float numbers from 0. to 1.).",
+        "args": [
+          {
+            "name": "Color Name",
+            "type": "symbol",
+            "optional": "0"
+          }
+        ]
+      },
+      {
+        "name": "everything",
+        "digest": "Report all current color RGBA values as a series of messages.",
+        "description": "Sends all the available colors out the outlet as a series of messages. Each message consists of the color id followed by four floating-point values that describe the color scheme color in RGBA format (float numbers from 0. to 1.)."
+      }
+    ]
+  }
+}

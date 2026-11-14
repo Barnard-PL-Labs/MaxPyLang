@@ -1,0 +1,324 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "live.gain~",
+      "numinlets": 2,
+      "numoutlets": 5,
+      "outlettype": [
+        "signal",
+        "signal",
+        "",
+        "float",
+        "list"
+      ],
+      "parameter_enable": 1,
+      "patching_rect": [
+        100.0,
+        100.0,
+        136.0,
+        47.0
+      ]
+    }
+  },
+  "args": {
+    "required": [],
+    "optional": []
+  },
+  "attribs": [
+    {
+      "name": "COMMON"
+    },
+    {
+      "name": "active",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "annotation_name",
+      "type": "symbol",
+      "size": "1"
+    },
+    {
+      "name": "channels",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "clip_size",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "coldcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "display_range",
+      "type": "float",
+      "size": "2"
+    },
+    {
+      "name": "focusbordercolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "hotcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "inactivecoldcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "inactivewarmcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "interp",
+      "type": "float",
+      "size": "1"
+    },
+    {
+      "name": "interval",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "livemode",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "metering",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "mode",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "modulationcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "orientation",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "overloadcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "param_connect",
+      "type": "symbol",
+      "size": "1"
+    },
+    {
+      "name": "parameter_mappable",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "relative",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "showname",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "shownumber",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "slidercolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "textcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "thickness",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "threshold_db",
+      "type": "float",
+      "size": "1"
+    },
+    {
+      "name": "threshold_linear",
+      "type": "float",
+      "size": "1"
+    },
+    {
+      "name": "tribordercolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "tricolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "trioncolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "warmcolor",
+      "type": "float",
+      "size": "4"
+    }
+  ],
+  "in/out": {},
+  "doc": {
+    "digest": "Decibel volume slider and monitor",
+    "description": "live.gain~ is a slider that scales input audio signals and provides a visual indication of the current sound level on a deciBel scale.",
+    "inlets": [
+      {
+        "id": "0",
+        "type": "signal",
+        "digest": "Audio Signal to be Scaled (ch 1), (Int/Float) Parameter Value (-70.00-6.00)"
+      },
+      {
+        "id": "1",
+        "type": "signal",
+        "digest": "Audio Signal to be Scaled (ch 2)"
+      }
+    ],
+    "outlets": [
+      {
+        "id": "0",
+        "type": "signal",
+        "digest": "Scaled Signal (ch 1)"
+      },
+      {
+        "id": "1",
+        "type": "signal",
+        "digest": "Scaled Signal (ch 2)"
+      },
+      {
+        "id": "2",
+        "type": "int/float",
+        "digest": "Parameter Value (-70.00-6.00)"
+      },
+      {
+        "id": "3",
+        "type": "int/float",
+        "digest": "Parameter Raw Value (0.-1.)"
+      },
+      {
+        "id": "4",
+        "type": "float/list",
+        "digest": "Amplitude of Both Channels (in dB)"
+      }
+    ],
+    "methods": [
+      {
+        "name": "bang",
+        "digest": "Send the current value out the outlet",
+        "description": "Sends the current value out the outlet."
+      },
+      {
+        "name": "int",
+        "digest": "Set the level (in dB)",
+        "description": "The number received in the inlet sets the level (in dB).",
+        "args": [
+          {
+            "name": "db-input",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "float",
+        "digest": "Set the level (in dB)",
+        "description": "The number received in the inlet sets the level (in dB).",
+        "args": [
+          {
+            "name": "db-input",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "assign",
+        "digest": "Display and output a value",
+        "description": "The word assign, followed by a floating point value, causes that value to be displayed and sent out the live.gain~ object's outlet. The value, however, will not be stored. If the Parameter Visibility attribute is set to Stored Only, the assign message will not add the new value to the Live application\u2019s undo chain.",
+        "args": [
+          {
+            "name": "assign-input",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "init",
+        "digest": "Restore and output the initial value",
+        "description": "Restore and output the initial value."
+      },
+      {
+        "name": "(mouse)",
+        "digest": "Click and drag to change the amplification.",
+        "description": "Click and drag the slider to change the amplification. Hold down the Shift key for more precise mouse control."
+      },
+      {
+        "name": "outputvalue",
+        "digest": "Send the current value out the outlet",
+        "description": "Sends the current value out the outlet."
+      },
+      {
+        "name": "rawfloat",
+        "digest": "Store a raw normalized value, convert to real, display, and output",
+        "description": "A raw normalized value (between 0. and 1.) received in the inlet is converted to a real value, stored, displayed by live.gain~ object, and the current value is sent out the outlet.",
+        "args": [
+          {
+            "name": "input",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "set",
+        "digest": "Set the current value without causing output",
+        "description": "Sets the current value without causing output.",
+        "args": [
+          {
+            "name": "set-slider-value",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "signal",
+        "digest": "Function depends on inlet",
+        "description": "In left inlet: The input signal (left channel) to be scaled.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\tIn right inlet: The input signal (right channel) to be scaled."
+      }
+    ]
+  }
+}
