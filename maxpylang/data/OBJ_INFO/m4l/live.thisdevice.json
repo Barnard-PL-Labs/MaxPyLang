@@ -1,0 +1,99 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "newobj",
+      "numinlets": 1,
+      "numoutlets": 3,
+      "outlettype": [
+        "bang",
+        "int",
+        "int"
+      ],
+      "patching_rect": [
+        100.0,
+        100.0,
+        83.0,
+        22.0
+      ],
+      "text": "live.thisdevice"
+    }
+  },
+  "args": {
+    "required": [],
+    "optional": []
+  },
+  "attribs": [
+    {
+      "name": "COMMON"
+    },
+    {
+      "name": "openinpresentation",
+      "type": "int",
+      "size": "1"
+    }
+  ],
+  "in/out": {},
+  "doc": {
+    "digest": "Send a bang automatically when a Max Device is loaded, report device state",
+    "description": "live.thisdevice reports three pieces of information about your Max Device. A bang message is automatically sent from the left outlet when the Max Device is opened and completely initialized, or when the containing patcher is part of another file that is opened. Additionally, a bang will be reported every time a new preset is loaded or the device is saved (and thus reloaded within the Live application). A 1 or 0 will be sent from the middle outlet when the Device is enabled or disabled, respectively. A 1 or 0 will be sent from the right outlet when preview mode for the Device is enabled or disabled, respectively. Used within Max, live.thisdevice functions essentially like the loadbang object. The middle and right outlets are inactive in this case.",
+    "inlets": [
+      {
+        "id": "0",
+        "type": "INLET_TYPE",
+        "digest": "bang, getstate"
+      }
+    ],
+    "outlets": [
+      {
+        "id": "0",
+        "type": "OUTLET_TYPE",
+        "digest": "Outputs bang When Patcher/Device is Loaded"
+      },
+      {
+        "id": "1",
+        "type": "OUTLET_TYPE",
+        "digest": "Outputs enabled state of Device"
+      },
+      {
+        "id": "2",
+        "type": "OUTLET_TYPE",
+        "digest": "Outputs preview state of Device"
+      }
+    ],
+    "methods": [
+      {
+        "name": "bang",
+        "digest": "Sending a bang message to a live.thisdevice object causes it to output a bang message from the leftmost outlet.",
+        "description": "Sending a bang message to a live.thisdevice object causes it to output a bang message from the leftmost outlet."
+      },
+      {
+        "name": "(mouse)",
+        "digest": "Double-clicking on a live.thisdevice object causes it to output a bang message from the leftmost outlet.",
+        "description": "Double-clicking on a live.thisdevice object causes it to output a bang message from the leftmost outlet."
+      },
+      {
+        "name": "getstate",
+        "digest": "Sending a getstate message to a live.thisdevice object causes it to output the Max Device state from the rightmost outlet.",
+        "description": "Sending a getstate message to a live.thisdevice object causes it to output the Max Device state from the rightmost outlet."
+      },
+      {
+        "name": "loadbang",
+        "digest": "Same as bang.",
+        "description": "Same as bang."
+      },
+      {
+        "name": "setwidth",
+        "digest": "Sets the width of the device.",
+        "description": "The setwidth message will dynamically set the width of the Max for Live device.\n\t\t\t\t\n\t\t\t\tNote: This width is not automatically saved as part of the preset and/or Live set.\n\t\t\t\t\n\t\t\t\tThe message setwidth 0 will return to the default condition where the width of the device is calculated by using the devices's visible objects.",
+        "args": [
+          {
+            "name": "width",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      }
+    ]
+  }
+}

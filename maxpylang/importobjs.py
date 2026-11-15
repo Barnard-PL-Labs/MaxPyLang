@@ -17,6 +17,7 @@ from .tools.constants import get_constant
 from .tools.constants import obj_info_folder   #path to maxpy obj info folder
 from .tools.constants import obj_io_folder     #path to obj io folder
 from .tools.constants import import_tools      #maxpatch json to add open/close functionality 
+from .tools.constants import import_args_file  #arguments for objects Max will not create bare
 
 from .maxpatch import MaxPatch
 
@@ -24,9 +25,10 @@ from .maxpatch import MaxPatch
 common_box_standin = [{'name': 'COMMON'}] #for attributes 
 available_argtypes = ['int', 'symbol', 'number', 'list', 'any', 'float'] #for arguments
 known_aliases = {'t':'trigger', 'sel': 'select', 'b': 'bangbang'} #known aliases
+vanilla_packages = ['max', 'msp', 'jit', 'm4l'] #packages whose refpages ship inside the Max app
 
 
-def import_objs(*packages, overwrite=False):
+def import_objs(*packages, overwrite=False, defaults="max"):
     """
     Import objects from MaxMSP packages for compatibility with Python interface.
     Creates object template files.
@@ -34,12 +36,21 @@ def import_objs(*packages, overwrite=False):
     Requires io files for each package describing the relationship between inlets/outlets and arguments.
     
     Usage:
-    input --> list of package folder names, use keyword "vanilla" as shortcut for [max, msp, jit]. 
+    input --> list of package folder names, use keyword "vanilla" as shortcut for [max, msp, jit, m4l]. 
     overwrite --> flag to re-import previously imported objects 
+    defaults --> where each object's default box comes from:
+        "max": Max opens a patch of bare objects and saves it. Needs an authorized Max,
+               because an unauthorized one cannot save.
+        "shipped": read from the patches Max ships (help files and examples), which Max
+               saved itself. Needs no running Max. An estimate: see get_shipped_obj_info
+               for how a box is chosen and how far it agrees with a Max save.
     
-    Make sure the Max application is OPEN when running this command!
+    With defaults="max", make sure the Max application is OPEN when running this command!
     If import fails, set wait_time higher and re-import. 
     """
+
+    if defaults not in ("max", "shipped"):
+        raise ValueError('defaults must be "max" or "shipped"')
     
     #create obj_info_folder to hold ref_files
     if not os.path.exists(obj_info_folder):
@@ -53,7 +64,7 @@ def import_objs(*packages, overwrite=False):
     package_info_folders = prep_make_info_folders(package_paths, overwrite=overwrite)
     
     #store object info
-    save_obj_info(package_paths, package_info_folders)
+    save_obj_info(package_paths, package_info_folders, defaults=defaults)
 
     #generate python stub modules
     generate_stubs(package_paths, package_info_folders)
@@ -84,12 +95,10 @@ def get_package_paths(packages):
         
         #add max, msp, jit if vanilla 
         if package == 'vanilla':
-            packages.append('max')
-            packages.append('msp')
-            packages.append('jit')
+            packages.extend(vanilla_packages)
             
-        #add vanilla path for max, msp, jit
-        elif package == 'max' or package == 'msp' or package == 'jit':
+        #add vanilla path for max, msp, jit, m4l
+        elif package in vanilla_packages:
             package_paths[package] = os.path.join(vanilla_refpath, package + "-ref")
             
         #add from package path for all others
@@ -150,13 +159,18 @@ def prep_make_info_folders(package_paths, overwrite=False):
 #*************** FOR SAVING OBJECT INFO *********************
 #************************************************************
 
-def save_obj_info(package_paths, package_info_folders):
+def save_obj_info(package_paths, package_info_folders, defaults="max"):
     """
     Saves default, argument, attribute, and inlet/outlet info for each object in the specified packages.
     Also saves obj aliases into obj_aliases.json file. 
     """
     
-    obj_aliases = known_aliases
+    #start from the aliases already saved, so importing one package keeps the others'
+    obj_aliases = dict(known_aliases)
+    aliases_file = os.path.join(obj_info_folder, "obj_aliases.json")
+    if os.path.exists(aliases_file):
+        with open(aliases_file, 'r') as f:
+            obj_aliases.update(json.load(f))
     
     #store object info, by package
     for package, info_folder in package_info_folders.items():
@@ -170,7 +184,10 @@ def save_obj_info(package_paths, package_info_folders):
         
         #get default obj info (dict for default instantiation)
         print("\tgetting defaults...")
-        default_obj_info = get_default_obj_info(package, obj_refs, obj_names)
+        if defaults == "shipped":
+            default_obj_info = get_shipped_obj_info(obj_refs, obj_names)
+        else:
+            default_obj_info = get_default_obj_info(package, obj_refs, obj_names)
         print("\tdefaults retrieved\n")
         
         #check for obj aliases
@@ -215,7 +232,6 @@ def save_obj_info(package_paths, package_info_folders):
         print(package, "imported successfully,", len(obj_names), "objects imported\n")
         
     #save aliases
-    aliases_file = os.path.join(obj_info_folder, "obj_aliases.json")
     with open(aliases_file, 'w') as f:
         json.dump(obj_aliases, f, indent=2)
     print("object aliases saved successfully")
@@ -305,6 +321,9 @@ def get_default_obj_info(package, refs, names):
     #parse for object info
     obj_info = {}
     for name, box in zip(names, patchboxes):
+        #an object captured with arguments is stored bare, like the others
+        if 'text' in box['box']:
+            box['box']['text'] = box['box']['text'].split(' ')[0]
         obj_info[name] = box
         
     #remove defaults file
@@ -315,15 +334,151 @@ def get_default_obj_info(package, refs, names):
 
 
 
+def get_shipped_obj_info(refs, names):
+    """
+    Helper function for import_objs().
+    Builds each object's default box from the patches Max ships, for when Max cannot be
+    asked to save one.
+
+    An object's box is chosen among its bare boxes in those patches (text is just the name,
+    or a UI box). An object in import_args.json has no working bare box, so its boxes with
+    arguments are used instead. Among those boxes:
+    - only the ones saved by the newest Max version count. An object can gain an outlet
+      between versions (live.remote~), and old patches would outvote the current help file.
+    - a shape with the inlet and outlet counts of the refpage wins. A box can set an
+      attribute that changes its counts (live.comment @suppressinlet 1), and such boxes can
+      outnumber the plain ones.
+    - otherwise the most common shape wins.
+
+    An object with no such box gets the inlets and outlets its refpage documents. Boxes of
+    it with arguments are used only for their outlet types, and only when their counts are
+    the refpage's: their counts may come from the arguments.
+
+    This is an estimate of what Max would save, not the same thing. Against the defaults
+    Max saved for the max, msp and jit packages it agrees on 574 of 583 objects that have a
+    bare box; the rest are mostly containers (gen~, jit.pix, bpatcher).
+
+    Returns dictionary of {object_name: default_patching_box}
+    """
+
+    with open(import_args_file, 'r') as f:
+        import_args = json.load(f)['args']
+
+    c74 = Path(get_constant('max_refpath')).resolve().parents[1]
+    bare = {name: collections.Counter() for name in names}
+    with_args = {name: collections.Counter() for name in names}
+    sizes = collections.defaultdict(collections.Counter)
+    for version, box in shipped_boxes(c74, versions=True):
+        if 'numinlets' not in box or 'numoutlets' not in box:
+            continue
+        words = box.get('text', '').split()
+        is_ui = box.get('maxclass', 'newobj') != 'newobj'
+        name = box['maxclass'] if is_ui else (words[0] if words else '')
+        if name not in bare:
+            continue
+        shape = (is_ui, box['numinlets'], box['numoutlets'], tuple(box.get('outlettype', [])),
+                 box.get('parameter_enable'))
+        (bare if is_ui or len(words) == 1 else with_args)[name][(version, shape)] += 1
+        if is_ui or len(words) == 1: #a box with arguments is as wide as its arguments
+            sizes[name][tuple(box.get('patching_rect', [])[2:4])] += 1
+
+    obj_info = {}
+    for ref, name in zip(refs, names):
+        root = ET.parse(ref).getroot()
+        documented = (len(root.findall("./inletlist/inlet")), len(root.findall("./outletlist/outlet")))
+
+        seen = with_args[name] if name in import_args else bare[name]
+        shapes = collections.Counter()
+        if seen:
+            newest = max(version for version, _ in seen)
+            for (version, shape), count in seen.items():
+                if version == newest:
+                    shapes[shape] += count
+        else:
+            for (_, shape), count in (bare[name] + with_args[name]).items():
+                if shape[1:3] == documented:
+                    shapes[shape] += count
+
+        if shapes:
+            #most common first; a shape with the refpage's counts ahead of that; ties by value
+            best = min(shapes, key=lambda shape: (shape[1:3] != documented, -shapes[shape], repr(shape)))
+            is_ui, numinlets, numoutlets, outlettype, parameter_enable = best
+        else:
+            is_ui, parameter_enable = False, None
+            numinlets, numoutlets = documented
+            outlettype = [""] * numoutlets
+            print("\t", name, "has no usable box in a shipped patch, using its refpage:",
+                  numinlets, "in,", numoutlets, "out")
+
+        box = {'id': 'obj-1', 'maxclass': name if is_ui else 'newobj',
+               'numinlets': numinlets, 'numoutlets': numoutlets}
+        if numoutlets:
+            box['outlettype'] = list(outlettype)
+        if parameter_enable is not None:
+            box['parameter_enable'] = parameter_enable
+        size = sizes[name].most_common(1)[0][0] if sizes[name] else ()
+        box['patching_rect'] = [100.0, 100.0, *(size if len(size) == 2 else (50.0, 22.0))]
+        if not is_ui:
+            box['text'] = name
+        obj_info[name] = {'box': box}
+
+    return obj_info
+
+
+def shipped_boxes(node, versions=False):
+    """
+    Every box in the patches under a folder (given as a Path), nested patchers included.
+    A dict or list is searched as parsed patch json. gen~ and RNBO patchers hold their
+    own operators, so they are skipped along with everything inside them.
+
+    versions --> for a folder, yield (major version of the Max that saved the file, box)
+    """
+
+    if isinstance(node, Path):
+        for path in sorted(node.rglob("*")):
+            if path.suffix in (".maxpat", ".maxhelp"):
+                try:
+                    data = json.loads(path.read_text(encoding="utf-8", errors="replace"))
+                except (ValueError, OSError):
+                    continue
+                patcher = data.get("patcher") if isinstance(data, dict) else None
+                appversion = patcher.get("appversion") if isinstance(patcher, dict) else None
+                major = appversion.get("major", 0) if isinstance(appversion, dict) else 0
+                for box in shipped_boxes(data):
+                    yield (major, box) if versions else box
+    elif isinstance(node, dict):
+        if "boxes" in node and "lines" in node:
+            if node.get("classnamespace", "box") != "box":
+                return
+            for box in node["boxes"]:
+                if "box" in box:
+                    yield box["box"]
+        for value in node.values():
+            yield from shipped_boxes(value)
+    elif isinstance(node, list):
+        for value in node:
+            yield from shipped_boxes(value)
+
+
+
 def add_barebones_objs(refs, patch):
     """
     Add a barebones instantiation of each object in refs to the patch.
+
+    Max will not create some objects without arguments (send, peek~, expr): it saves an
+    error box with no inlets or outlets. Those get the arguments in import_args.json, so
+    the box Max saves has the object's real inlets and outlets.
     """
+
+    with open(import_args_file, 'r') as f:
+        import_args = json.load(f)['args']
     
     for ref in refs:
         xmltree = ET.parse(ref)
         root = xmltree.getroot()
         text = root.attrib['name'] #get text from xml file
+        if text in import_args:
+            text += ' ' + import_args[text]
         patch.add_barebones_obj(text)
         
     return 
@@ -358,6 +513,9 @@ def get_objarg_info(refs, names):
     Gets info on obj text arguments, returned as dictionary of required and optional arguments. 
     """
     
+    with open(import_args_file, 'r') as f:
+        free_text = json.load(f)['free_text']
+
     #arginfo template
     objarg_info = collections.defaultdict(lambda: {'required':[], 'optional':[]})
     
@@ -371,6 +529,10 @@ def get_objarg_info(refs, names):
         #get required and optional args
         objarg_info[name]['required'] = get_objargs_by_flag(root, "[@optional='0']")
         objarg_info[name]['optional'] = get_objargs_by_flag(root, "[@optional='1']")
+
+        #an expression is free text, whatever parts of it the refpage lists as arguments
+        if name in free_text:
+            objarg_info[name] = {'required': [{'name': 'expression', 'type': ['any']}], 'optional': []}
         
     return objarg_info
         
@@ -472,7 +634,8 @@ def get_objinout_info(package, names):
     #get path to io file
     info_file = os.path.join(obj_io_folder, package + "_io.json")
     
-    #read file
+    #read file (a package with no io file has no argument-dependent xlets)
+    info = {}
     if os.path.exists(info_file):
         with open(info_file, 'r') as f:
             info = json.loads(f.read())

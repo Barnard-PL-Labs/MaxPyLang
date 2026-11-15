@@ -1,0 +1,114 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "newobj",
+      "numinlets": 1,
+      "numoutlets": 5,
+      "outlettype": [
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "patching_rect": [
+        100.0,
+        100.0,
+        225.66666666666674,
+        20.0
+      ],
+      "text": "live.routing"
+    }
+  },
+  "args": {
+    "required": [],
+    "optional": []
+  },
+  "attribs": [
+    {
+      "name": "COMMON"
+    },
+    {
+      "name": "index",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "port",
+      "type": "symbol",
+      "size": "1"
+    }
+  ],
+  "in/out": {},
+  "doc": {
+    "digest": "Route MIDI and Audio Inputs and Outputs in Ableton Live",
+    "description": "Route MIDI and Audio data in Ableton Live using available inputs and outputs. live.routing only supports one midi or audio port at a time per Max for Live device. So, if you use two live.routing objects in one Max for Live device, they will both point to the same port. This is because the Live API currently supports only one port at a time per Max for Live device.\n\t\t\n\t\t\n\t\tTo route audio data through a Max for Live device, you will need to use the plugin~ and plugout~ objects to recieve audio data from Live in Max. Similarly, to route midi data through a Max for Live device, you will need to use the midiin and midiout objects to recieve midi data from Live in Max. You can then build your routing patch in Max using the live.routing object. To learn more about Ableton Live's I/O, look up the Device I/O Object Class in the Live Object Model.",
+    "inlets": [
+      {
+        "id": "0",
+        "type": "INLET_TYPE",
+        "digest": "int, messages in",
+        "description": "messages, int, attributes"
+      }
+    ],
+    "outlets": [
+      {
+        "id": "0",
+        "type": "OUTLET_TYPE",
+        "digest": "current type",
+        "description": "Outputs the index into the list of available types of the chosen type of i/o. In Ableton Live, this is typically the index of a Track name, if you are routing data from a Live Track."
+      },
+      {
+        "id": "1",
+        "type": "OUTLET_TYPE",
+        "digest": "current channel",
+        "description": "Outputs the index into the list of available channels of the chosen channel on the i/o. In Ableton Live, this is typically the index of one of the \"Pre Fx\", \"Post FX\" and \"Post Mixer\" options, if you are routing data from a Live Track."
+      },
+      {
+        "id": "2",
+        "type": "OUTLET_TYPE",
+        "digest": "available types (list)",
+        "description": "Lists all the available types of I/Os in Live."
+      },
+      {
+        "id": "3",
+        "type": "OUTLET_TYPE",
+        "digest": "available channels (list)",
+        "description": "Lists all the available channels of the selected I/Os in Live."
+      },
+      {
+        "id": "4",
+        "type": "OUTLET_TYPE",
+        "digest": "dumpout",
+        "description": "outputs unsupported data."
+      }
+    ],
+    "methods": [
+      {
+        "name": "channel",
+        "digest": "Set the I/O channel by its index",
+        "description": "Set the current Audio or MIDI channel to be routed by the specified index number.",
+        "args": [
+          {
+            "name": "input",
+            "type": "int",
+            "optional": "0"
+          }
+        ]
+      },
+      {
+        "name": "type",
+        "digest": "Set the I/O type by its index",
+        "description": "Set the current Audio or MIDI type to be routed by the specified index number.",
+        "args": [
+          {
+            "name": "input",
+            "type": "int",
+            "optional": "0"
+          }
+        ]
+      }
+    ]
+  }
+}

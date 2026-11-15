@@ -11,6 +11,10 @@ with warnings.catch_warnings():
     except ImportError:
         pass
     try:
+        from .m4l import *
+    except ImportError:
+        pass
+    try:
         from .max import *
     except ImportError:
         pass

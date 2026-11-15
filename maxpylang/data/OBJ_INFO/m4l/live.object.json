@@ -1,0 +1,199 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "newobj",
+      "numinlets": 2,
+      "numoutlets": 1,
+      "outlettype": [
+        ""
+      ],
+      "patching_rect": [
+        100.0,
+        100.0,
+        59.0,
+        18.0
+      ],
+      "text": "live.object"
+    }
+  },
+  "args": {
+    "required": [],
+    "optional": []
+  },
+  "attribs": [
+    {
+      "name": "COMMON"
+    }
+  ],
+  "in/out": {},
+  "doc": {
+    "digest": "Perform operations on Live objects",
+    "description": "live.object is used to perform operations on Live objects that have been selected using the live.path object. These operations include retrieving information on the current state of the Live API and setting values to control Live.\n\t\t\n\t\t\n\t\tNote: The Live API runs in the main thread in Live, and all messages to and from the API are automatically deferred.",
+    "methods": [
+      {
+        "name": "getid",
+        "digest": "Report the current object's id",
+        "description": "The current object's id is sent from the outlet, preceded by the word id. If there is no current object, id 0 will be sent."
+      },
+      {
+        "name": "id nn",
+        "digest": "Set the current object",
+        "description": "Operation:\n\t\t\t\t\n\t\t\t\tSets the current object. The message has the same effect if sent to both the right or the left inlet. For clarity it is suggested to always use the right inlet to supply the object id.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t- no output -"
+      },
+      {
+        "name": "getpath",
+        "digest": "Send the canonical path of current object",
+        "description": "Operation:\n\t\t\t\t\n\t\t\t\tSends the canonical path of current object.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tOutlet\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tOutput\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tExample\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tleft\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tpath path \n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tpath live_set return_tracks 0"
+      },
+      {
+        "name": "gettype",
+        "digest": "Send the type (class)",
+        "description": "Operation:\n\t\t\t\t\n\t\t\t\tSends the type (a.k.a. class) of the current object.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tOutlet\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tOutput\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tExample\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tleft\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\ttype object-type \n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\ttype Song"
+      },
+      {
+        "name": "getinfo",
+        "digest": "Send a description of the current object",
+        "description": "Operation:\n\t\t\t\t\n\t\t\t\tSends a description of the current object.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\tOutput to left outlet (most lines may occur multiple times, last line is info done):\n\t\t\t\t\n\t\t\t\t\t\t\t\t\t\n\t\t\t\t\tinfo id nn \t\t\t\t\t\n\t\t\t\t\tinfo type object-type \t\t\t\t\t\n\t\t\t\t\tinfo description description \t\t\t\t\t\n\t\t\t\t\tinfo children list-child  object-type \t\t\t\t\t\n\t\t\t\t\tinfo child child  object-type \t\t\t\t\t\n\t\t\t\t\tinfo property property  property-type \t\t\t\t\t\n\t\t\t\t\tinfo function function \t\t\t\t\t\n\t\t\t\t\tinfo done\n\t\t\t\t\t\n \t\t\t\t\n\t\t\t\tExample output:\n\t\t\t\t\n\t\t\t\t\t\t\t\t\t\n\t\t\t\t\tinfo id 3\n\t\t\t\t\t\n\t\t\t\t\tinfo type Scene\n\t\t\t\t\t\n\t\t\t\t\tinfo description This class represents a series of ClipSlots in Lives session view matrix\n\t\t\t\t\t\n\t\t\t\t\tinfo children clip_slots ClipSlot\n\t\t\t\t\t\n\t\t\t\t\tinfo child canonical_parent Song\n\t\t\t\t\t\n\t\t\t\t\tinfo property is_triggered bool\n\t\t\t\t\t\n\t\t\t\t\tinfo property name symbol\n\t\t\t\t\t\n\t\t\t\t\tinfo property tempo float\n\t\t\t\t\t\n\t\t\t\t\tinfo function fire\n\t\t\t\t\t\n\t\t\t\t\tinfo function fire_as_selected\n\t\t\t\t\t\n\t\t\t\t\tinfo function set_fire_button_state\n\t\t\t\t\t\n\t\t\t\t\tinfo done"
+      },
+      {
+        "name": "bang, getid",
+        "digest": "Sends the id of the current Live object to the outlet",
+        "description": "Operation:\n\t\t\t\t\n\t\t\t\tSends the id of the current Live object to the outlet.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tOutlet\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tOutput\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tExample\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tleft\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tid nn \n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tid 5"
+      },
+      {
+        "name": "call",
+        "digest": "Call the given function of the current object (optional parameter list)",
+        "description": "Arguments:\n\t\t\t\t\n\t\t\t\tfunction the name of the function\n\t\t\t\t\n\t\t\t\tparameter-list an optional list of parameters\n\t\t\t\t\n\t\t\t\t\n\t\t\t\tOperation:\n\t\t\t\t\n\t\t\t\tCalls the given function of the current object, optionally with a list of parameters.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\tRemark:\n\t\t\t\t\n\t\t\t\tThe types of the parameters are given in the Live Object Model.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tOutlet\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tOutput\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tExample\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tleft\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tfunctionvalue\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tget_beats_loop_length 004.00.00.000",
+        "args": [
+          {
+            "name": "function",
+            "optional": "0",
+            "type": "symbol"
+          },
+          {
+            "name": "parameter-list",
+            "optional": "1",
+            "type": "list of different types"
+          }
+        ]
+      },
+      {
+        "name": "set",
+        "digest": "Set the list child to contain the given ids",
+        "description": "Arguments:\n\t\t\t\t\n\t\t\t\tlist-child the name of a list child of the current object\n\t\t\t\t\n\t\t\t\tid nn... id mm  the new list of objects for the given name\n\t\t\t\t\n\t\t\t\t\n\t\t\t\tOperation:\n\t\t\t\t\n\t\t\t\tSet the list child to contain the given ids.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\tRemark:\n\t\t\t\t\n\t\t\t\tNot all children can be set.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t- no output -",
+        "args": [
+          {
+            "name": "list-child",
+            "optional": "0",
+            "type": "symbol"
+          },
+          {
+            "name": "id nn ... id mm",
+            "optional": "0",
+            "type": "id-list"
+          }
+        ]
+      },
+      {
+        "name": "set",
+        "digest": "Set the child name to point to the given child",
+        "description": "Arguments:\n\t\t\t\t\n\t\t\t\tchild the name of a child of the current object\n\t\t\t\t\n\t\t\t\tid nn  the new child object for this name\n\t\t\t\t\n\t\t\t\t\n\t\t\t\tOperation:\n\t\t\t\t\n\t\t\t\tSet the child name to point to the given child.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\tRemark:\n\t\t\t\t\n\t\t\t\tNot all children can be set.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t- no output -",
+        "args": [
+          {
+            "name": "child",
+            "optional": "0",
+            "type": "symbol"
+          },
+          {
+            "name": "id nn",
+            "optional": "0",
+            "type": "id"
+          }
+        ]
+      },
+      {
+        "name": "set",
+        "digest": "Set the given list property to the value list",
+        "description": "Arguments:\n\t\t\t\t\n\t\t\t\tlist-property the name of a list property of the current object\n\t\t\t\t\n\t\t\t\tvalue-list the new values for the property\n\t\t\t\t\n\t\t\t\t\n\t\t\t\tOperation:\n\t\t\t\t\n\t\t\t\tSet the given list property to the value list.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\tRemark:\n\t\t\t\t\n\t\t\t\tNot all properties can be set. The types of the properties are given in the Live Object Model.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t- no output -",
+        "args": [
+          {
+            "name": "list-property",
+            "optional": "0",
+            "type": "symbol"
+          },
+          {
+            "name": "value-list",
+            "optional": "0",
+            "type": "various types"
+          }
+        ]
+      },
+      {
+        "name": "set",
+        "digest": "Set the value of given property of the current object",
+        "description": "Arguments:\n\t\t\t\t\n\t\t\t\tproperty the name of a single-value property of the current object\n\t\t\t\t\n\t\t\t\tvalue the new value for the property\n\t\t\t\t\n\t\t\t\t\n\t\t\t\tOperation:\n\t\t\t\t\n\t\t\t\tSet the value of given property of the current object.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\tRemark:\n\t\t\t\t\n\t\t\t\tNot all properties can be set. The types of the properties are given in the Live Object Model.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t- no output -",
+        "args": [
+          {
+            "name": "property",
+            "optional": "0",
+            "type": "symbol"
+          },
+          {
+            "name": "value",
+            "optional": "0",
+            "type": "various types"
+          }
+        ]
+      },
+      {
+        "name": "get",
+        "digest": "Send the ids of the elements of the list-child of the current object",
+        "description": "Arguments:\n\t\t\t\t\n\t\t\t\tlist-child the name of a list-child of the current object\n\t\t\t\t\n\t\t\t\t\n\t\t\t\tOperation:\n\t\t\t\t\n\t\t\t\tSends the ids of the elements of the list-child of the current object.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tOutlet\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tOutput\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tExample\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tleft\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tlist-child id nn... id mm \n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tclip_slots id 4 id 5",
+        "args": [
+          {
+            "name": "list-child",
+            "optional": "0",
+            "type": "symbol"
+          }
+        ]
+      },
+      {
+        "name": "get",
+        "digest": "Send the id of the child of the current object",
+        "description": "Arguments:\n\t\t\t\t\n\t\t\t\tchild the name of a child of the current object\n\t\t\t\t\n\t\t\t\t\n\t\t\t\tOperation:\n\t\t\t\t\n\t\t\t\tSends the id of the child of the current object.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tOutlet\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tOutput\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tExample\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tleft\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tchild id nn \n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tmaster_track id 10",
+        "args": [
+          {
+            "name": "child",
+            "optional": "0",
+            "type": "symbol"
+          }
+        ]
+      },
+      {
+        "name": "get",
+        "digest": "Send the list of values of given property of the current object",
+        "description": "Arguments:\n\t\t\t\t\n\t\t\t\tlist-property the name of a list property of the current object\n\t\t\t\t\n\t\t\t\t\n\t\t\t\tOperation:\n\t\t\t\t\n\t\t\t\tSends the list of values of given property of the current object.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tOutlet\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tOutput\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tExample\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tleft\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tlist-propertylist of values\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tinput_routings Ext. In Max Resampling 1-Audio A-Return Master No Input",
+        "args": [
+          {
+            "name": "list-property",
+            "optional": "0",
+            "type": "symbol"
+          }
+        ]
+      },
+      {
+        "name": "get",
+        "digest": "Output the value of a property of the current object",
+        "description": "Arguments:\n\t\t\t\t\n\t\t\t\tproperty the name of a single-value property of the current object\n\t\t\t\t\n\t\t\t\t\n\t\t\t\tOperation:\n\t\t\t\t\n\t\t\t\tSends value of given property of the current object.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tOutlet\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tOutput\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tExample\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tleft\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tpropertyvalue\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\tname base solo 3",
+        "args": [
+          {
+            "name": "property",
+            "optional": "0",
+            "type": "symbol"
+          }
+        ]
+      }
+    ]
+  }
+}

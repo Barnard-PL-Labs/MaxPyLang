@@ -1,0 +1,53 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "newobj",
+      "numinlets": 0,
+      "numoutlets": 1,
+      "outlettype": [
+        "signal"
+      ],
+      "patching_rect": [
+        100.0,
+        100.0,
+        50.0,
+        22.0
+      ],
+      "text": "live.param~"
+    }
+  },
+  "args": {
+    "required": [
+      {
+        "name": "parameter-name",
+        "type": []
+      }
+    ],
+    "optional": []
+  },
+  "attribs": [
+    {
+      "name": "COMMON"
+    }
+  ],
+  "in/out": {},
+  "doc": {
+    "digest": "Generate an MSP signal from a parameter value.",
+    "description": "live.param~ produces a signal with the current value of a parameter.",
+    "outlets": [
+      {
+        "id": "0",
+        "type": "signal",
+        "digest": "Parameter Value"
+      }
+    ],
+    "methods": [
+      {
+        "name": "signal",
+        "digest": "The current value of the parameter is output as a value at signal rate",
+        "description": "The current value of the parameter is output as a value at signal rate."
+      }
+    ]
+  }
+}

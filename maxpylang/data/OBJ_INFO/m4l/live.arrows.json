@@ -1,0 +1,147 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "live.arrows",
+      "numinlets": 1,
+      "numoutlets": 1,
+      "outlettype": [
+        ""
+      ],
+      "parameter_enable": 0,
+      "patching_rect": [
+        100.0,
+        100.0,
+        32.0,
+        30.0
+      ]
+    }
+  },
+  "args": {
+    "required": [],
+    "optional": []
+  },
+  "attribs": [
+    {
+      "name": "COMMON"
+    },
+    {
+      "name": "annotation_name",
+      "type": "symbol",
+      "size": "1"
+    },
+    {
+      "name": "arrowcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "blinkcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "blinktime",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "bordercolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "downarrow",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "leftarrow",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "param_connect",
+      "type": "symbol",
+      "size": "1"
+    },
+    {
+      "name": "parameter_enable",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "parameter_mappable",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "rightarrow",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "uparrow",
+      "type": "int",
+      "size": "1"
+    }
+  ],
+  "in/out": {},
+  "doc": {
+    "digest": "Vectorized arrow(s) user interface object",
+    "description": "live.arrows displays a variable number of directional arrow buttons.",
+    "inlets": [
+      {
+        "id": "0",
+        "type": "INLET_TYPE",
+        "digest": "Message In (colors...)"
+      }
+    ],
+    "outlets": [
+      {
+        "id": "0",
+        "type": "OUTLET_TYPE",
+        "digest": "Selected Arrow Symbol"
+      }
+    ],
+    "methods": [
+      {
+        "name": "int",
+        "digest": "Select an arrow and send a message",
+        "description": "Sending an integer value to the live.arrows object will cause the displayed arrow whose number corresponds to those arrow(w) currently displayed to flash and will send a corresponding message out the live.arrows object's outlet. Index numbering for arrows starts at 0 for the leftmost arrow. The indexing range will vary depending on the number of arrows displayed (using the downarrow, leftarrow, rightarrow, and uparrow attributes).",
+        "args": [
+          {
+            "name": "input",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "down",
+        "digest": "Flash the down arrow and send a message",
+        "description": "When the down message is received, the down arrow will flash and the message down will be sent to the live.arrows object's outlet if the downarrow attribute is set to 1."
+      },
+      {
+        "name": "left",
+        "digest": "Flash the left arrow and send a message",
+        "description": "When the left message is received, the left arrow will flash and the message left will be sent to the live.arrows object's outlet if the leftarrow attribute is set to 1."
+      },
+      {
+        "name": "(mouse)",
+        "digest": "Click to output the corresponding arrow symbol",
+        "description": "Click to output the corresponding arrow symbol."
+      },
+      {
+        "name": "right",
+        "digest": "Flash the right arrow and send a message",
+        "description": "When the right message is received, the right arrow will flash and the message right will be sent to the live.arrows object's outlet if the rightarrow attribute is set to 1."
+      },
+      {
+        "name": "up",
+        "digest": "Flash the up arrow and send a message",
+        "description": "When the up message is received, the up arrow will flash and the message up will be sent to the live.arrows object's outlet if the uparrow attribute is set to 1."
+      }
+    ]
+  }
+}

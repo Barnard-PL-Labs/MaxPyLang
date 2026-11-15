@@ -1,0 +1,35 @@
+{
+  "_doc": "Arguments the importer gives an object when it asks Max for the object's default box. Max will not create these objects bare: it saves an error box with no inlets or outlets. The arguments are stripped again before the box is stored.",
+  "args": {
+    "adstatus": "sr",
+    "expr": "$i1",
+    "fftin~": "1",
+    "fftout~": "1",
+    "if": "$i1 then $i1",
+    "index~": "foo",
+    "linedrive": "127 1 1.06 30",
+    "lookup~": "foo",
+    "mc.index~": "foo",
+    "mc.lookup~": "foo",
+    "mc.peek~": "foo",
+    "peek~": "foo",
+    "plugreceive~": "foo",
+    "plugsend~": "foo",
+    "poke~": "foo",
+    "polybuffer~": "foo",
+    "pv": "foo",
+    "send": "foo",
+    "setclock": "foo mul 1.",
+    "sprintf": "%d",
+    "stretch~": "foo",
+    "udpsend": "127.0.0.1 7400",
+    "value": "foo",
+    "vexpr": "$i1"
+  },
+  "_doc_free_text": "Objects whose argument is an expression in free text. Their refpages list the parts of the expression as five required arguments, which no real expression matches, so the importer stores one required argument of any type.",
+  "free_text": [
+    "expr",
+    "if",
+    "vexpr"
+  ]
+}

@@ -34,7 +34,7 @@ import subprocess
 import warnings
 from pathlib import Path
 
-PACKAGES = ["jit", "max", "msp"]
+PACKAGES = ["jit", "m4l", "max", "msp"]
 
 _HERE = Path(__file__).resolve().parent
 OBJECTS_DIR = _HERE.parent / "objects"

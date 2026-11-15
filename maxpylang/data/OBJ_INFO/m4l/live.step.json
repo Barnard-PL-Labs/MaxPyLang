@@ -1,0 +1,828 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "live.step",
+      "numinlets": 1,
+      "numoutlets": 5,
+      "outlettype": [
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "parameter_enable": 1,
+      "patching_rect": [
+        100.0,
+        100.0,
+        450.0,
+        171.0
+      ]
+    }
+  },
+  "args": {
+    "required": [],
+    "optional": []
+  },
+  "attribs": [
+    {
+      "name": "COMMON"
+    },
+    {
+      "name": "annotation_name",
+      "type": "symbol",
+      "size": "1"
+    },
+    {
+      "name": "autoscroll",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "bgcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "bgcolor2",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "bgrulercolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "bgunitcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "blackkeycolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "bordercolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "display_seq",
+      "type": "atom_long",
+      "size": "1"
+    },
+    {
+      "name": "duration_active",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "editlooponly",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "extra1_active",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "extra1_max",
+      "type": "atom_long",
+      "size": "1"
+    },
+    {
+      "name": "extra1_min",
+      "type": "atom_long",
+      "size": "1"
+    },
+    {
+      "name": "extra1_signed",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "extra2_active",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "extra2_max",
+      "type": "atom_long",
+      "size": "1"
+    },
+    {
+      "name": "extra2_min",
+      "type": "atom_long",
+      "size": "1"
+    },
+    {
+      "name": "extra2_signed",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "extra_thickness",
+      "type": "float",
+      "size": "1"
+    },
+    {
+      "name": "hbgcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "loopbordercolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "loopruler",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "mode",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "nseq",
+      "type": "atom_long",
+      "size": "1"
+    },
+    {
+      "name": "param_connect",
+      "type": "symbol",
+      "size": "1"
+    },
+    {
+      "name": "pitch_active",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "stepcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "stepcolor2",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "target_seq",
+      "type": "atom_long",
+      "size": "1"
+    },
+    {
+      "name": "textcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "unitruler",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "usestepcolor2",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "velocity_active",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "whitekeycolor",
+      "type": "float",
+      "size": "4"
+    }
+  ],
+  "in/out": {},
+  "doc": {
+    "digest": "Step Sequencer UI object",
+    "description": "live.step displays multiple sequences which have multiple steps composed of pitch, velocity, and duration. Two additional steps (Extra 1 and Extra 2) are available for user-defined display.",
+    "inlets": [
+      {
+        "id": "0",
+        "type": "INLET_TYPE",
+        "digest": "Message in"
+      }
+    ],
+    "outlets": [
+      {
+        "id": "0",
+        "type": "list",
+        "digest": "Step Values (Index Pitch, Velocity, Duration, Extra1, Extra2)"
+      },
+      {
+        "id": "1",
+        "type": "list",
+        "digest": "Current Loop Points"
+      },
+      {
+        "id": "2",
+        "type": "list",
+        "digest": "Mouse Over Information"
+      },
+      {
+        "id": "3",
+        "type": "list",
+        "digest": "dumpout"
+      },
+      {
+        "id": "4",
+        "type": "int",
+        "digest": "Sequence Index out"
+      }
+    ],
+    "methods": [
+      {
+        "name": "bang",
+        "digest": "Report values for all sequences",
+        "description": "If the target_seq attribute is set to zero, a bang message will send the values associated with the current step of all sequences out the object's left outlet. If the target_seq attribute is set to a value greater than zero, a bang message will send the values associated with the current step of the currently specified sequence out the object's left outlet."
+      },
+      {
+        "name": "int",
+        "digest": "Set the current step for all sequences",
+        "description": "If the target_seq attribute is set to zero, an integer sets the current step of all sequences to the corresponding integer (index numbering starts at 1). If the target_seq attribute is set to a value greater than zero, an integer sets the current step of the currently specified sequence. The values associated with the current step are sent out the object's left outlet.",
+        "args": [
+          {
+            "name": "step-index",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "active",
+        "digest": "Deactivate/activate all sequences",
+        "description": "If the target_seq attribute is set to zero, the message active 0 deactivates all sequences. The word active, followed by any non-zero value, will activate all sequences.\n\t\t\t\t\n\t\t\t\tIf the target_seq attribute is set to a value greater than zero, the message active 0 deactivates the specified sequence. The word active, followed by any non-zero value, will activate the specified sequence.",
+        "args": [
+          {
+            "name": "0/1",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "copy",
+        "digest": "Copy all or a part of a sequence",
+        "description": "The word copy will copy the entire sequence. One or two optional integer arguments may be used to specify starting and ending indices (index numbering starts at 1). For example, copy 2 will copy the sequence starting at index 2, while copy 2 5 will copy starting at index 2 and ending at index 5.",
+        "args": [
+          {
+            "name": "start-index",
+            "optional": "1",
+            "type": "int"
+          },
+          {
+            "name": "stop-index",
+            "optional": "1",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "dictionary",
+        "digest": "Set sequences with a dictionary",
+        "description": "Replaces the current sequence or all sequences of live.step by the content of a named dictionary.  If multiple sequences are present in the dictionary, every sequences is replaced.",
+        "args": [
+          {
+            "name": "dictionary-name",
+            "optional": "0",
+            "type": "symbol"
+          }
+        ]
+      },
+      {
+        "name": "direction",
+        "digest": "Set the playback direction for sequences",
+        "description": "The word direction followed by an integer in the range 0-4, sets the playback direction for sequence playback. The playback options are:\n\t\t\t\t\n\t\t\t\t0: forward\n\t\t\t\t\n\t\t\t\t1: backward\n\t\t\t\t\n\t\t\t\t2: back and forth\n\t\t\t\t\n\t\t\t\t3: Rotate\n\t\t\t\t\n\t\t\t\t4: random\n\t\t\t\t\n\t\t\t\t\n\t\t\t\tIf the target_seq attribute is set to zero, the integer argument sets the direction of all sequences when live.step object's playback is controlled using the time message.\n\t\t\t\t\n\t\t\t\tIf the target_seq attribute is set to a value greater than zero, an integer sets the direction of the specified sequence when live.step object's playback is controlled using the time message.",
+        "args": [
+          {
+            "name": "direction-value",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "doedit",
+        "digest": "Move or rotate stored sequence data",
+        "description": "The word doedit, followed by a number in the range 0-4, provides a simple means to move or rotate the parameters stored in the live.step object. The modes specified by the number arguments are:\n\t\t\t\t\n\t\t\t\t0: transpose the pitch upward.\n\t\t\t\t\n\t\t\t\t1: transpose the pitch downward.\n\t\t\t\t\n\t\t\t\t2: Rotate the steps to the left.\n\t\t\t\t\n\t\t\t\t3: Rotate the steps to the right\n\t\t\t\t\n\t\t\t\t4: Randomize steps depending on the mode attribute. For instance, if the mode is set to velocity, doedit 4 will only randomize the velocity.\n\t\t\t\t\n\t\t\t\tFor more advanced editing features, use the up, down, left, right, random, scramble, and sort messages.",
+        "args": [
+          {
+            "name": "edit-mode",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "down",
+        "digest": "Decreases the values of a sequence based on target_seq and mode attributes",
+        "description": "The word down will decreases the values of the sequence based on the target_seq and mode attributes. For instance, if the mode attribute is set to velocity, the down message will only decrease the velocity of the currently specified sequence (or all the sequences if the target_seq attribute is set to zero).\n\t\t\t\t\n\t\t\t\tAn optional argument may be used with the down message to specify the parameters to be decreased without having to use the mode attribute. The optional arguments are:\n\t\t\t\t\n\t\t\t\tall: decrease all parameters\n\t\t\t\t\n\t\t\t\tpitch: transpose pitches downward\n\t\t\t\t\n\t\t\t\tvelocity: decrease velocities\n\t\t\t\t\n\t\t\t\tduration: decrease durations\n\t\t\t\t\n\t\t\t\textra1: decrease values for the user-definable Extra 1 parameter\n\t\t\t\t\n\t\t\t\textra2: decrease values for the user-definable Extra 2 parameter",
+        "args": [
+          {
+            "name": "parameter",
+            "optional": "1",
+            "type": "symbol"
+          }
+        ]
+      },
+      {
+        "name": "dump",
+        "digest": "Report all sequence values",
+        "description": "Sends the values (pitch, velocity, duration, extra1, extra2) of all steps of the currently specified sequence out the live.step object's right outlet."
+      },
+      {
+        "name": "dump_to_dict",
+        "digest": "Report sequences in dictionary format",
+        "description": "Sends out a dictionary of the current sequence or all sequences (if target_seq is set to 0), via the dump outlet."
+      },
+      {
+        "name": "duration",
+        "digest": "Set duration values for the current sequence",
+        "description": "The word duration, followed by an integer that specifies a starting index into a sequence (index numbering starts with 1) and a list of values (in ticks), will set the duration values for the current sequence specified by the target_seq attribute.",
+        "args": [
+          {
+            "name": "start-index/values",
+            "optional": "0",
+            "type": "list"
+          }
+        ]
+      },
+      {
+        "name": "extra1",
+        "digest": "Set extra1 values for the current sequence",
+        "description": "The word extra1, followed by an integer that specifies a starting index into a sequence (index numbering starts with 1) and a list of values, will set the extra1 values for the current sequence specified by the target_seq attribute.",
+        "args": [
+          {
+            "name": "start-index/values",
+            "optional": "0",
+            "type": "list"
+          }
+        ]
+      },
+      {
+        "name": "extra2",
+        "digest": "Set extra2 values for the current sequence",
+        "description": "The word extra2, followed by an integer that specifies a starting index into a sequence (index numbering starts with 1) and a list of values, will set the extra2 values for the current sequence specified by the target_seq attribute.",
+        "args": [
+          {
+            "name": "start-index/values",
+            "optional": "0",
+            "type": "list"
+          }
+        ]
+      },
+      {
+        "name": "fetch",
+        "digest": "Report parameter values for a step in the sequence",
+        "description": "The word fetch, followed by a symbol that specifies a step parameter (pitch, velocity, duration, extra1, or extra2) and an integer that specifies a step number, will send a list out of the live.step object's fourth (dumpout) outlet in the form <parameter-name> <step-number> <value>.",
+        "args": [
+          {
+            "name": "parameter name",
+            "optional": "0",
+            "type": "symbol"
+          },
+          {
+            "name": "step number",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "fold",
+        "digest": "Toggle folded display mode",
+        "description": "The word fold, followed by a 0 or 1, toggles the folded display mode. When folding is enabled, the live.step object only displays those pitches which are present in the sequence specified by the target_seq attribute rather than all possible pitches. Fold mode displays only the pitches specific to each individual sequence.\t\t\t\t\n\t\t\t\tNote: Sequence editing messages such as up, down, and random use the list of pitches displayed in fold state when performing operations (i.e., the random message will only choose randomly from among the pitches displayed on fold mode. These operations are also dependent on the target sequence, as well). for all sequences.",
+        "args": [
+          {
+            "name": "0/1",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "fold_pitch",
+        "digest": "Set pitches to be displayed in fold mode",
+        "description": "The word fold_pitch, followed by an integer or list of integers that specify MIDI note numbers, sets the pitches to be displayed by the live.step object in fold mode. As with the fold message, the fold_pitch message sets pitches to be displayed in the sequence specified by the target_seq attribute.",
+        "args": [
+          {
+            "name": "pitches-list",
+            "optional": "0",
+            "type": "list"
+          }
+        ]
+      },
+      {
+        "name": "getactive",
+        "digest": "Report the active state of the currently specified sequence",
+        "description": "The message getactive will send the active state of the currently specified sequence out the live.step object's fourth (dumpout) outlet in the form of a list preceded by the word active."
+      },
+      {
+        "name": "getcurrentstep",
+        "digest": "Report the current step of the currently specified sequence",
+        "description": "The message getcurrentstep will send the current step of the sequence out the live.step object's fourth (dumpout) outlet in the form of a number preceded by the word currentstep. When working with multiple sequences, the getcurrentstep message will report the current step of the targeted sequence (specified by the target_seq attribute)."
+      },
+      {
+        "name": "getdirection",
+        "digest": "Report the direction state of the currently specified sequence",
+        "description": "The message getdirection will send the direction state of the currently specified sequence out the live.step object's fourth (dumpout) outlet in the form of a list preceded by the word direction."
+      },
+      {
+        "name": "getduration",
+        "digest": "Report all duration values in the currently specified sequence",
+        "description": "The message getduration will send a list of all the duration values in the sequence specified by the target_seq attribute out the live.step object's fourth (dumpout) outlet in the form of a list preceded by the word duration."
+      },
+      {
+        "name": "getextra1",
+        "digest": "Report all extra1 values in the currently specified sequence",
+        "description": "The message getextra1 will send a list of all the extra1 values in the sequence specified by the target_seq attribute out the live.step object's fourth (dumpout) outlet in the form of a list preceded by the word extra1."
+      },
+      {
+        "name": "getextra2",
+        "digest": "Report all extra2 values in the currently specified sequence",
+        "description": "The message getextra2 will send a list of all the extra2 values in the sequence specified by the target_seq attribute out the live.step object's fourth (dumpout) outlet in the form of a list preceded by the word extra2."
+      },
+      {
+        "name": "getinterval",
+        "digest": "Report the interval of the currently specified sequence",
+        "description": "The message getinterval will send the interval of the currently specified sequence out the live.step object's fourth (dumpout) outlet in the form of a list preceded by the word interval."
+      },
+      {
+        "name": "getloop",
+        "digest": "Report the loop points in the currently specified sequence",
+        "description": "The message getloop will send the loop points of the currently specified sequence out the live.step object's fourth (dumpout) outlet in the form of a list preceded by the word loop."
+      },
+      {
+        "name": "getmodelist",
+        "digest": "Report all display modes",
+        "description": "The message getmodelist will send the list of the display modes out the live.step object's fourth (dumpout) outlet in the form of a list preceded by the word modelist."
+      },
+      {
+        "name": "getnstep",
+        "digest": "Report the number of steps in the currently specified sequence",
+        "description": "The message getnstep will send the number of steps in the currently specified sequence out the live.step object's fourth (dumpout) outlet in the form of a list preceded by the word nstep."
+      },
+      {
+        "name": "getpitch",
+        "digest": "Report all pitch values in the currently specified sequence",
+        "description": "The message getpitch will send a list of all the pitch values in the sequence specified by the target_seq attribute out the live.step object's fourth (dumpout) outlet in the form of a list preceded by the word pitch."
+      },
+      {
+        "name": "getstep",
+        "digest": "Report all parameter values for a sequence step",
+        "description": "The message getstep will send a list of the values (pitch, velocity, duration, extra1, extra2) of the specified index of the currently specified sequence out the live.step object's fourth (dumpout) outlet in the form of a list preceded by the word step.",
+        "args": [
+          {
+            "name": "step-index",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "getvelocity",
+        "digest": "Report all velocity values in the currently specified sequence",
+        "description": "The message getvelocity will send a list of all the velocity values in the sequence specified by the target_seq attribute out the live.step object's fourth (dumpout) outlet in the form of a list preceded by the word velocity."
+      },
+      {
+        "name": "getzoom",
+        "digest": "Report the zoom pitch values of the currently specified sequence",
+        "description": "The message getzoom will send the zoom pitch values of the currently specified sequence out the live.step object's fourth (dumpout) outlet in the form of a list preceded by the word zoom."
+      },
+      {
+        "name": "init",
+        "digest": "Restore and output the initial values entered when Initial Enabled is checked in the live.step object's Inspector",
+        "description": "Restores and outputs the initial values entered when Initial Enabled is checked in the live.step object's Inspector."
+      },
+      {
+        "name": "interval",
+        "digest": "Set the interval of the currently specified sequence",
+        "description": "Sets the interval of the currently specified sequence.",
+        "args": [
+          {
+            "name": "time-value",
+            "optional": "0",
+            "type": "list"
+          }
+        ]
+      },
+      {
+        "name": "left",
+        "digest": "Left-shift the sequence values based on the target_seq and mode attributes",
+        "description": "The word left will rotate (left-shift) the values of the sequence based on the target_seq and mode attributes. For instance, if the mode attribute is set to velocity, the left message will only rotate the velocity of the currently specified sequence (or all the sequences if the target_seq attribute is set to zero).\n\t\t\t\t\n\t\t\t\tAn optional argument may be used with the left message to specify the parameters to be rotated without having to use the mode attribute. The optional arguments are:\n\t\t\t\t\n\t\t\t\tall: Rotate all parameters to the left\n\t\t\t\t\n\t\t\t\tpitch: Rotate all pitches to the left\n\t\t\t\t\n\t\t\t\tvelocity: Rotate all velocities to the left\n\t\t\t\t\n\t\t\t\tduration: Rotate all durations to the left\n\t\t\t\t\n\t\t\t\textra1: Rotate all user-definable Extra 1 parameters to the left\n\t\t\t\t\n\t\t\t\textra2: Rotate all user-definable Extra 2 parameters to the left",
+        "args": [
+          {
+            "name": "parameter",
+            "optional": "1",
+            "type": "symbol"
+          }
+        ]
+      },
+      {
+        "name": "loop",
+        "digest": "Set loop points for the currently specified sequence",
+        "description": "The word loop, followed by two numbers that specify starting and ending indices, sets the loop points of the currently specified sequence.",
+        "args": [
+          {
+            "name": "start-index",
+            "optional": "0",
+            "type": "int"
+          },
+          {
+            "name": "stop-index",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "(mouse)",
+        "digest": "Report mouse activity",
+        "description": "Whenever the live.step object is edited using the mouse, the message changed followed by a number in the range 0-2 will be sent out the object's dumpout outlet. The number specifies what portion of the live.step display has been modified, as follows:\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t0: The pitch, velocity, duration, extra1, or extra2 settings have been modified.\n\t\t\t\t\n\t\t\t\t1: The looping portion of the UI has been modified.\n\t\t\t\t\n\t\t\t\t2: Edits have been made in the ruler area of the UI."
+      },
+      {
+        "name": "next",
+        "digest": "Report the values for the next step in the sequences",
+        "description": "The next message will send the values associated with the next step of all sequences out the object's left outlet. If the target_seq attribute is set to a value greater than zero, a next message will send the values associated with the next step of the currently specified sequence out the object's left outlet."
+      },
+      {
+        "name": "nstep",
+        "digest": "Set the number of steps in the target sequence",
+        "description": "Sets the number of steps in the target sequence.",
+        "args": [
+          {
+            "name": "number of steps",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "paste",
+        "digest": "Paste steps into a sequence",
+        "description": "When the paste message is received without argument, all parameters are pasted at the same location as they were copied. An optional argument to specify parameter type (pitch, velocity, duration, extra1, extra2) can be used to paste only specific items. An additional option number argument specifies the starting index where the copied steps will be pasted (index numbering starts at 1).",
+        "args": [
+          {
+            "name": "parameter",
+            "optional": "1",
+            "type": "symbol"
+          },
+          {
+            "name": "start-index",
+            "optional": "1",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "pitch",
+        "digest": "Set pitch values for the current sequence",
+        "description": "The word pitch, followed by an integer that specifies a starting index into a sequence (index numbering starts with 1) and a list of values, will set the pitch values for the current sequence specified by the target_seq attribute.",
+        "args": [
+          {
+            "name": "start-index/values",
+            "optional": "0",
+            "type": "list"
+          }
+        ]
+      },
+      {
+        "name": "random",
+        "digest": "Randomize values in the seqence",
+        "description": "The word random will randomize the values of the sequence based on the target_seq and mode attributes. For instance, if the mode attribute is set to velocity, the random message will only scramble the velocity of the currently specified sequence (or all the sequences if the target_seq attribute is set to zero).\n\t\t\t\t\n\t\t\t\tAn optional argument may be used with the random message to specify the parameters to be scrambled without having to use the mode attribute. The optional arguments are:\n\t\t\t\t\n\t\t\t\tall: Randomize all parameters\n\t\t\t\t\n\t\t\t\tpitch: Randomize all pitches\n\t\t\t\t\n\t\t\t\tvelocity: Randomize all velocities\n\t\t\t\t\n\t\t\t\tduration: Randomize all durations\n\t\t\t\t\n\t\t\t\textra1: Randomize all values for the user-definable Extra 1 parameter\n\t\t\t\t\n\t\t\t\textra2: Randomize all values for the user-definable Extra 2 parameter",
+        "args": [
+          {
+            "name": "parameter",
+            "optional": "1",
+            "type": "symbol"
+          }
+        ]
+      },
+      {
+        "name": "reset",
+        "digest": "Deactivate the current step",
+        "description": "The reset message allows you to deactivate the current step. It is equivalent to setting the current step to 0."
+      },
+      {
+        "name": "right",
+        "digest": "Right-shift the sequence values based on the target_seq and mode attributes",
+        "description": "The word right will rotate (right-shift) the values of the sequence based on the target_seq and mode attributes. For instance, if the mode attribute is set to velocity, the left message will only rotate the velocity of the currently specified sequence (or all the sequences if the target_seq attribute is set to zero).\n\t\t\t\t\n\t\t\t\tAn optional argument may be used with the right message to specify the parameters to be rotated without having to use the mode attribute. The optional arguments are:\n\t\t\t\t\n\t\t\t\tall: Rotate all parameters to the right\n\t\t\t\t\n\t\t\t\tpitch: Rotate all pitches to the right\n\t\t\t\t\n\t\t\t\tvelocity: Rotate all velocities to the right\n\t\t\t\t\n\t\t\t\tduration: Rotate all durations to the right\n\t\t\t\t\n\t\t\t\textra1: Rotate all values for the user-definable Extra 1 parameter to the right\n\t\t\t\t\n\t\t\t\textra2: Rotate all values for the user-definable Extra 2 parameter to the right",
+        "args": [
+          {
+            "name": "parameter",
+            "optional": "1",
+            "type": "symbol"
+          }
+        ]
+      },
+      {
+        "name": "scramble",
+        "digest": "Randomize the order of sequence values based on target_seq and mode attributes",
+        "description": "The word scramble will randomize the order of the values of the sequence based on the target_seq and mode attributes. For instance, if the mode attribute is set to velocity, the left message will only scramble the velocity of the currently specified sequence (or all the sequences if the target_seq attribute is set to zero).\n\t\t\t\t\n\t\t\t\tAn optional argument may be used with the scramble message to specify the parameters to be scrambled without having to use the mode attribute. The optional arguments are:\n\t\t\t\t\n\t\t\t\tall: Randomize the order of all parameters\n\t\t\t\t\n\t\t\t\tpitch: Randomize the order of all pitches\n\t\t\t\t\n\t\t\t\tvelocity: Randomize the order of all velocities\n\t\t\t\t\n\t\t\t\tduration: Randomize the order of all durations\n\t\t\t\t\n\t\t\t\textra1: Randomize the order of all user-definable Extra 1 parameters\n\t\t\t\t\n\t\t\t\textra2: Randomize the order of all user-definable Extra 2 parameters\n\t\t\t\t\n\t\t\t\tIf you are not using mode all, and that you pass 1 as argument, scramble will keep your steps synchronized. For instance, the scramble pitch 1 message will reorder the pitches, but the other parameters will follow.",
+        "args": [
+          {
+            "name": "parameter",
+            "optional": "1",
+            "type": "symbol"
+          },
+          {
+            "name": "keep-step-sync",
+            "optional": "1",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "set",
+        "digest": "Set the current step of all the sequences",
+        "description": "If the target_seq attribute is set to zero, the word set, followed by an integer sets the current step of all the sequences to the corresponding integer (index numbering starts at 1).\n\t\t\t\t\n\t\t\t\tIf the target_seq attribute is set to a value greater than zero, the word set, followed by an integer sets the current step of the currently specified sequence.",
+        "args": [
+          {
+            "name": "step-index",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "setall",
+        "digest": "Set a value for all layers in the current sequence",
+        "description": "The word setall, followed by a number, will assign that value to every layer in the currently targeted sequence when the the live.step object is in display mode. An optional first argument specifying a specific layer (i.e. setall velocity 85) can be used to set all values in a specify layer. When the editlooponly attribute is set to 1, the setall message will only be applied to indices inside the loop selection.",
+        "args": [
+          {
+            "name": "value",
+            "optional": "0",
+            "type": "list"
+          }
+        ]
+      },
+      {
+        "name": "settimeshift",
+        "digest": "Move to a sequence step relative to the current step",
+        "description": "The word settimeshift, followed by a positive or negative number that specifies an offset, will move to the relative position from the current step in the sequence and first that step (e.g., sending the message settimeshift -1 when the current step number is 3 will cause the content of step 2 to fire.",
+        "args": [
+          {
+            "name": "time-shift",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "sort",
+        "digest": "Sort step values of a sequence based on the target_seq and mode attributes",
+        "description": "The word sort will sort the step values of the sequence based on the target_seq and mode attributes. For instance, if the mode attribute is set to velocity, the sort message will only sort the velocity values of the currently specified sequence (or all the sequences if the target_seq attribute is set to zero).\n\t\t\t\t\n\t\t\t\tOptional arguments may be used with the sort message to specify behavior, synchronization, and direction of sortint. The can be used to set the parameters to be sorted without having to use the mode attribute. The optional arguments are:\n\t\t\t\t\n\t\t\t\tall: Sort the order of all parameters\n\t\t\t\t\n\t\t\t\tpitch: Sort the order of the pitches\n\t\t\t\t\n\t\t\t\tvelocity: Sort the order of the velocities\n\t\t\t\t\n\t\t\t\tduration: Sort the order of the durations\n\t\t\t\t\n\t\t\t\textra1: Sort the order of all user-definable Extra 1 parameters\n\t\t\t\t\n\t\t\t\textra2: Sort the order of all user-definable Extra 2 parameters\n\t\t\t\t\n\t\t\t\tThe first integer argument specifies whether or not to keep the step values synchronized - it only works if the mode attribute is not set to all. For instance, the message sort pitch 1 will reorder the steps based on the pitch, but the velocity, duration and user-definable extra1 and extra2 values associated to the pitch will be maintained. An optional second integer argument can be used to set the sorting order:\n\t\t\t\t\n\t\t\t\t1: Ascending (the default) -1: Descending.",
+        "args": [
+          {
+            "name": "parameter",
+            "optional": "1",
+            "type": "symbol"
+          },
+          {
+            "name": "keep-step-sync",
+            "optional": "1",
+            "type": "int"
+          },
+          {
+            "name": "direction",
+            "optional": "1",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "step",
+        "digest": "Set the values for a sequence step",
+        "description": "The word step, followed by a list of four integers, sets the values of a specific step. The required arguments are:\n\t\t\t\t\n\t\t\t\t\n\t\t\t\tthe index (index numbering starts at 1)\n\t\t\t\t\n\t\t\t\tthe MIDI note number (0-127)\n\t\t\t\t\n\t\t\t\tthe note velocity (0-127)\n\t\t\t\t\n\t\t\t\tthe duration (30, 60, 120, 240, 480, 960, 1920, 3840 ticks)",
+        "args": [
+          {
+            "name": "index",
+            "optional": "0",
+            "type": "int"
+          },
+          {
+            "name": "midi-note",
+            "optional": "0",
+            "type": "int"
+          },
+          {
+            "name": "velocity",
+            "optional": "0",
+            "type": "int"
+          },
+          {
+            "name": "duration",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "time",
+        "digest": "Specify the timing position in the sequence.",
+        "description": "The word time, followed by a list of 6 numbers, defines the timing position in the sequence. The required arguments are bar, beat, unit, resolution-in-ppq, time-signature-numerator, and time-signature-denominator. The live.step object does not have an internal clock, so you need to send the time message often if you want to use it to drive the live.step object.",
+        "args": [
+          {
+            "name": "bar",
+            "optional": "0",
+            "type": "int"
+          },
+          {
+            "name": "beat",
+            "optional": "0",
+            "type": "int"
+          },
+          {
+            "name": "unit",
+            "optional": "0",
+            "type": "int"
+          },
+          {
+            "name": "resolution",
+            "optional": "0",
+            "type": "int"
+          },
+          {
+            "name": "time-sig-numerator",
+            "optional": "0",
+            "type": "list"
+          },
+          {
+            "name": "time-sig-denominator",
+            "optional": "0",
+            "type": "list"
+          }
+        ]
+      },
+      {
+        "name": "up",
+        "digest": "Increase values of the sequence based on the target_seq and mode attributes",
+        "description": "The word up will increase the values of the sequence based on the target_seq and mode attributes. For instance, if the mode attribute is set to velocity, the up message will only increase the velocity of the currently specified sequence (or all the sequences if the target_seq attribute is set to zero).\n\t\t\t\t\n\t\t\t\tAn optional argument may be used with the up message to specify the parameters to be increased without having to use the mode attribute. The optional arguments are:\n\t\t\t\t\n\t\t\t\tall: Increase all parameters\n\t\t\t\t\n\t\t\t\tpitch: Transpose pitches upward\n\t\t\t\t\n\t\t\t\tvelocity: Increase velocities\n\t\t\t\t\n\t\t\t\tduration: Increase durations\n\t\t\t\t\n\t\t\t\textra1: Increase the value of all user-definable Extra 1 parameters\n\t\t\t\t\n\t\t\t\textra2: Increase the value of all user-definable Extra 2 parameters",
+        "args": [
+          {
+            "name": "parameter",
+            "optional": "1",
+            "type": "symbol"
+          }
+        ]
+      },
+      {
+        "name": "velocity",
+        "digest": "Set velocity values for the current sequence",
+        "description": "The word velocity, followed by an integer that specifies a starting index into a sequence (index numbering starts with 1) and a list of values, will set the velocity values for the current sequence specified by the target_seq attribute.",
+        "args": [
+          {
+            "name": "start-index/values",
+            "optional": "0",
+            "type": "list"
+          }
+        ]
+      },
+      {
+        "name": "zoom",
+        "digest": "Sets the the upper and lower displayed range of the currently specified sequence",
+        "description": "Sets the the upper and lower displayed range of the currently specified sequence.",
+        "args": [
+          {
+            "name": "low-pitch",
+            "optional": "0",
+            "type": "float"
+          },
+          {
+            "name": "high-pitch",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "zoom_fit",
+        "digest": "Set the pitch display ranges based on low/high note values",
+        "description": "The word zoom_fit will cause the currently displayed pitch range of the live.step object to adjust so that the highest and lowest note values become the upper and lower limits of the display."
+      },
+      {
+        "name": "zoom_in",
+        "digest": "Decrease the displayed pitch range by 7 steps",
+        "description": "The word zoom_in will cause the current pitch range of the live.step object display to decrease by a factor of a fifth (7 steps) at the top and bottom, resulting in a \"zoom in\" effect."
+      },
+      {
+        "name": "zoom_out",
+        "digest": "Increase the displayed pitch range by 7 steps",
+        "description": "The word zoom_out will cause the current pitch range of the live.step object display to increase by a factor of a fifth (7 steps) at the top and bottom, resulting in a \"zoom out\" effect."
+      }
+    ]
+  }
+}

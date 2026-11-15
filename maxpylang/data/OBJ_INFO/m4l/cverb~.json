@@ -1,0 +1,88 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "newobj",
+      "numinlets": 2,
+      "numoutlets": 1,
+      "outlettype": [
+        ""
+      ],
+      "patching_rect": [
+        100.0,
+        100.0,
+        50.0,
+        22.0
+      ],
+      "text": "cverb~"
+    }
+  },
+  "args": {
+    "required": [
+      {
+        "name": "reverb-time",
+        "units": "ms",
+        "type": [
+          "int"
+        ]
+      }
+    ],
+    "optional": []
+  },
+  "attribs": [
+    {
+      "name": "COMMON"
+    }
+  ],
+  "in/out": {},
+  "doc": {
+    "digest": "A simple monaural reverberator",
+    "description": "cverb~ provides monaural reverberation for an input signal.",
+    "inlets": [
+      {
+        "id": "0",
+        "type": "signal",
+        "digest": "(signal) Input",
+        "description": "Audio input signal"
+      },
+      {
+        "id": "1",
+        "type": "signal/float",
+        "digest": "(signal/float) Reverberation Time (in ms)",
+        "description": "Reverberation time, in milliseconds (set by a float/signal)"
+      }
+    ],
+    "outlets": [
+      {
+        "id": "0",
+        "type": "signal",
+        "digest": "(signal) Output",
+        "description": "The reverberated output signal"
+      }
+    ],
+    "methods": [
+      {
+        "name": "float",
+        "digest": "Set the reverberation time",
+        "description": "In right inlet: A floating point value in the right inlet is used to set the reverberation time in milliseconds.",
+        "args": [
+          {
+            "name": "reverb-time",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "clear",
+        "digest": "Clear reverb memory",
+        "description": "Clears the memory of the reverb (which may produce a click in the output)."
+      },
+      {
+        "name": "signal",
+        "digest": "Function depends on inlet",
+        "description": "In left inlet: Audio input to the reverberator.\n\t\t\t\t\n\t\t\t\tIn right inlet: A signal value may be used to set the reverberation time in milliseconds."
+      }
+    ]
+  }
+}

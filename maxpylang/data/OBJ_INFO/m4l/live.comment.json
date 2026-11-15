@@ -1,0 +1,142 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "live.comment",
+      "numinlets": 1,
+      "numoutlets": 0,
+      "patching_rect": [
+        100.0,
+        100.0,
+        62.0,
+        20.0
+      ]
+    }
+  },
+  "args": {
+    "required": [],
+    "optional": []
+  },
+  "attribs": [
+    {
+      "name": "COMMON"
+    },
+    {
+      "name": "bgcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "bubble",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "bubblepoint",
+      "type": "float",
+      "size": "1"
+    },
+    {
+      "name": "bubbleside",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "bubbletextmargin",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "bubbleusescolors",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "style",
+      "type": "symbol",
+      "size": "1"
+    },
+    {
+      "name": "suppressinlet",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "underline",
+      "type": "int",
+      "size": "1"
+    }
+  ],
+  "in/out": {},
+  "doc": {
+    "digest": "Explanatory note or label (Max for Live)",
+    "description": "live.comment displays text which is typed into it in order to serve as a label or explanatory text. The text follows Ableton Live's color scheme, if used in a Max for Live device.",
+    "inlets": [
+      {
+        "id": "0",
+        "type": "INLET_TYPE",
+        "digest": "Messages in"
+      }
+    ],
+    "methods": [
+      {
+        "name": "append",
+        "digest": "Add text at end of current contents",
+        "description": "The word append followed by any message will set the live.comment object to display that message after any text which it already contains.",
+        "args": [
+          {
+            "name": "message",
+            "optional": "0",
+            "type": "list"
+          }
+        ]
+      },
+      {
+        "name": "prepend",
+        "digest": "Add text in front of current contents",
+        "description": "The word prepend followed by any message will set the live.comment object to display that message before any text which it already contains.",
+        "args": [
+          {
+            "name": "message",
+            "optional": "0",
+            "type": "list"
+          }
+        ]
+      },
+      {
+        "name": "set",
+        "digest": "Displays a message",
+        "description": "The word set followed by any message will set the live.comment object to display that message.",
+        "args": [
+          {
+            "name": "message",
+            "optional": "0",
+            "type": "list"
+          }
+        ]
+      },
+      {
+        "name": "setwithtruncation",
+        "digest": "Display a truncated message",
+        "description": "The word set followed by a symbol and a width (in pixels) will truncate the symbol to the given width. An optional third symbol will be appended onto the truncated text.",
+        "args": [
+          {
+            "name": "message",
+            "type": "symbol",
+            "optional": "0"
+          },
+          {
+            "name": "width",
+            "type": "int",
+            "optional": "0"
+          },
+          {
+            "name": "suffix",
+            "type": "symbol",
+            "optional": "1"
+          }
+        ]
+      }
+    ]
+  }
+}

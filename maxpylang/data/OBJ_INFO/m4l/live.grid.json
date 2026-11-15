@@ -1,0 +1,425 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "live.grid",
+      "numinlets": 2,
+      "numoutlets": 6,
+      "outlettype": [
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "parameter_enable": 1,
+      "patching_rect": [
+        100.0,
+        100.0,
+        177.0,
+        42.0
+      ]
+    }
+  },
+  "args": {
+    "required": [],
+    "optional": []
+  },
+  "attribs": [
+    {
+      "name": "COMMON"
+    },
+    {
+      "name": "amountcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "annotation_name",
+      "type": "symbol",
+      "size": "1"
+    },
+    {
+      "name": "bgstepcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "bgstepcolor2",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "bordercolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "bordercolor2",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "columns",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "direction",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "direction_height",
+      "type": "float",
+      "size": "1"
+    },
+    {
+      "name": "directioncolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "displayamount",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "freezecolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "hbgcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "link",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "marker_horizontal",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "marker_vertical",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "matrixmode",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "mode",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "rounded",
+      "type": "float",
+      "size": "1"
+    },
+    {
+      "name": "rows",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "spacing",
+      "type": "float",
+      "size": "1"
+    },
+    {
+      "name": "stepcolor",
+      "type": "float",
+      "size": "4"
+    }
+  ],
+  "in/out": {},
+  "doc": {
+    "digest": "A UI grid of steps, with constraints and directions",
+    "description": "live.grid is a user interfaces object designed for use with the chucker~ object. It provides a display grid of steps, constraints for transposition, and playback direction for use in controlling the chucker~ object.",
+    "inlets": [
+      {
+        "id": "0",
+        "type": "INLET_TYPE",
+        "digest": "Message in"
+      },
+      {
+        "id": "1",
+        "type": "INLET_TYPE",
+        "digest": "Sync Messages"
+      }
+    ],
+    "outlets": [
+      {
+        "id": "0",
+        "type": "list",
+        "digest": "Current Step Value (y value, direction)"
+      },
+      {
+        "id": "1",
+        "type": "list",
+        "digest": "Steps Values"
+      },
+      {
+        "id": "2",
+        "type": "list",
+        "digest": "Directions Values"
+      },
+      {
+        "id": "3",
+        "type": "list",
+        "digest": "Mouse Over Information"
+      },
+      {
+        "id": "4",
+        "type": "list",
+        "digest": "dumpout"
+      },
+      {
+        "id": "5",
+        "type": "anything",
+        "digest": "Synchronisation Messages (if Linked)"
+      }
+    ],
+    "methods": [
+      {
+        "name": "int",
+        "digest": "Set, display, and output the current step",
+        "description": "Sets, displays and outputs the current step. The list sent out the left outlet of the live.grid object takes the form step(s)  direction (optional, depending on the visibility of the directions panel). When the live.grid object is in Matrix Mode and there is no value selected in the column, a 0 is sent as the step value.",
+        "args": [
+          {
+            "name": "step-index",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "list",
+        "digest": "Function depends on the direction or matrixmode attributes",
+        "description": "When the direction attribute is set to 0, a list of 2 values sets the step index and value.\n\t\t\t\t\n\t\t\t\tWhen the direction attribute is set to 1, a list of 3 values sets the step index, value and direction.\n\t\t\t\t\n\t\t\t\tWhen the matrixmode attribute is set to 1, a list of 3 values sets the object's behavior: x, y, and state (0/1). An optional fourth value can be used to set direction (-1/0/1).",
+        "args": [
+          {
+            "name": "input-list",
+            "optional": "0",
+            "type": "list"
+          }
+        ]
+      },
+      {
+        "name": "clear",
+        "digest": "Deselect all currently set rows and columns",
+        "description": "The clear message is only used when the matrixmode attribute is enabled, and will deselect all currently set rows and columns."
+      },
+      {
+        "name": "constraint",
+        "digest": "Set the constraint for a step",
+        "description": "Sets the constraint for a specific step. For instance, the message constraint 3 0 0 1 1 sets the constraints of the third step (column numbering starts at 1) to 0 0 1 1.",
+        "args": [
+          {
+            "name": "constraint of the step",
+            "optional": "0",
+            "type": "list"
+          }
+        ]
+      },
+      {
+        "name": "directions",
+        "digest": "Set a step's playback direction",
+        "description": "Sets the grid directions, used to indicate the direction of playback of a step:\n\t\t\t\t\n\t\t\t\t-1: Backward\n\t\t\t\t\n\t\t\t\t0: Stop\n\t\t\t\t\n\t\t\t\t1: Forward",
+        "args": [
+          {
+            "name": "directions",
+            "optional": "0",
+            "type": "list"
+          }
+        ]
+      },
+      {
+        "name": "down",
+        "digest": "Decrease all step values",
+        "description": "Decreases (lowers) the current values of all the steps by one. New step values are sent out the second outlet.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\tNote: The current constraints, if any, are also taken into account when altering current step values; the resulting shift might be \"rounded\" to the closest step."
+      },
+      {
+        "name": "freeze",
+        "digest": "Display/hide a frozen step",
+        "description": "Set the index to 0 to hide the overlay used to indicate frozen values. Any index greater than zero sets and displays the frozen step.",
+        "args": [
+          {
+            "name": "step-index",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "getcell",
+        "digest": "Report the value of a specified cell",
+        "description": "The word cell, followed by a pair of numbers that specifies the x and y indices of a cell in the live.grid display, will send a list consisting of the word cell, a number pair that specifies the x and y indices, and the value of the cell (column numbering starts at 1).",
+        "args": [
+          {
+            "name": "x-index",
+            "optional": "0",
+            "type": "int"
+          },
+          {
+            "name": "y-index",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "getcolumn",
+        "digest": "Report the values for a specified column",
+        "description": "The word getcolumn, followed by a number that specifies a column in the live.grid display, will send a list consisting of the word column, a number that specifies the column index, and a list of the current column values out the fourth (dumpout) outlet (column numbering starts at 1).",
+        "args": [
+          {
+            "name": "column",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "getconstraint",
+        "digest": "Report the constraint values for a specified column",
+        "description": "The word getconstraint, followed by a number that specifies a column in the live.grid display, will send a list consisting of the column number followed by a list indicating the constrain state of each cell in the column, from bottom to top (column numbering starts at 1). Constraints are indicated as follows:\n\t\t\t\t\n\t\t\t\t0: Constraint\n\t\t\t\t\n\t\t\t\t1: No constraint",
+        "args": [
+          {
+            "name": "column",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "getdirections",
+        "digest": "Report the direction for a specified column",
+        "description": "The word getdirections, followed by a number that specifies a column in the live.grid display, will send a list consisting of the column number followed by the direction out the fourth (dumpout) outlet (column numbering starts at 1). The direction is indicated as follows:\n\t\t\t\t\n\t\t\t\t-1: Backward\n\t\t\t\t\n\t\t\t\t0: Stop\n\t\t\t\t\n\t\t\t\t1: Forward",
+        "args": [
+          {
+            "name": "column",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "getrow",
+        "digest": "Report the values for a specified row",
+        "description": "The word getrow, followed by a number that specifies a row in the live.grid display, will send a list consisting of the word row, a number that specifies the row index, and a list of the current row values out the fourth (dumpout) outlet (row numbering starts at 1).",
+        "args": [
+          {
+            "name": "row",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "init",
+        "digest": "Restore and output the initial values",
+        "description": "Restores and outputs the initial values."
+      },
+      {
+        "name": "left",
+        "digest": "Left-shift values of all steps",
+        "description": "Rotate the values of all steps to the left. New steps values are sent out the second outlet.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\tNote: The current constraints, if any, are also taken into account when altering current step values; the resulting shift might be \"rounded\" to the closest step."
+      },
+      {
+        "name": "linkdump",
+        "digest": "Synchronize a live.grid object to another",
+        "description": "When the link attribute is set to 1, the linkdump message sends all messages required to synchronize one live.grid object to another live.grid object out the object's right outlet."
+      },
+      {
+        "name": "random",
+        "digest": "Generate new step values or step constraints",
+        "description": "The word random generates new step values or step constraints, depending on the current mode. An optional second argument can be used to select a portion of the UI object to randomize:\n\t\t\t\t\n\t\t\t\tsteps: Randomize the steps values\n\t\t\t\t\n\t\t\t\tconstraint: Randomize constraints and make sure that the steps values are correct with respect to the new constraints grid\n\t\t\t\t\n\t\t\t\tdirections: Randomize directions if the direction attribute is set to 1.",
+        "args": [
+          {
+            "name": "type (optional)",
+            "optional": "0",
+            "type": "list"
+          }
+        ]
+      },
+      {
+        "name": "reset",
+        "digest": "Set the default values or clear constraints",
+        "description": "The word reset sets the default values or clears the constraints, depending on the current mode. An optional second argument can be used to select a portion of the UI object to reset:\n\t\t\t\t\n\t\t\t\tsteps: Reset the steps values (Note: since the reset may interact with the current constraints, a given step value may not be completely reset)\n\t\t\t\t\n\t\t\t\tconstraint: Clear all constraints\n\t\t\t\t\n\t\t\t\tdirections: Set all the directions to forward if the direction attribute is set to 1.",
+        "args": [
+          {
+            "name": "type (optional)",
+            "optional": "0",
+            "type": "list"
+          }
+        ]
+      },
+      {
+        "name": "right",
+        "digest": "Right-shift all step values",
+        "description": "Rotate the values of all the steps to the right. New steps values are sent out the second outlet.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\tNote: The current constraints, if any, are also taken into account when altering current step values; the resulting shift might be \"rounded\" to the closest step."
+      },
+      {
+        "name": "set",
+        "digest": "Set and display an output step without causing output",
+        "description": "Sets and displays the current output step without causing output.",
+        "args": [
+          {
+            "name": "step-index",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "setcell",
+        "digest": "Set the value of the specified cell",
+        "description": "The word setcell, followed by a pair of numbers that specifies the x and y indices of a cell in the live.grid display and a number value, will set the value of the specified cell (column numbering starts at 1).",
+        "args": [
+          {
+            "name": "x-index",
+            "optional": "0",
+            "type": "int"
+          },
+          {
+            "name": "y-index",
+            "optional": "0",
+            "type": "int"
+          },
+          {
+            "name": "value",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "steps",
+        "digest": "Set the values of all the steps at once",
+        "description": "Sets the values of all the steps at once. Value numbering starts at 1.",
+        "args": [
+          {
+            "name": "step values",
+            "optional": "0",
+            "type": "list"
+          }
+        ]
+      },
+      {
+        "name": "up",
+        "digest": "Increase all step values",
+        "description": "Increases (raises) the values of all steps. New steps values are sent out the second outlet.\n\t\t\t\t\n\t\t\t\t\n\t\t\t\tNote: The current constraints, if any, are also taken into account when altering current step values; the resulting shift might be \"rounded\" to the closest step."
+      }
+    ]
+  }
+}

@@ -41,6 +41,13 @@ def test_two_objects_feeding_each_others_hot_inlets_loop():
     assert kinds(patch) == ["hot loop"]
 
 
+def test_live_colors_banging_itself_is_not_a_loop():
+    # its right outlet bangs when the Live theme changes, never in reply to its inlet, and
+    # Max's own Live devices wire it back through a trigger to read the colors again
+    patch = build("live.colors", "t b", "print", cords=[(1, 1, 2, 0), (2, 0, 1, 0), (1, 0, 3, 0)])
+    assert kinds(patch) == []
+
+
 def test_an_object_feeding_its_own_hot_inlet_loops():
     patch = build("+ 1", "print", cords=[(1, 0, 1, 0), (1, 0, 2, 0)])
     assert kinds(patch) == ["hot loop"]

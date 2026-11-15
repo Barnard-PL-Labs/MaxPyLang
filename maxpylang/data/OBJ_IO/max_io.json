@@ -15,12 +15,17 @@
     
  "decode": {"numoutlets": [{"argtype": "a", "index": 0, "type": "int"}]}, 
     
+ "expr": {"numinlets": [{"argtype": "dollar", "type": null}]},
+
  "funnel": {"numinlets": [{"argtype": "a", "index": 0, "type": null}]}, 
     
  "gate": {"numoutlets": [{"argtype": "a", "index": 0, "type": ""}]}, 
     
  "grab": {"numoutlets": [{"argtype": "a", "index": 0, "add_amt": 1, "type": ""}]}, 
     
+ "if": {"numinlets": [{"argtype": "dollar", "type": null}],
+        "numoutlets": [{"argtype": "word", "word": "out2", "add_amt": 1, "type": ""}]},
+
  "js": {"numinlets": [{"argtype": "n", "index": 1, "type": null}], 
         "numoutlets": [{"argtype": "n", "index": 0, "type": ""}]}, 
     
@@ -47,11 +52,15 @@
     
  "spray": {"numoutlets": [{"argtype": "a", "index": 0, "type": ""}]}, 
     
+ "sprintf": {"numinlets": [{"argtype": "format", "type": null}]},
+
  "switch": {"numinlets": [{"argtype": "a", "index": "all", "add_amt": 1, "type": null}]}, 
     
  "trigger": {"numoutlets": [{"argtype": "a", "index": "all", "type": "trigger_out"}]}, 
     
  "unjoin": {"numoutlets": [{"argtype": "a", "index": 0, "add_amt": 1, "comparitor": ">=2", "type": ""}]}, 
     
- "unpack": {"numoutlets": [{"argtype": "a", "index": "all", "type": "unpack_out"}]}
+ "unpack": {"numoutlets": [{"argtype": "a", "index": "all", "type": "unpack_out"}]},
+
+ "vexpr": {"numinlets": [{"argtype": "dollar", "type": null}]}
 }

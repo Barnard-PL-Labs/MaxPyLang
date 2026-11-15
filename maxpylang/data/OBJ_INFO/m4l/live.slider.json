@@ -1,0 +1,211 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "live.slider",
+      "numinlets": 1,
+      "numoutlets": 2,
+      "outlettype": [
+        "",
+        "float"
+      ],
+      "parameter_enable": 1,
+      "patching_rect": [
+        100.0,
+        100.0,
+        39.0,
+        95.0
+      ]
+    }
+  },
+  "args": {
+    "required": [],
+    "optional": []
+  },
+  "attribs": [
+    {
+      "name": "COMMON"
+    },
+    {
+      "name": "active",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "annotation_name",
+      "type": "symbol",
+      "size": "1"
+    },
+    {
+      "name": "focusbordercolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "modulationcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "orientation",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "param_connect",
+      "type": "symbol",
+      "size": "1"
+    },
+    {
+      "name": "parameter_mappable",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "relative",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "showname",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "shownumber",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "slidercolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "textcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "tribordercolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "tricolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "trioncolor",
+      "type": "float",
+      "size": "4"
+    }
+  ],
+  "in/out": {},
+  "doc": {
+    "digest": "Output numbers by moving a slider onscreen",
+    "description": "live.slider is a user interface object that resembles a sliding potentiometer.",
+    "inlets": [
+      {
+        "id": "0",
+        "type": "int/float",
+        "digest": "Parameter Value (0.00-127.00)"
+      }
+    ],
+    "outlets": [
+      {
+        "id": "0",
+        "type": "int/float",
+        "digest": "Parameter Value (0.00-127.00)"
+      },
+      {
+        "id": "1",
+        "type": "int/float",
+        "digest": "Parameter Raw Value (0.-1.)"
+      }
+    ],
+    "methods": [
+      {
+        "name": "bang",
+        "digest": "Send the current value out the outlet",
+        "description": "Sends the current value out the outlet."
+      },
+      {
+        "name": "int",
+        "digest": "Store, display, and output a number",
+        "description": "The number received in the inlet is stored and displayed by the live.slider object and sent out the outlet.",
+        "args": [
+          {
+            "name": "input",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "float",
+        "digest": "Store, display, and output a number",
+        "description": "The number received in the inlet is stored and displayed by the live.slider object and sent out the outlet.",
+        "args": [
+          {
+            "name": "input",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "assign",
+        "digest": "Display and output a value",
+        "description": "The word assign, followed by a floating point value, causes that value to be displayed and sent out the live.slider object's outlet. The value, however, will not be stored. If the Parameter Visibility attribute is set to Stored Only, the assign message will not add the new value to the Live application\u2019s undo chain.",
+        "args": [
+          {
+            "name": "assign-input",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "init",
+        "digest": "Restore and output the initial value",
+        "description": "Restore and output the initial value."
+      },
+      {
+        "name": "(mouse)",
+        "digest": "Click and drag in the slider to change the value.",
+        "description": "Click and drag in the slider to change the value. Hold down the Shift key for more precise mouse control."
+      },
+      {
+        "name": "outputvalue",
+        "digest": "Send the current value out the outlet",
+        "description": "Sends the current value out the outlet."
+      },
+      {
+        "name": "rawfloat",
+        "digest": "Store a raw normalized value, convert to real, display, and output",
+        "description": "A raw normalized value (between 0. and 1.) received in the inlet is converted to a real value, stored, displayed by live.slider, and the current value is sent out the outlet.",
+        "args": [
+          {
+            "name": "input",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "set",
+        "digest": "Set and display the current value without triggering output",
+        "description": "Sets and displays the current value without triggering any output.",
+        "args": [
+          {
+            "name": "set-input",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      }
+    ]
+  }
+}

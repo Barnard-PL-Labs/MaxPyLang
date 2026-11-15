@@ -1,0 +1,129 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "newobj",
+      "numinlets": 2,
+      "numoutlets": 1,
+      "outlettype": [
+        ""
+      ],
+      "patching_rect": [
+        100.0,
+        100.0,
+        93.0,
+        23.0
+      ],
+      "text": "live.modulate~"
+    }
+  },
+  "args": {
+    "required": [],
+    "optional": []
+  },
+  "attribs": [
+    {
+      "name": "COMMON"
+    },
+    {
+      "name": "depth",
+      "type": "float",
+      "size": "1"
+    },
+    {
+      "name": "smoothing",
+      "type": "float",
+      "size": "1"
+    }
+  ],
+  "in/out": {},
+  "doc": {
+    "digest": "Modulate Ableton Live and Max for Live Parameters",
+    "description": "The live.modulate~ object enables you to modulate the value of Live parameters in realtime using signal objects. To understand more about Live's parameters, look up the DeviceParameter Object Class in the Live Object Model.",
+    "inlets": [
+      {
+        "id": "0",
+        "type": "INLET_TYPE",
+        "digest": "value (signal/float) clipped to [-1, 1]"
+      },
+      {
+        "id": "1",
+        "type": "INLET_TYPE",
+        "digest": "id in"
+      }
+    ],
+    "outlets": [
+      {
+        "id": "0",
+        "type": "OUTLET_TYPE",
+        "digest": "status"
+      }
+    ],
+    "methods": [
+      {
+        "name": "int",
+        "digest": "Send a value to the selected Live Parameter",
+        "description": "An integer number value received in the left inlet will be applied to the selected Live parameter (DeviceParameter Object), if any, at the beginning of the next audio buffer, or at the end of a pending ramp (see smoothing).",
+        "args": [
+          {
+            "name": "value",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "float",
+        "digest": "Send a decimal value to the selected Live Parameter",
+        "description": "A floating point number value received in the left inlet will be applied to the selected Live parameter (DeviceParameter Object), if any, at the beginning of the next audio buffer, or at the end of a pending ramp (see smoothing).",
+        "args": [
+          {
+            "name": "value",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "list",
+        "digest": "Start a ramp",
+        "description": "Start a ramp with a list of two floats, similar to the line~ object. Sending in \u201c1 500\u201d means that the value 1 will be reached in 500 ms, starting at the current value. New ramps will always override the current ramp, so if you want to cut short a ramp, send another value.",
+        "args": [
+          {
+            "name": "target-value",
+            "optional": "0",
+            "type": "float"
+          },
+          {
+            "name": "delta-time",
+            "optional": "0",
+            "units": "ms",
+            "type": "number"
+          }
+        ]
+      },
+      {
+        "name": "getid",
+        "digest": "Report the mapped object's id",
+        "description": "The mapped object's id is sent from the outlet, preceded by the word id. If there is no mapped object, id 0 will be sent."
+      },
+      {
+        "name": "id",
+        "digest": "Set the Live object using it's id nn",
+        "description": "In right inlet: Sets the selected Live object. The message has no effect if the id is not a parameter (DeviceParameter Object).",
+        "args": [
+          {
+            "name": "parameter id",
+            "type": "int",
+            "optional": "0"
+          }
+        ]
+      },
+      {
+        "name": "signal",
+        "digest": "Send signal values to the selected Live Parameter",
+        "description": "Signal input values received in the left inlet will be applied to the selected parameter (DeviceParameter Object), if any, in realtime."
+      }
+    ]
+  }
+}

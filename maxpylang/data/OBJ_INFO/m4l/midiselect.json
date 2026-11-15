@@ -1,0 +1,161 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "newobj",
+      "numinlets": 1,
+      "numoutlets": 8,
+      "outlettype": [
+        "",
+        "",
+        "",
+        "int",
+        "int",
+        "",
+        "int",
+        "int"
+      ],
+      "patching_rect": [
+        100.0,
+        100.0,
+        50.0,
+        22.0
+      ],
+      "text": "midiselect"
+    }
+  },
+  "args": {
+    "required": [],
+    "optional": []
+  },
+  "attribs": [
+    {
+      "name": "COMMON"
+    },
+    {
+      "name": "bend",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "ch",
+      "type": "atom",
+      "size": "16"
+    },
+    {
+      "name": "ctl",
+      "type": "atom",
+      "size": "128"
+    },
+    {
+      "name": "hires",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "note",
+      "type": "atom",
+      "size": "128"
+    },
+    {
+      "name": "pgm",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "poly",
+      "type": "atom",
+      "size": "128"
+    },
+    {
+      "name": "touch",
+      "type": "int",
+      "size": "1"
+    }
+  ],
+  "in/out": {},
+  "doc": {
+    "digest": "Select and interpret raw MIDI data",
+    "description": "midiselect receives raw MIDI bytes and separates the input stream. MIDI data to be selected for output is set using object attributes. There is a separate data outlet associated with each MIDI data selection attribute. Any input data which is unselected will be sent out the object's eighth outlet.",
+    "inlets": [
+      {
+        "id": "0",
+        "type": "INLET_TYPE",
+        "digest": "Raw MIDI Data"
+      }
+    ],
+    "outlets": [
+      {
+        "id": "0",
+        "type": "OUTLET_TYPE",
+        "digest": "Note-on and Note-off (list: Pitch, Velocity)"
+      },
+      {
+        "id": "1",
+        "type": "OUTLET_TYPE",
+        "digest": "Poly Key Pressure (list: Key, Value)"
+      },
+      {
+        "id": "2",
+        "type": "OUTLET_TYPE",
+        "digest": "Control Change (list: Controller Number, Value)"
+      },
+      {
+        "id": "3",
+        "type": "OUTLET_TYPE",
+        "digest": "Program Change"
+      },
+      {
+        "id": "4",
+        "type": "OUTLET_TYPE",
+        "digest": "Aftertouch"
+      },
+      {
+        "id": "5",
+        "type": "OUTLET_TYPE",
+        "digest": "Pitch Bend"
+      },
+      {
+        "id": "6",
+        "type": "OUTLET_TYPE",
+        "digest": "MIDI Channel"
+      },
+      {
+        "id": "7",
+        "type": "OUTLET_TYPE",
+        "digest": "Unselected Raw MIDI Data"
+      }
+    ],
+    "methods": [
+      {
+        "name": "bang",
+        "digest": "Clear partial MIDI messages",
+        "description": "Clears the midiselect object's memory of any partial MIDI messages received up to that point."
+      },
+      {
+        "name": "int",
+        "digest": "Evaluate and output MIDI messages",
+        "description": "Numbers received in the inlet (usually from a seq or midiin object) are treated as bytes of a MIDI message. The status byte and the filtering attributes determine the outlet which will be used to output the data bytes.",
+        "args": [
+          {
+            "name": "byte",
+            "optional": "0",
+            "type": "list"
+          }
+        ]
+      },
+      {
+        "name": "float",
+        "digest": "Evaluate and output MIDI messages",
+        "description": "Floating-point numbers received in the inlet are converted to integer values and treated as bytes of a MIDI message. The status byte and the filtering attributes determine the outlet which will be used to output the data bytes.",
+        "args": [
+          {
+            "name": "byte",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      }
+    ]
+  }
+}

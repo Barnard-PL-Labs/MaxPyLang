@@ -1,0 +1,121 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "newobj",
+      "numinlets": 1,
+      "numoutlets": 5,
+      "outlettype": [
+        "",
+        "",
+        "",
+        "int",
+        ""
+      ],
+      "patching_rect": [
+        100.0,
+        100.0,
+        93.0,
+        22.0
+      ],
+      "text": "live.map"
+    }
+  },
+  "args": {
+    "required": [],
+    "optional": []
+  },
+  "attribs": [
+    {
+      "name": "COMMON"
+    },
+    {
+      "name": "mapping",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "strict",
+      "type": "int",
+      "size": "1"
+    }
+  ],
+  "in/out": {},
+  "doc": {
+    "digest": "Simplify the process of selecting Live interface elements for use with the Live API.",
+    "description": "The live.map object encapsulates the process of using the mouse to select Live user interface elements to determine their LOM paths and IDs.",
+    "inlets": [
+      {
+        "id": "0",
+        "type": "INLET_TYPE",
+        "digest": "bang, int, messages in"
+      }
+    ],
+    "outlets": [
+      {
+        "id": "0",
+        "type": "OUTLET_TYPE",
+        "digest": "path"
+      },
+      {
+        "id": "1",
+        "type": "OUTLET_TYPE",
+        "digest": "id"
+      },
+      {
+        "id": "2",
+        "type": "OUTLET_TYPE",
+        "digest": "name"
+      },
+      {
+        "id": "3",
+        "type": "OUTLET_TYPE",
+        "digest": "mapping 1/0"
+      },
+      {
+        "id": "4",
+        "type": "OUTLET_TYPE",
+        "digest": "dumpout"
+      }
+    ],
+    "methods": [
+      {
+        "name": "bang",
+        "digest": "Start mapping",
+        "description": "Begin the process of listening for mouse clicks for Live user interface element selection. Selecting a Live user interface element will automatically stop mapping after outputting the path and ID of the selected element."
+      },
+      {
+        "name": "int",
+        "digest": "Start or stop mapping",
+        "description": "1 in the left inlet of the object will begin the process of listening for mouse clicks for Live user interface element selection. Selecting a Live user interface element will automatically stop mapping after outputting the path and ID of the selected element. A 0 will manually stop mapping, whether or not a Live user interface element was selected.",
+        "args": [
+          {
+            "name": "enable",
+            "type": "int",
+            "optional": "0"
+          }
+        ]
+      },
+      {
+        "name": "cancel",
+        "digest": "Cancel mapping",
+        "description": "Stop mapping if it was started."
+      },
+      {
+        "name": "getdefault",
+        "digest": "Retrieve the default value of the mapped element.",
+        "description": "Output the default value of the mapped Live user interface element, preceded by the word default, from the rightmost outlet of the object."
+      },
+      {
+        "name": "getrange",
+        "digest": "Retrieve the range of the mapped element.",
+        "description": "Output the range of the mapped Live user interface element, preceded by the word range, from the rightmost outlet of the object."
+      },
+      {
+        "name": "unmap",
+        "digest": "Clear the mapped element.",
+        "description": "If an element was previously mapped, clear the internal state of the live.map object, as well as any information about default value, range, etc."
+      }
+    ]
+  }
+}

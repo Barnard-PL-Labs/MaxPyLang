@@ -1,0 +1,192 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "live.toggle",
+      "numinlets": 1,
+      "numoutlets": 1,
+      "outlettype": [
+        ""
+      ],
+      "parameter_enable": 1,
+      "patching_rect": [
+        100.0,
+        100.0,
+        15.0,
+        15.0
+      ]
+    }
+  },
+  "args": {
+    "required": [],
+    "optional": []
+  },
+  "attribs": [
+    {
+      "name": "COMMON"
+    },
+    {
+      "name": "active",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "activebgcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "activebgoncolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "annotation_name",
+      "type": "symbol",
+      "size": "1"
+    },
+    {
+      "name": "appearance",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "bgcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "bgoncolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "bordercolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "focusbordercolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "inactivelcdcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "lcdcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "outputmode",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "param_connect",
+      "type": "symbol",
+      "size": "1"
+    },
+    {
+      "name": "parameter_mappable",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "rounded",
+      "type": "float",
+      "size": "1"
+    }
+  ],
+  "in/out": {},
+  "doc": {
+    "digest": "Switch between off and on (0/1)",
+    "description": "live.toggle sends a 0 as output when it is turned off and a 1 as output when it is turned on (when giving input, a non-zero number will turn it on, a 0 will turn it off, and a bang will alternate the state of the toggle).",
+    "inlets": [
+      {
+        "id": "0",
+        "type": "INLET_TYPE",
+        "digest": "int Sets Toggle, bang Reverses It"
+      }
+    ],
+    "outlets": [
+      {
+        "id": "0",
+        "type": "int",
+        "digest": "Output 1 or 0 When Toggle Is Set"
+      }
+    ],
+    "methods": [
+      {
+        "name": "bang",
+        "digest": "Alternate toggle state",
+        "description": "Switches live.toggle on if it is off; switches it off if it is on."
+      },
+      {
+        "name": "int",
+        "digest": "Switch toggle and pass through number",
+        "description": "The number is sent out the outlet. If the number is not 0, live.toggle displays an X, showing it is on. If it is 0, live.toggle is blank, showing it is off.",
+        "args": [
+          {
+            "name": "input",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "float",
+        "digest": "Converted to int. See int listing.",
+        "args": [
+          {
+            "name": "input",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "assign",
+        "digest": "Display and output a value",
+        "description": "The word assign, followed by a floating point value, causes that value to be displayed and sent out the live.toggle object's outlet. The value, however, will not be stored. If the Parameter Visibility attribute is set to Stored Only, the assign message will not add the new value to the Live application\u2019s undo chain.",
+        "args": [
+          {
+            "name": "assign-input",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "init",
+        "digest": "Restore and output the initial value",
+        "description": "Restores and outputs the initial value."
+      },
+      {
+        "name": "(mouse)",
+        "digest": "Switch toggle state",
+        "description": "A mouse click on live.toggle switches the object on if it is off and off if it is on."
+      },
+      {
+        "name": "outputvalue",
+        "digest": "Send the current value out the outlet",
+        "description": "Sends the current value out the outlet."
+      },
+      {
+        "name": "set",
+        "digest": "Switch toggle state without output",
+        "description": "Switches the live.toggle on or off without sending anything out the outlet. The word set, followed by any non-zero number, sets toggle to on; set 0 sets it to off.",
+        "args": [
+          {
+            "name": "set-input",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      }
+    ]
+  }
+}

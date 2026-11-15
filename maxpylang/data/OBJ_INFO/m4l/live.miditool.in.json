@@ -1,0 +1,70 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "newobj",
+      "numinlets": 1,
+      "numoutlets": 3,
+      "outlettype": [
+        "",
+        "",
+        ""
+      ],
+      "patching_rect": [
+        100.0,
+        100.0,
+        90.0,
+        23.0
+      ],
+      "text": "live.miditool.in"
+    }
+  },
+  "args": {
+    "required": [],
+    "optional": []
+  },
+  "attribs": [
+    {
+      "name": "COMMON"
+    }
+  ],
+  "in/out": {},
+  "doc": {
+    "digest": "Retrieve notes and contextual data of MIDI clips in Live. Designed for use in a MIDI Tool Generator or MIDI Tool Transformation.",
+    "description": "The live.miditool.in object is used in a MIDI Tool Generator or MIDI Tool Transformation and is responsible for retrieving note and contextual information of the currently selected clip in Live. In combination with the live.miditool.out object, you can develop a generative or transformative process that can be controlled and triggered from the Tool Tabs.",
+    "inlets": [
+      {
+        "id": "0",
+        "type": "bang",
+        "digest": "Trigger output"
+      }
+    ],
+    "outlets": [
+      {
+        "id": "0",
+        "type": "OUTLET_TYPE",
+        "digest": "Dictionary containing the notes from Live"
+      },
+      {
+        "id": "1",
+        "type": "OUTLET_TYPE",
+        "digest": "Dictionary containing the note context"
+      },
+      {
+        "id": "2",
+        "type": "OUTLET_TYPE",
+        "digest": "Notifications from Live"
+      }
+    ],
+    "methods": [
+      {
+        "name": "bang",
+        "digest": "Triggers the retrieval of the clip data and starts or continues an iteration of an apply cycle.",
+        "description": "A bang will continue or start an iteration of the apply cycle. In either case, a dictionary of notes is provided from the left outlet, and another dictionary of contextual information is provided from the right outlet."
+      },
+      {
+        "name": "(MIDI)"
+      }
+    ]
+  }
+}

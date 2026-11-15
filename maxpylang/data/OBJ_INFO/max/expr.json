@@ -3,8 +3,11 @@
     "box": {
       "id": "obj-105",
       "maxclass": "newobj",
-      "numinlets": 0,
-      "numoutlets": 0,
+      "numinlets": 1,
+      "numoutlets": 1,
+      "outlettype": [
+        ""
+      ],
       "patching_rect": [
         100.0,
         100.0,
@@ -19,29 +22,7 @@
       {
         "name": "expression",
         "type": [
-          "list"
-        ]
-      },
-      {
-        "name": "constant",
-        "type": [
-          "number"
-        ]
-      },
-      {
-        "name": "inlet-format",
-        "type": [
-          "symbol"
-        ]
-      },
-      {
-        "name": "table-info",
-        "type": []
-      },
-      {
-        "name": "(other)",
-        "type": [
-          "symbol"
+          "any"
         ]
       }
     ],
@@ -52,5 +33,12 @@
       "name": "COMMON"
     }
   ],
-  "in/out": {}
+  "in/out": {
+    "numinlets": [
+      {
+        "argtype": "dollar",
+        "type": null
+      }
+    ]
+  }
 }

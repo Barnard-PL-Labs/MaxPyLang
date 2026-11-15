@@ -1,0 +1,316 @@
+{
+  "default": {
+    "box": {
+      "id": "obj-1",
+      "maxclass": "live.tab",
+      "numinlets": 1,
+      "numoutlets": 3,
+      "outlettype": [
+        "",
+        "",
+        "float"
+      ],
+      "parameter_enable": 1,
+      "patching_rect": [
+        100.0,
+        100.0,
+        32.0,
+        96.0
+      ]
+    }
+  },
+  "args": {
+    "required": [],
+    "optional": []
+  },
+  "attribs": [
+    {
+      "name": "COMMON"
+    },
+    {
+      "name": "active",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "activebgcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "activebgoncolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "annotation_name",
+      "type": "symbol",
+      "size": "1"
+    },
+    {
+      "name": "appearance",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "bgcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "bgoncolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "blinktime",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "bordercolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "button",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "focusbordercolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "inactivelcdcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "inactivetextoffcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "inactivetextoncolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "lcdbgcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "lcdcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "livemode",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "mode",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "multiline",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "param_connect",
+      "type": "symbol",
+      "size": "1"
+    },
+    {
+      "name": "parameter_mappable",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "pictures",
+      "type": "symbol",
+      "size": "64"
+    },
+    {
+      "name": "remapsvgcolors",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "rounded",
+      "type": "float",
+      "size": "1"
+    },
+    {
+      "name": "spacing_x",
+      "type": "float",
+      "size": "1"
+    },
+    {
+      "name": "spacing_y",
+      "type": "float",
+      "size": "1"
+    },
+    {
+      "name": "textcolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "textoncolor",
+      "type": "float",
+      "size": "4"
+    },
+    {
+      "name": "usepicture",
+      "type": "int",
+      "size": "1"
+    },
+    {
+      "name": "usesvgviewbox",
+      "type": "int",
+      "size": "1"
+    }
+  ],
+  "in/out": {},
+  "doc": {
+    "digest": "A user interface tab/multiple button object in the style of Ableton Live.",
+    "description": "live.tab is used to create multiple-button and multi-column displays and interfaces.",
+    "inlets": [
+      {
+        "id": "0",
+        "type": "INLET_TYPE",
+        "digest": "Messages in"
+      }
+    ],
+    "outlets": [
+      {
+        "id": "0",
+        "type": "OUTLET_TYPE",
+        "digest": "Item Index"
+      },
+      {
+        "id": "1",
+        "type": "OUTLET_TYPE",
+        "digest": "Item Symbol"
+      },
+      {
+        "id": "2",
+        "type": "OUTLET_TYPE",
+        "digest": "Parameter Raw Value (0.-1.)"
+      }
+    ],
+    "methods": [
+      {
+        "name": "bang",
+        "digest": "Output the current item",
+        "description": "Sends the current item out the outlets."
+      },
+      {
+        "name": "int",
+        "digest": "Display a tab item and send the current item",
+        "description": "The number specifies a tab item to be sent out, and causes live.tab to display that item. The items are numbered starting at 0.",
+        "args": [
+          {
+            "name": "input",
+            "optional": "0",
+            "type": "int"
+          }
+        ]
+      },
+      {
+        "name": "float",
+        "digest": "Display a tab item and send the current item",
+        "description": "The number specifies a tab item to be sent out, and causes live.tab to display that item. The items are numbered starting at 0.",
+        "args": [
+          {
+            "name": "input",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "assign",
+        "digest": "Display and output a value",
+        "description": "The word assign, followed by a floating point value, causes that value to be displayed and sent out the live.tab object's outlet. The value, however, will not be stored. If the Parameter Visibility attribute is set to Stored Only, the assign message will not add the new value to the Live application\u2019s undo chain.",
+        "args": [
+          {
+            "name": "assign-input",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "init",
+        "digest": "Restore and output the initial value",
+        "description": "Restore and output the initial value."
+      },
+      {
+        "name": "(mouse)",
+        "digest": "Click to set a tab selection",
+        "description": "Clicking on a tab button will highlight and set the selection and send the tab text out the second outlet and the index out the first outlet."
+      },
+      {
+        "name": "outputvalue",
+        "digest": "Output the current value",
+        "description": "Sends the current value out the outlet."
+      },
+      {
+        "name": "rawfloat",
+        "digest": "Store a raw normalized value, convert to real, display, and output",
+        "description": "A raw normalized value (between 0. and 1.) received in the inlet is converted to a real value, stored, displayed by live.tab, and the current value is sent out the outlet.",
+        "args": [
+          {
+            "name": "input",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "set",
+        "digest": "Display a menu item without triggering output",
+        "description": "The word set, followed by a number, specifies a menu item to be displayed by live.tab without triggering any output.",
+        "args": [
+          {
+            "name": "tab index",
+            "optional": "0",
+            "type": "float"
+          }
+        ]
+      },
+      {
+        "name": "setsymbol",
+        "digest": "Display a tab item without triggering output",
+        "description": "The word setsymbol, followed by a symbol that specifies a tab item, causes live.tab to display that item, but does not cause any output.",
+        "args": [
+          {
+            "name": "tab item",
+            "optional": "0",
+            "type": "list"
+          }
+        ]
+      },
+      {
+        "name": "symbol",
+        "digest": "Display a tab item and report output",
+        "description": "The word symbol, followed by a symbol that specifies a tab item, causes live.tab to display that item and send the tab text out the second outlet and the index out the first outlet.",
+        "args": [
+          {
+            "name": "tab item",
+            "optional": "0",
+            "type": "list"
+          }
+        ]
+      }
+    ]
+  }
+}
