@@ -211,3 +211,32 @@ def test_inlets_read_from_an_expression_or_format_match_the_shipped_boxes():
     print(f"\n{checked} shipped expr, vexpr, if and sprintf boxes checked")
     assert checked > 500, "the corpus looks incomplete"
     assert wrong == [], f"{len(wrong)} boxes, e.g.\n" + "\n".join(wrong[:20])
+
+
+def test_switch_and_receive_counts_match_the_shipped_boxes():
+    """switch has one inlet more than its first argument, whatever follows it, and a receive
+    with a name has no inlet."""
+    import contextlib
+    import io
+
+    import maxpylang as mp
+
+    wrong, checked = [], 0
+    for path, patcher in corpus():
+        for box in patcher["boxes"]:
+            box = box.get("box", {})
+            text = box.get("text") or ""
+            words = text.split()
+            if box.get("maxclass") != "newobj" or len(words) < 2 or "numinlets" not in box:
+                continue
+            if _ALIASES.get(words[0], words[0]) not in ("switch", "receive"):
+                continue
+            with contextlib.redirect_stdout(io.StringIO()):
+                obj = mp.MaxObject(text.split(" @")[0])
+            checked += 1
+            if (len(obj.ins), len(obj.outs)) != (box["numinlets"], box["numoutlets"]):
+                wrong.append(f"{path.relative_to(C74)}: {text!r} has {box['numinlets']} in, {box['numoutlets']} out;"
+                             f" maxpylang gives {len(obj.ins)} in, {len(obj.outs)} out")
+    print(f"\n{checked} shipped switch and receive boxes checked")
+    assert checked > 1000, "the corpus looks incomplete"
+    assert wrong == [], f"{len(wrong)} boxes, e.g.\n" + "\n".join(wrong[:20])

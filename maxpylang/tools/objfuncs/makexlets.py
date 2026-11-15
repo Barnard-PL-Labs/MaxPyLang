@@ -112,6 +112,9 @@ def parse_io_num(self, info, default_num):
     for term in info:
 
         #counts read from the argument text itself, not from one argument's value
+        if term['argtype'] == 'fixed':          #receive foo: any argument at all gives this count
+            sum += term['num']
+            continue
         if term['argtype'] in ('dollar', 'format', 'word'):
             text = " ".join(str(x) for x in self._args)
             if term['argtype'] == 'dollar':     #expr $i1 + $f2: the highest $ index, 9 at most
@@ -179,26 +182,36 @@ def remove_xlets(self, num, xlet_type):
     """
     Helper function for updating ins and outs.
 
-    Removes the given number of xlets and any attached patchcords. (does not update typing!)
+    Removes the given number of xlets from the end, and any attached patchcords. The number
+    may be given negative, as the difference update_ins_outs works out. (does not update typing!)
     """
+
+    num = abs(num)
+    if num == 0:
+        return
 
     if xlet_type == 'numinlets':
         removed = self._ins[-num:]
         del self._ins[-num:]        #remove inlets from object
-        for inlet in removed:      #remove patchcords
+        for inlet in removed:       #remove patchcords
             for outlet in inlet.sources:
                 outlet._destinations.remove(inlet)
-                print("Patchcord removed:", outlet, "--->", inlet)
-
+                print("Patchcord removed: (", outlet.parent.name, ": outlet", outlet.index, "--->",
+                      inlet.parent.name, ": inlet", inlet.index, ")")
+            inlet._sources.clear()
+            inlet._midpoints.clear()
 
     elif xlet_type == 'numoutlets':
         removed = self._outs[-num:]
-        del self._outs[-num]        #remove outlets from object
-        for outlet in removed:     #remove patchcords
+        del self._outs[-num:]       #remove outlets from object
+        for outlet in removed:      #remove patchcords
             for inlet in outlet.destinations:
-                del inlet.midpoints[inlet.sources.index(outlet)]
-                inlet._sources.remove(outlet)
-                print("Patchcord removed:", outlet, "--->", inlet)
+                cord = inlet._sources.index(outlet)
+                del inlet._midpoints[cord]
+                del inlet._sources[cord]
+                print("Patchcord removed: (", outlet.parent.name, ": outlet", outlet.index, "--->",
+                      inlet.parent.name, ": inlet", inlet.index, ")")
+            outlet._destinations.clear()
 
     return
 
