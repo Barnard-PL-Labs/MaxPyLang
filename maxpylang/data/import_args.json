@@ -31,5 +31,10 @@
     "expr",
     "if",
     "vexpr"
+  ],
+  "_doc_not_aliases": "Names Max's objectmappings files map to another object's file although they are not that object: the importer does not make them aliases. xbendin2 has 3 outlets where xbendin has 2, and xbendout2 has 3 inlets where xbendout has 2.",
+  "not_aliases": [
+    "xbendin2",
+    "xbendout2"
   ]
 }

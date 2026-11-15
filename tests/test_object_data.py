@@ -130,6 +130,71 @@ def test_every_import_argument_makes_a_known_object():
         assert sum(counts(f"{name} {args}")) > 0, name
 
 
+# ── Max's short names ─────────────────────────────────────────────────────────
+
+@pytest.mark.parametrize("short, full", [
+    ("s foo", "send foo"),
+    ("r foo", "receive foo"),
+    ("v foo", "value foo"),
+    ("s~ bus", "send~ bus"),
+    ("r~ bus", "receive~ bus"),
+    ("f 0.5", "float 0.5"),
+    ("i 3", "int 3"),
+    ("del 100", "delay 100"),
+    ("p voice", "patcher voice"),
+    ("list.group 3", "zl.group 3"),
+    ("jit.+", "jit.op"),
+])
+def test_a_short_name_builds_the_object_it_stands_for(short, full):
+    a, b = build(short), build(full)
+    assert (len(a.ins), len(a.outs)) == (len(b.ins), len(b.outs))
+    assert [o.types for o in a.outs] == [o.types for o in b.outs]
+    assert a._dict["box"]["text"] == short, "the box keeps the name as typed"
+
+
+def test_the_cord_check_sees_through_a_short_name():
+    patch = mp.MaxPatch(verbose=False)
+    osc, send, signal_send = patch.place("cycle~ 220", "s level", "s~ bus", verbose=False)
+    with pytest.warns(ConnectionWarning, match="takes no audio"):
+        patch.connect([osc.outs[0], send.ins[0]], verbose=False)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        patch.connect([osc.outs[0], signal_send.ins[0]], verbose=False)
+
+
+def test_a_name_with_different_inlets_from_its_file_is_not_an_alias():
+    # Max maps xbendin2 to xbendin's file, but it has a third outlet
+    for name in IMPORT_ARGS["not_aliases"]:
+        with pytest.warns(UnknownObjectWarning):
+            assert mp.MaxObject(name).notknown()
+
+
+def test_every_alias_points_at_an_object_in_the_database():
+    aliases = json.loads((OBJ_INFO / "obj_aliases.json").read_text(encoding="utf-8"))
+    known = {path.stem for path in OBJ_INFO.glob("*/*.json")}
+    assert [name for name, target in aliases.items() if target not in known] == []
+    assert [name for name in aliases if name in known] == [], "an alias would hide a real object"
+
+
+def test_max_aliases_are_read_from_the_mappings_files(fake_max):
+    (fake_max / "init").mkdir()
+    (fake_max / "init" / "max-objectmappings.txt").write_text(
+        "max objectfile s send;\n"                    # a short name
+        "max objectfile + plus;\n"                    # already an alias
+        "max objectfile qmetro metro qmetro;\n"       # its own class in another object's file
+        "max objectfile xbendin2 xbendin;\n"          # same file, one more outlet: listed in not_aliases
+        "max objectfile list.group zl zl.group;\n"    # another spelling of zl.group
+        "max objectfile flonum number number;\n"      # an object in the database
+        "max objectfile mc.meter~ meter~;\n"          # multichannel: not the object it wraps
+        "max objectfile old gone;\n"                  # target not in the database
+        "max objectfile times2 *;\n"                  # target given by its alias
+        "max definesubstitution x y;\n\n"
+    )
+    known = {"send", "plus", "times", "metro", "zl.group", "number", "flonum", "meter~", "xbendin"}
+    found = importobjs.get_max_aliases(known, {"+": "plus", "*": "times"})
+    assert found == {"s": "send", "list.group": "zl.group", "times2": "times"}
+
+
 # ── counts read from the argument text ────────────────────────────────────────
 
 @pytest.mark.parametrize("text, expected", [
