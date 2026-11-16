@@ -251,8 +251,8 @@ _BUILT_FROM_A_FILE = {"js", "jsui", "v8", "v8ui", "patcher", "bpatcher", "poly~"
 def test_few_shipped_boxes_have_arguments_maxpylang_rejects():
     """An object whose arguments are rejected is built with no inlets or outlets, so every
     cord on it is lost. These boxes all work in Max. Before quoted strings, time values,
-    patcher arguments and the really-required counts this was 497 of 47,190 boxes with
-    arguments; it is 64 now, all of them gen operators (cycle, `* samplerate`) in gen
+    patcher arguments and the really-required counts this was close to 500 of the 45,000
+    boxes with arguments; it is 64 now, all of them gen operators (cycle, `* samplerate`) in gen
     patchers saved without their namespace, and one box with a stray comma."""
     import contextlib
     import io
