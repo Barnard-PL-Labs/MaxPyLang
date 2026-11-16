@@ -18,7 +18,8 @@
     }
   },
   "args": {
-    "required": [
+    "required": [],
+    "optional": [
       {
         "id": "0",
         "name": "size",
@@ -26,8 +27,7 @@
           "int"
         ]
       }
-    ],
-    "optional": []
+    ]
   },
   "attribs": [
     {

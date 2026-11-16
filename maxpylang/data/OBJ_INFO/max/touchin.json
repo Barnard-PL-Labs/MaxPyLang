@@ -19,7 +19,8 @@
     }
   },
   "args": {
-    "required": [
+    "required": [],
+    "optional": [
       {
         "name": "port-channel",
         "type": [
@@ -31,9 +32,7 @@
         "type": [
           "int"
         ]
-      }
-    ],
-    "optional": [
+      },
       {
         "name": "port",
         "type": [

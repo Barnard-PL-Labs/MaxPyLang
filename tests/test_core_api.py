@@ -107,7 +107,6 @@ def test_edit_sets_an_int_attribute():
     assert obj._dict["box"]["hidden"] == 1
 
 
-@bug("remove_bad_attribs checks isinstance(vals, int or float), which is isinstance(vals, int)")
 def test_edit_sets_a_float_attribute():
     obj = mp.MaxObject("metro 500")
     quiet(obj.edit, fontsize=12.0)
@@ -185,7 +184,6 @@ def test_gate_outlets_follow_its_argument():
     assert len(mp.MaxObject("gate 4").outs) == 4
 
 
-@bug("typing is only refreshed when the outlet count changes, and trigger defaults to 2 outlets")
 def test_trigger_outlet_types_follow_its_arguments():
     assert mp.MaxObject("trigger b i")._dict["box"]["outlettype"] == ["bang", "int"]
 
@@ -194,7 +192,6 @@ def test_trigger_with_three_arguments_types_its_outlets():
     assert mp.MaxObject("trigger b i f")._dict["box"]["outlettype"] == ["bang", "int", "float"]
 
 
-@bug("check_int(1.5) is True, so float arguments type their outlets as int")
 def test_unpack_float_arguments_give_float_outlets():
     assert mp.MaxObject("unpack 1. 2. 3.")._dict["box"]["outlettype"] == ["float", "float", "float"]
 

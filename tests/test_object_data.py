@@ -231,6 +231,67 @@ def test_an_argument_with_no_documented_type_accepts_anything():
     assert not typechecks.check_type(["int"], "word")
 
 
+# ── reading arguments ─────────────────────────────────────────────────────────
+
+@pytest.mark.parametrize("text, args", [
+    ('route "Send to..." bang', ['"Send to..."', "bang"]),
+    ('t "LCD Text / Icon"', ['"LCD Text / Icon"']),
+    ("pack  0   0", [0, 0]),                                    # extra spaces are not arguments
+    ('buffer~ beta "Snare 01.wav" -1', ["beta", '"Snare 01.wav"', -1]),
+])
+def test_a_quoted_string_is_one_argument(text, args):
+    obj = build(text)
+    assert obj._args == args
+    assert obj._dict["box"]["text"].split(" ", 1)[1] == " ".join(str(arg) for arg in args)
+
+
+def test_a_quoted_argument_counts_once_for_inlets_and_outlets():
+    assert counts('route "Control Border" "Text / Icon"') == counts("route a b")
+    assert len(build('t "LCD Text / Icon"').outs) == 1
+
+
+def test_an_attribute_value_in_quotes_is_one_value():
+    name, args, attribs = build("metro").parse_text('metro 500 @varname "one two" @active 1')
+    assert (name, args, attribs) == ("metro", [500], {"varname": ['"one two"'], "active": ["1"]})
+
+
+@pytest.mark.parametrize("text", [
+    "metro 16n", "metro 4nd", "metro 8nt", "metro 100ms", "makenote 127 4n", "adsr~ 4n 4n 0.3 4n",  # time values
+    "* #1", "tapin~ #1", "clip #2 #3", "delay~ #1 512", "cycle~ #3wind",                               # patcher arguments
+    "cycle~ mybuffer", "svf~ 0.2 radians", "change +", "bondo 2 n",                                  # optional, by type
+    "join", "select foo", "sel a b c", "split 15", "noteout", "noteout a", "patcherargs", "past 50",  # not really required
+])
+def test_arguments_max_accepts_do_not_make_an_object_unknown(text):
+    assert sum(counts(text)) > 0
+
+
+@pytest.mark.parametrize("text", ["metro abc", "metro 4x", "gate n", "expr", "setclock foo"])
+def test_arguments_max_does_not_accept_are_still_caught(text):
+    with pytest.warns(UnknownObjectWarning):
+        mp.MaxObject(text)
+
+
+def test_a_number_argument_may_be_a_time_value_or_a_patcher_argument():
+    for arg in ("4n", "16nd", "8nt", "100ms", "2.5s", "10hz", "480ticks", "1:30", "0:1:30", "2.1.0", "#1", "#0_name"):
+        assert typechecks.check_type(["int"], arg), arg
+    for arg in ("n4", "4x", "ms", "word", "1:", "#name"):
+        assert not typechecks.check_type(["int"], arg), arg
+
+
+def test_a_float_is_not_an_int():
+    assert typechecks.check_int("3") and typechecks.check_int(3)
+    assert not typechecks.check_int(1.5) and not typechecks.check_int("1.5")
+
+
+def test_the_importer_keeps_only_the_arguments_max_really_requires():
+    info = {"required": [{"name": "minimum"}, {"name": "maximum"}], "optional": [{"name": "extra"}]}
+    assert importobjs.demote_required_args(info, 1) == {
+        "required": [{"name": "minimum"}], "optional": [{"name": "maximum"}, {"name": "extra"}]}
+    for name, count in IMPORT_ARGS["required_count"].items():
+        stored = json.loads(next(OBJ_INFO.glob(f"*/{name}.json")).read_text())["args"]["required"]
+        assert len(stored) == count, name
+
+
 # ── importing without a running Max ───────────────────────────────────────────
 
 def patch_file(path, boxes):

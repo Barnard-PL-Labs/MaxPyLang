@@ -18,15 +18,15 @@
     }
   },
   "args": {
-    "required": [
+    "required": [],
+    "optional": [
       {
         "name": "match-list",
         "type": [
           "list"
         ]
       }
-    ],
-    "optional": []
+    ]
   },
   "attribs": [
     {

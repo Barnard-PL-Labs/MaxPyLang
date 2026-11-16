@@ -18,15 +18,14 @@
     }
   },
   "args": {
-    "required": [
+    "required": [],
+    "optional": [
       {
         "name": "drive-factor",
         "type": [
           "int"
         ]
-      }
-    ],
-    "optional": [
+      },
       {
         "name": "drive-factor",
         "type": [

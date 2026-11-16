@@ -567,7 +567,8 @@ def get_objarg_info(refs, names):
     """
     
     with open(import_args_file, 'r') as f:
-        free_text = json.load(f)['free_text']
+        import_args = json.load(f)
+    free_text, required_count = import_args['free_text'], import_args['required_count']
 
     #arginfo template
     objarg_info = collections.defaultdict(lambda: {'required':[], 'optional':[]})
@@ -586,9 +587,22 @@ def get_objarg_info(refs, names):
         #an expression is free text, whatever parts of it the refpage lists as arguments
         if name in free_text:
             objarg_info[name] = {'required': [{'name': 'expression', 'type': ['any']}], 'optional': []}
+
+        #a refpage marks arguments required that Max's own patches leave out
+        if name in required_count:
+            objarg_info[name] = demote_required_args(objarg_info[name], required_count[name])
         
     return objarg_info
         
+
+def demote_required_args(arg_info, count):
+    """
+    Keeps the first `count` required arguments and moves the rest to the front of the
+    optional ones.
+    """
+    required = arg_info['required']
+    return {'required': required[:count], 'optional': required[count:] + arg_info['optional']}
+
 
 def get_objargs_by_flag(root, flag):
     """

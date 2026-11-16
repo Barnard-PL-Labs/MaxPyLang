@@ -43,7 +43,8 @@
     }
   },
   "args": {
-    "required": [
+    "required": [],
+    "optional": [
       {
         "id": "0",
         "name": "standard pitch",
@@ -51,8 +52,7 @@
           "int"
         ]
       }
-    ],
-    "optional": []
+    ]
   },
   "attribs": [
     {

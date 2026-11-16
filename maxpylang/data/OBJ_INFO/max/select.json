@@ -19,15 +19,14 @@
     }
   },
   "args": {
-    "required": [
+    "required": [],
+    "optional": [
       {
         "name": "inlet",
         "type": [
           "int"
         ]
-      }
-    ],
-    "optional": [
+      },
       {
         "name": "selectors",
         "type": [

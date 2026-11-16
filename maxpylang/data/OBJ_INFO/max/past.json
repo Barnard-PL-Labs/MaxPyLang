@@ -24,15 +24,16 @@
         "type": [
           "list"
         ]
-      },
+      }
+    ],
+    "optional": [
       {
         "name": "number",
         "type": [
           "int"
         ]
       }
-    ],
-    "optional": []
+    ]
   },
   "attribs": [
     {

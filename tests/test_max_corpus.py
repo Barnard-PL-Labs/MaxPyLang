@@ -240,3 +240,48 @@ def test_switch_and_receive_counts_match_the_shipped_boxes():
     print(f"\n{checked} shipped switch and receive boxes checked")
     assert checked > 1000, "the corpus looks incomplete"
     assert wrong == [], f"{len(wrong)} boxes, e.g.\n" + "\n".join(wrong[:20])
+
+
+# Their inlets and outlets come from a file or a subpatch that is not there in a test.
+_BUILT_FROM_A_FILE = {"js", "jsui", "v8", "v8ui", "patcher", "bpatcher", "poly~", "pfft~", "gen", "gen~", "jit.gen",
+                      "jit.pix", "jit.gl.pix", "rnbo~", "mxj", "mxj~", "node.script", "vst~", "mc.gen~", "mc.poly~",
+                      "mc.pfft~", "mcs.gen~", "mcs.poly~"}
+
+
+def test_few_shipped_boxes_have_arguments_maxpylang_rejects():
+    """An object whose arguments are rejected is built with no inlets or outlets, so every
+    cord on it is lost. These boxes all work in Max. Before quoted strings, time values,
+    patcher arguments and the really-required counts this was 497 of 47,190 boxes with
+    arguments; it is 64 now, all of them gen operators (cycle, `* samplerate`) in gen
+    patchers saved without their namespace, and one box with a stray comma."""
+    import contextlib
+    import io
+    import warnings
+
+    import maxpylang as mp
+
+    database = Path(__file__).resolve().parents[1] / "maxpylang" / "data" / "OBJ_INFO"
+    known = {path.stem for path in database.glob("*/*.json")} - _BUILT_FROM_A_FILE
+    verdicts, total, rejected = {}, 0, {}
+    for _, patcher in corpus():
+        for box in patcher["boxes"]:
+            box = box.get("box", {})
+            text = (box.get("text") or "").split(" @")[0]
+            words = text.split()
+            if box.get("maxclass") != "newobj" or len(words) < 2 or "numinlets" not in box:
+                continue
+            name = _ALIASES.get(words[0], words[0])
+            if name not in known:
+                continue
+            if text not in verdicts:
+                with contextlib.redirect_stdout(io.StringIO()), warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    verdicts[text] = mp.MaxObject(text).notknown()
+            total += 1
+            if verdicts[text]:
+                rejected[name] = rejected.get(name, 0) + 1
+    count = sum(rejected.values())
+    print(f"\n{count} of {total} shipped boxes with arguments are rejected: {rejected}")
+    assert total > 40_000, "the corpus looks incomplete"
+    assert count <= 0.002 * total, f"{count} of {total} rejected: {rejected}"
+    assert set(rejected) <= {"cycle", "times", "rdiv", "wave~"}, rejected

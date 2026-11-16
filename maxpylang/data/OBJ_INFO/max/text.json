@@ -20,15 +20,15 @@
     }
   },
   "args": {
-    "required": [
+    "required": [],
+    "optional": [
       {
         "name": "filename",
         "type": [
           "symbol"
         ]
       }
-    ],
-    "optional": []
+    ]
   },
   "attribs": [
     {

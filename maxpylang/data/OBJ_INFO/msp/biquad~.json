@@ -18,7 +18,8 @@
     }
   },
   "args": {
-    "required": [
+    "required": [],
+    "optional": [
       {
         "name": "a0",
         "type": [
@@ -49,8 +50,7 @@
           "float"
         ]
       }
-    ],
-    "optional": []
+    ]
   },
   "attribs": [
     {

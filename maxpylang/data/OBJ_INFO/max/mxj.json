@@ -21,15 +21,16 @@
         "type": [
           "symbol"
         ]
-      },
+      }
+    ],
+    "optional": [
       {
         "name": "attributes",
         "type": [
           "list"
         ]
       }
-    ],
-    "optional": []
+    ]
   },
   "attribs": [
     {

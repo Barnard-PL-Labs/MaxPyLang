@@ -19,7 +19,8 @@
     }
   },
   "args": {
-    "required": [
+    "required": [],
+    "optional": [
       {
         "name": "cutoff-frequency",
         "units": "hz",
@@ -27,8 +28,7 @@
           "float"
         ]
       }
-    ],
-    "optional": []
+    ]
   },
   "attribs": [
     {
