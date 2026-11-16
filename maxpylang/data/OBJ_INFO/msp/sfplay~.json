@@ -169,6 +169,7 @@
           1,
           2
         ],
+        "optional": true,
         "type": {
           "default": "signal",
           "last": [

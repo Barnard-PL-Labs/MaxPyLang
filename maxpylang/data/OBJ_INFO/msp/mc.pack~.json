@@ -39,5 +39,14 @@
       "size": "1"
     }
   ],
-  "in/out": {}
+  "in/out": {
+    "numinlets": [
+      {
+        "argtype": "n",
+        "index": 0,
+        "comparitor": ">=2",
+        "type": null
+      }
+    ]
+  }
 }

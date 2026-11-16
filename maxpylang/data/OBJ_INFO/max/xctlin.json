@@ -40,5 +40,13 @@
       "size": "1"
     }
   ],
-  "in/out": {}
+  "in/out": {
+    "numoutlets": [
+      {
+        "argtype": "midi",
+        "num": 3,
+        "type": "int"
+      }
+    ]
+  }
 }

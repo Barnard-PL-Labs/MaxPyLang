@@ -40,5 +40,13 @@
       "name": "COMMON"
     }
   ],
-  "in/out": {}
+  "in/out": {
+    "numoutlets": [
+      {
+        "argtype": "midi",
+        "num": 2,
+        "type": "int"
+      }
+    ]
+  }
 }

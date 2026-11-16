@@ -36,5 +36,14 @@
       "name": "COMMON"
     }
   ],
-  "in/out": {}
+  "in/out": {
+    "numoutlets": [
+      {
+        "argtype": "n",
+        "index": 0,
+        "comparitor": ">=2",
+        "type": "multichannelsignal"
+      }
+    ]
+  }
 }

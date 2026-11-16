@@ -115,6 +115,13 @@ def parse_io_num(self, info, default_num):
         if term['argtype'] == 'fixed':          #receive foo: any argument at all gives this count
             sum += term['num']
             continue
+        if term['argtype'] == 'keys':           #dict.unpack a: b: has one per key, written with a colon
+            sum += len([x for x in self._args if ":" in str(x)]) + term.get('add_amt', 0)
+            continue
+        if term['argtype'] == 'midi':           #notein a 1: each number given is one outlet fewer
+            given = len([x for x in self._args if tc.check_number(x) and float(x) > 0])
+            sum += max(1, term['num'] - given)
+            continue
         if term['argtype'] in ('dollar', 'format', 'word'):
             text = " ".join(str(x) for x in self._args)
             if term['argtype'] == 'dollar':     #expr $i1 + $f2: the highest $ index, 9 at most
@@ -140,8 +147,12 @@ def parse_io_num(self, info, default_num):
             base_num = len(args)
         else:                       #otherwise, look for arg at specified index
             if len(args) <= index:
+                if term.get('optional'): #a later term for an argument that may be left out adds nothing
+                    continue
                 return default_num       #if not enough args of type, return default number of xlets
-            base_num = int(args[index])  #otherwise, take the arg at index
+            if not tc.check_number(args[index]):
+                return default_num       #a patcher argument (#1) or a name where a count is asked for
+            base_num = int(float(args[index]))  #otherwise, take the arg at index
 
         #then, parse accepted values term
         if 'acc_vals' in term.keys():
@@ -153,6 +164,10 @@ def parse_io_num(self, info, default_num):
         if 'comparitor' in term.keys():
             if not eval(str(base_num) + term['comparitor']): #if it doesn't pass comparitor test, return default number
                 return default_num
+
+        #a count Max never goes below: gate 0 still has one outlet
+        if 'min' in term.keys():
+            base_num = max(base_num, term['min'])
 
         #finally, parse add amount term
         sum += base_num

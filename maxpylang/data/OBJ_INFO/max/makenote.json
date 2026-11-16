@@ -56,5 +56,23 @@
       "size": "1"
     }
   ],
-  "in/out": {}
+  "in/out": {
+    "numinlets": [
+      {
+        "argtype": "a",
+        "index": "all",
+        "add_amt": 1,
+        "comparitor": ">=3",
+        "type": null
+      }
+    ],
+    "numoutlets": [
+      {
+        "argtype": "a",
+        "index": "all",
+        "comparitor": ">=3",
+        "type": "float"
+      }
+    ]
+  }
 }

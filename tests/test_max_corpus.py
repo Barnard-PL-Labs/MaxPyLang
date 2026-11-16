@@ -285,3 +285,52 @@ def test_few_shipped_boxes_have_arguments_maxpylang_rejects():
     assert total > 40_000, "the corpus looks incomplete"
     assert count <= 0.002 * total, f"{count} of {total} rejected: {rejected}"
     assert set(rejected) <= {"cycle", "times", "rdiv", "wave~"}, rejected
+
+
+def test_counts_that_follow_the_arguments_match_the_shipped_boxes():
+    """Every box with arguments and no attributes in a patch saved by Max 8 or 9, against
+    the counts maxpylang gives the same text. Older patches are left out because some
+    objects have gained outlets since (dict, info~). Before the rules for selector~,
+    dict.pack, the MIDI inputs, adc~ and the rest this was 401 of 19,433 boxes; it is 31."""
+    import contextlib
+    import io
+    import warnings
+
+    import maxpylang as mp
+
+    database = Path(__file__).resolve().parents[1] / "maxpylang" / "data" / "OBJ_INFO"
+    known = {path.stem for path in database.glob("*/*.json")} - _BUILT_FROM_A_FILE
+    built, total, wrong = {}, 0, {}
+    for path in sorted(C74.rglob("*")):
+        if path.suffix not in (".maxpat", ".maxhelp"):
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8", errors="replace"))
+        except (ValueError, OSError):
+            continue
+        if (data.get("patcher", {}).get("appversion") or {}).get("major", 0) < 8:
+            continue
+        for patcher in max_patchers(data):
+            for box in patcher["boxes"]:
+                box = box.get("box", {})
+                text = box.get("text") or ""
+                words = text.split()
+                if box.get("maxclass") != "newobj" or len(words) < 2 or "numinlets" not in box or " @" in text:
+                    continue
+                name = _ALIASES.get(words[0], words[0])
+                if name not in known:
+                    continue
+                if text not in built:
+                    with contextlib.redirect_stdout(io.StringIO()), warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        obj = mp.MaxObject(text)
+                    built[text] = None if obj.notknown() else (len(obj.ins), len(obj.outs))
+                if built[text] is None:
+                    continue
+                total += 1
+                if built[text] != (box["numinlets"], box["numoutlets"]):
+                    wrong[name] = wrong.get(name, 0) + 1
+    count = sum(wrong.values())
+    print(f"\n{count} of {total} shipped boxes with arguments have other counts in Max: {wrong}")
+    assert total > 15_000, "the corpus looks incomplete"
+    assert count <= 0.005 * total, f"{count} of {total}: {wrong}"

@@ -79,5 +79,20 @@
       "size": "1"
     }
   ],
-  "in/out": {}
+  "in/out": {
+    "numinlets": [
+      {
+        "argtype": "n",
+        "index": 0,
+        "type": null
+      }
+    ],
+    "numoutlets": [
+      {
+        "argtype": "n",
+        "index": 0,
+        "type": "signal"
+      }
+    ]
+  }
 }
