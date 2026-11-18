@@ -219,7 +219,7 @@ class MaxPatch:
     )
 
     # FOR CHECKING
-    from .tools.patchfuncs.checking import get_unknowns, get_abstractions, get_js_objs
+    from .tools.patchfuncs.checking import get_unknowns, get_abstractions, get_js_objs, get_coverage
 
     # MISC FUNCTIONS
     from .tools.patchfuncs.misc import add_barebones_obj

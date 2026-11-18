@@ -5,6 +5,8 @@ Methods related to checking MaxPatches: unknown objects, abstraction/js links, a
 
     check() --> get info on unknowns, abstractions, js files, and audio-into-control cords
 
+    get_coverage() --> how much of the patch the cord and graph checks could judge
+
     get_unknowns() --> get unknown objects
     get_abstractions() --> get abstractions
     get_js_objs() --> get js objects, linked and unlinked
@@ -13,7 +15,7 @@ Methods related to checking MaxPatches: unknown objects, abstraction/js links, a
 import collections
 import os
 
-from maxpylang.cordcheck import coverage
+from maxpylang.cordcheck import coverage, unchecked
 from maxpylang.graphcheck import find_problems, from_patch, warn_problems
 
 def check(self, *flags, device_type=None):
@@ -91,6 +93,7 @@ def check(self, *flags, device_type=None):
         plural = "" if total == 1 else "s"
         print(f"PatchCheck: cords : {total} cord{plural}, {counts['problem']} sending audio into an inlet "
               f"that takes none, {counts['unknown']} not checked (no type data)")
+        _print_some("not checked:", [f"{n} on {label} ({why})" for label, why, n in unchecked(self)])
         print()
 
     if 'graph' in flags:
@@ -102,10 +105,47 @@ def check(self, *flags, device_type=None):
         print(f"PatchCheck: graph : {count(found['hot loop'], 'hot loop', 'hot loops')}, "
               f"{count(found['audio feedback'], 'audio feedback loop', 'audio feedback loops')} with no delay, "
               f"{count(found['dead output'], 'part', 'parts')} of the patch whose output reaches nothing")
+        _print_some("not seen into:", self.get_coverage()["objects"]["not_seen_into"])
         print()
 
     return
 
+
+
+def _print_some(heading, items, limit=5):
+    """One indented line listing up to `limit` items, and how many more there are."""
+    if not items:
+        return
+    more = f", and {len(items) - limit} more" if len(items) > limit else ""
+    print("              ", heading, ", ".join(items[:limit]) + more)
+
+
+def get_coverage(self):
+    """
+    How much of the patch the checks could judge. A check says nothing about what it does
+    not know, so a patch that saves with no warning is only as checked as these numbers say.
+
+    :returns: ``{"cords": {"total", "checked", "flagged", "not_checked", "not_checked_because"},
+        "objects": {"total", "not_seen_into"}}``. ``not_checked_because`` lists
+        ``(object, reason, cords)``; ``not_seen_into`` lists the objects the graph check treats
+        as able to do anything: subpatchers, abstractions, js and unknown objects.
+    :rtype: dict
+    """
+    counts = coverage(self)
+    nodes, _ = from_patch(self)
+    return {
+        "cords": {
+            "total": sum(counts.values()),
+            "checked": counts["ok"] + counts["problem"],
+            "flagged": counts["problem"],
+            "not_checked": counts["unknown"],
+            "not_checked_because": unchecked(self),
+        },
+        "objects": {
+            "total": len(nodes),
+            "not_seen_into": [node.label for node in nodes.values() if node.opaque],
+        },
+    }
 
 
 def get_unknowns(self):

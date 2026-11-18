@@ -47,6 +47,13 @@ whatever its form: each one raises a `ConnectionWarning` at the line that made i
 `save()` ends with a `PatchCheck: cords` line counting them. The cord is still saved, so fix
 every warning before using the patch.
 
+A check says nothing about what it does not know. When some of the patch could not be judged,
+`save()` lists it: `not checked:` names the objects behind cords the cord check skipped
+(an unknown object, an abstraction, or an object with no type data), and `not seen into:`
+names the objects the whole-patch check treats as able to do anything (subpatchers,
+abstractions, `js`, unknown objects). No warning on those parts does not mean they work.
+`patch.get_coverage()` returns the same numbers as a dict.
+
 ## Core API
 
 ### MaxPatch
