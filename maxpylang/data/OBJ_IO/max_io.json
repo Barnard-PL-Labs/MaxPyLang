@@ -54,7 +54,8 @@
     
  "sprintf": {"numinlets": [{"argtype": "format", "type": null}]},
 
- "switch": {"numinlets": [{"argtype": "a", "index": "all", "add_amt": 1, "type": null}]}, 
+ "switch": {"numinlets": [{"argtype": "n", "index": 0, "add_amt": 1, "type": null}]},
+ "receive": {"numinlets": [{"argtype": "fixed", "num": 0, "type": null}]}, 
     
  "trigger": {"numoutlets": [{"argtype": "a", "index": "all", "type": "trigger_out"}]}, 
     

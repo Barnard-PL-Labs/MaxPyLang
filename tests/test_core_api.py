@@ -129,9 +129,56 @@ def test_pack_inlets_follow_its_arguments():
     assert len(mp.MaxObject("pack 0 0 0 0").ins) == 4
 
 
-@bug("remove_xlets slices the wrong end of the inlet list, then indexes past it")
 def test_switch_inlets_follow_its_argument():
     assert len(quiet(mp.MaxObject, "switch 1").ins) == 2
+    assert len(mp.MaxObject("switch 3").ins) == 4
+    assert len(mp.MaxObject("switch 3 1").ins) == 4     # the second argument is the open inlet
+
+
+def test_a_named_receive_has_no_inlet():
+    assert len(mp.MaxObject("receive").ins) == 1
+    assert len(mp.MaxObject("receive foo").ins) == 0
+    assert len(mp.MaxObject("r foo").ins) == 0
+
+
+@pytest.mark.parametrize("before, after, counts", [
+    ("pack 0 0 0 0 0", "pack 0 0 0 0", (4, 1)),     # one fewer: the old code kept one and dropped four
+    ("pack 0 0 0 0 0", "pack 0 0", (2, 1)),
+    ("gate 4", "gate 2", (2, 2)),
+    ("gate 5", "gate 1", (2, 1)),
+    ("unpack 0 0 0 0", "unpack 0 0 0", (1, 3)),
+    ("switch 4", "switch 1", (2, 1)),
+])
+def test_edit_to_fewer_arguments_removes_xlets_from_the_end(before, after, counts):
+    obj = mp.MaxObject(before)
+    kept_in, kept_out = obj.ins[0], obj.outs[0]
+    quiet(obj.edit, text_add="replace", text=after)
+    assert (len(obj.ins), len(obj.outs)) == counts
+    assert obj.ins[0] is kept_in and obj.outs[0] is kept_out
+    box = obj._dict["box"]
+    assert (box["numinlets"], box["numoutlets"], len(box["outlettype"])) == (*counts, counts[1])
+
+
+def test_removing_an_inlet_removes_its_cords(patch, in_tmp):
+    source, packer = patch.place("number", "pack 0 0 0", verbose=False)
+    patch.connect([source.outs[0], packer.ins[0]], [source.outs[0], packer.ins[2]], verbose=False)
+    quiet(packer.edit, text_add="replace", text="pack 0 0")
+    assert source.outs[0].destinations == [packer.ins[0]]
+    assert packer.ins[0].sources == [source.outs[0]]
+    quiet(patch.save, "shrunk", verbose=False)
+
+
+def test_removing_an_outlet_removes_its_cords(patch, in_tmp):
+    gate, kept, dropped = patch.place("gate 3", "number", "number", verbose=False)
+    patch.connect([gate.outs[0], kept.ins[0]], [gate.outs[2], dropped.ins[0]], [gate.outs[2], kept.ins[0]],
+                  verbose=False)
+    quiet(gate.edit, text_add="replace", text="gate 1")
+    assert len(gate.outs) == 1
+    assert dropped.ins[0].sources == [] and dropped.ins[0].midpoints == []
+    assert kept.ins[0].sources == [gate.outs[0]] and len(kept.ins[0].midpoints) == 1
+    quiet(patch.save, "shrunk", verbose=False)
+    saved = mp.MaxPatch(load_file="shrunk.maxpat", verbose=False)
+    assert len(saved.get_json()["patcher"]["lines"]) == 1
 
 
 def test_gate_outlets_follow_its_argument():

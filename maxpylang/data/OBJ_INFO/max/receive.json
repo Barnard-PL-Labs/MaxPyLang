@@ -33,5 +33,13 @@
       "name": "COMMON"
     }
   ],
-  "in/out": {}
+  "in/out": {
+    "numinlets": [
+      {
+        "argtype": "fixed",
+        "num": 0,
+        "type": null
+      }
+    ]
+  }
 }
