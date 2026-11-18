@@ -792,7 +792,7 @@
     "freqshift~": {"ins": ["signal", "signal"], "outs": ["signal", "signal"]},
     "ftom~": {"ins": ["signal"], "outs": ["signal"]},
     "fzero~": {"ins": ["signal"], "outs": ["control", "control", "control"]},
-    "gain~": {"ins": "any", "outs": ["signal", "control"]},
+    "gain~": {"ins": ["signal", "control"], "outs": ["signal", "control"]},
     "gate~": {"ins": ["signal", "signal"], "outs": "signal"},
     "gen": {"ins": "any", "outs": "any"},
     "gen.codebox": {"ins": "any", "outs": "any"},

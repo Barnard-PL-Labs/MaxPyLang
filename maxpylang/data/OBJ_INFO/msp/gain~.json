@@ -4,7 +4,7 @@
       "id": "obj-90",
       "maxclass": "gain~",
       "multichannelvariant": 0,
-      "numinlets": 1,
+      "numinlets": 2,
       "numoutlets": 2,
       "outlettype": [
         "signal",

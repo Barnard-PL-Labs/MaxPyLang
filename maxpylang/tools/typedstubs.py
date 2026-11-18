@@ -94,6 +94,11 @@ def _obj_aliases():
 # objects that pass on whatever they are given, audio included
 _PASS_THROUGH = {"inlet", "outlet"}
 
+# rates set by hand where the signature table cannot give them. gain~ has one inlet as a
+# multichannel box and two otherwise (audio in, then the ramp time), so the table calls its
+# count open; maxpylang builds the two-inlet form.
+_HAND_SET = {"gain~": {"ins": ["signal", "control"]}}
+
 
 def object_types(max_name, sig):
     """Static rates of one object's inlets ("ins") and outlets ("outs") from its signature row."""
@@ -104,6 +109,7 @@ def object_types(max_name, sig):
         for side, rate in (("ins", "signal"), ("outs", "any")):
             rates = types[side]
             types[side] = [rate] * len(rates) if isinstance(rates, list) else rate
+    types.update(_HAND_SET.get(max_name, {}))
     return types
 
 

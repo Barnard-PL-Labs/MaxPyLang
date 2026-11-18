@@ -56,5 +56,20 @@
       "size": "1"
     }
   ],
-  "in/out": {}
+  "in/out": {
+    "numoutlets": [
+      {
+        "argtype": "n",
+        "index": 0,
+        "add_amt": 1,
+        "type": {
+          "default": "signal",
+          "last": [
+            1,
+            "bang"
+          ]
+        }
+      }
+    ]
+  }
 }

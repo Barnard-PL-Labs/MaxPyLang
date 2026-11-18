@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from maxpylang.cordcheck import AUDIO, judge, rate_of
+from maxpylang.cordcheck import AUDIO, judge, outlet_rate, rate_of
 
 _CANDIDATES = [os.environ.get("MAXPYLANG_C74"), "/Applications/Max.app/Contents/Resources/C74"]
 C74 = next((Path(p) for p in _CANDIDATES if p and Path(p).is_dir()), None)
@@ -20,6 +20,10 @@ pytestmark = pytest.mark.skipif(C74 is None, reason="Max is not installed")
 
 _ALIASES = json.loads((Path(__file__).resolve().parents[1] / "maxpylang" / "data" / "OBJ_INFO"
                        / "obj_aliases.json").read_text())
+
+
+# the objects maxpylang knows: only their saved outlet types are read, as at runtime
+_KNOWN = {path.stem for path in (Path(__file__).resolve().parents[1] / "maxpylang" / "data" / "OBJ_INFO").glob("*/*.json")}
 
 
 def box_name(box):
@@ -74,7 +78,8 @@ def survey_corpus():
             src, dst = boxes.get(src_id), boxes.get(dst_id)
             if src is None or dst is None:
                 continue
-            outcome = judge(rate_of(box_name(src), "outs", out_i), rate_of(box_name(dst), "ins", in_i))
+            saved = src.get("outlettype") if box_name(src) in _KNOWN else None
+            outcome = judge(outlet_rate(box_name(src), out_i, saved), rate_of(box_name(dst), "ins", in_i))
             counts[outcome] += 1
             if outcome == "problem":
                 problems.append(f"{path.relative_to(C74)}: {src.get('text') or box_name(src)} outlet {out_i}"
@@ -100,6 +105,15 @@ def test_no_shipped_cord_is_flagged(survey):
           f"{counts['problem']} flagged, {counts['unknown']} not checked")
     assert total > 100_000, "the corpus looks incomplete"
     assert problems == [], f"{len(problems)} false alarms, e.g.\n" + "\n".join(problems[:20])
+
+
+def test_most_shipped_cords_are_checked(survey):
+    """A cord that is not checked can hide a mistake. This was 27,000 of 140,082 before an
+    open outlet was read from the box's own outlet types; it is 24,663 now, nearly all of
+    them on patchers, bpatchers, inlets, abstractions and objects not in the database."""
+    counts, _, _ = survey
+    total = counts["ok"] + counts["problem"] + counts["unknown"]
+    assert counts["unknown"] <= 0.18 * total, f"{counts['unknown']} of {total} shipped cords not checked"
 
 
 def test_no_outlet_the_data_calls_audio_is_saved_as_a_message(survey):
