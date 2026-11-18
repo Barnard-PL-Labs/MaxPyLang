@@ -42,8 +42,9 @@
   "in/out": {
     "numoutlets": [
       {
-        "argtype": "a",
+        "argtype": "n",
         "index": 0,
+        "min": 1,
         "type": ""
       }
     ]

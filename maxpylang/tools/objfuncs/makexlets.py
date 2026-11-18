@@ -115,6 +115,13 @@ def parse_io_num(self, info, default_num):
         if term['argtype'] == 'fixed':          #receive foo: any argument at all gives this count
             sum += term['num']
             continue
+        if term['argtype'] == 'keys':           #dict.unpack a: b: has one per key, written with a colon
+            sum += len([x for x in self._args if ":" in str(x)]) + term.get('add_amt', 0)
+            continue
+        if term['argtype'] == 'midi':           #notein a 1: each number given is one outlet fewer
+            given = len([x for x in self._args if tc.check_number(x) and float(x) > 0])
+            sum += max(1, term['num'] - given)
+            continue
         if term['argtype'] in ('dollar', 'format', 'word'):
             text = " ".join(str(x) for x in self._args)
             if term['argtype'] == 'dollar':     #expr $i1 + $f2: the highest $ index, 9 at most
@@ -140,6 +147,8 @@ def parse_io_num(self, info, default_num):
             base_num = len(args)
         else:                       #otherwise, look for arg at specified index
             if len(args) <= index:
+                if term.get('optional'): #a later term for an argument that may be left out adds nothing
+                    continue
                 return default_num       #if not enough args of type, return default number of xlets
             if not tc.check_number(args[index]):
                 return default_num       #a patcher argument (#1) or a name where a count is asked for
@@ -156,12 +165,16 @@ def parse_io_num(self, info, default_num):
             if not eval(str(base_num) + term['comparitor']): #if it doesn't pass comparitor test, return default number
                 return default_num
 
+        #a count Max never goes below: gate 0 still has one outlet
+        if 'min' in term.keys():
+            base_num = max(base_num, term['min'])
+
         #finally, parse add amount term
         sum += base_num
         if 'add_amt' in term.keys():
             sum += term['add_amt']
 
-    return sum
+    return max(sum, 0)      #a negative argument (jit.unpack -1) is not a negative count
 
 
 def add_xlets(self, num, xlet_type):
@@ -297,7 +310,7 @@ def parse_io_typing(self, type_info, num_xlets):
                 first_types = [first_types] * num_firsts
 
             #fill in the first xlets with first types
-            for i in range(num_firsts):
+            for i in range(min(num_firsts, num_xlets)):
                 new_types[i] = first_types[i]
 
 
@@ -311,7 +324,7 @@ def parse_io_typing(self, type_info, num_xlets):
                 last_types = [last_types] * num_lasts
 
             #fill in last xlets with last types, from the back
-            for i in range(num_lasts):
+            for i in range(min(num_lasts, num_xlets)):
                 new_types[ -(i+1) ] = last_types[ -(i+1) ]
 
 

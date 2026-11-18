@@ -305,6 +305,65 @@ def test_the_importer_keeps_only_the_arguments_max_really_requires():
         assert len(stored) == count, name
 
 
+# ── counts that follow the arguments ──────────────────────────────────────────
+
+@pytest.mark.parametrize("text, expected", [
+    ("selector~ 2", (3, 1)), ("selector~ 5 1", (6, 1)),
+    ("gate 0", (2, 1)), ("gate 3", (2, 3)),                 # Max never gives gate fewer than one outlet
+    ("dict.pack pitch: start_time: duration:0.25", (4, 1)),
+    ("dict.pack brick : 2 wheat : 1", (3, 1)),
+    ("dict.unpack id: label:", (1, 3)),
+    ("join", (2, 1)), ("join 4", (4, 1)),
+    ("pipe 100", (2, 1)), ("pipe 0 0 1000", (3, 2)),
+    ("makenote 100 500", (3, 2)), ("makenote 128 500 1", (4, 3)),
+    ("matrix 4 4", (5, 5)), ("mtr 3", (4, 4)), ("jit.cycle 4", (1, 5)),
+    ("notein", (1, 3)), ("notein a", (1, 3)), ("notein a 1", (1, 2)), ("notein 17", (1, 2)),
+    ("ctlin 7", (1, 2)), ("ctlin 33 1", (1, 1)), ("ctlin -1 4", (1, 2)),
+    ("polyin 60 1", (1, 1)), ("xnotein 1", (1, 3)),
+    ("adc~", (1, 2)), ("adc~ 1", (1, 1)), ("adc~ 1 3 4", (1, 3)), ("dac~ 1 3 4", (3, 0)),
+    ("plugin~ 1 2 3 4", (4, 4)),
+    ("fffb~ 8", (1, 8)), ("groove~ foo", (3, 2)), ("groove~ foo 2", (3, 3)), ("groove~ #1 4", (3, 5)),
+    ("sfplay~", (2, 2)), ("sfplay~ 2", (2, 3)), ("sfplay~ 2 60000 1", (2, 4)),
+    ("tapout~ 100", (1, 1)), ("tapout~ 100 200 300", (3, 3)),
+    ("mc.pack~ 4", (4, 1)), ("mc.separate~ 2 3 4", (1, 4)), ("mcs.sig~ 54 61 70", (3, 1)),
+    ("dict foo", (2, 5)), ("info~ foo", (1, 10)),           # one more outlet each since Max 9
+])
+def test_counts_follow_the_arguments(text, expected):
+    obj = build(text)
+    assert (len(obj.ins), len(obj.outs)) == expected
+    box = obj._dict["box"]
+    assert (box["numinlets"], box["numoutlets"], len(box.get("outlettype", []))) == (*expected, expected[1])
+
+
+def test_outlet_types_follow_a_count_rule():
+    assert build("adc~ 1 3 4")._dict["box"]["outlettype"] == ["signal"] * 3
+    assert build("sfplay~ 2")._dict["box"]["outlettype"] == ["signal", "signal", "bang"]
+    assert build("notein a 1")._dict["box"]["outlettype"] == ["int", "int"]
+
+
+def test_a_patcher_argument_where_a_count_is_asked_for_keeps_the_default():
+    assert counts("gate #1") == counts("gate")
+    assert counts("selector~ #1") == counts("selector~")
+
+
+@pytest.mark.parametrize("text, expected", [
+    ("sfplay~ -1", (2, 2)), ("pitchshift~ -1", (2, 2)), ("sfplay~ 0", (2, 2)),   # at least one channel
+    ("jit.unpack -1", (1, 0)), ("fffb~ -3", (1, 0)),
+])
+def test_a_negative_count_argument_is_not_an_error(text, expected):
+    assert counts(text) == expected
+
+
+def test_every_rule_in_the_database_matches_its_source_file():
+    """The runtime reads an object's rule from OBJ_INFO; the importer copies it there from
+    OBJ_IO. A rule edited in one place only would be lost on the next import, or never run."""
+    io_folder = OBJ_INFO.parent / "OBJ_IO"
+    for source in sorted(io_folder.glob("*_io.json")):
+        for name, rule in json.loads(source.read_text()).items():
+            stored = json.loads(next(OBJ_INFO.glob(f"*/{name}.json")).read_text())["in/out"]
+            assert stored == rule, name
+
+
 # ── importing without a running Max ───────────────────────────────────────────
 
 def patch_file(path, boxes):

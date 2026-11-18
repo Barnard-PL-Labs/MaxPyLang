@@ -1,5 +1,7 @@
 {
- "jit.pack": {"numinlets": [{"argtype": "a", "index": 0, "type" : null}]}, 
- "jit.unpack": {"numoutlets": [{"argtype": "a", "index": 0, "add_amt": 1,
-                               "type": {"default": "jit_matrix", "last":[1, ""]}}]}
+ "jit.pack": {"numinlets": [{"argtype": "a", "index": 0, "type": null}]},
+
+ "jit.unpack": {"numoutlets": [{"argtype": "a", "index": 0, "add_amt": 1, "type": {"default": "jit_matrix", "last": [1, ""]}}]},
+
+ "jit.cycle": {"numoutlets": [{"argtype": "n", "index": 0, "add_amt": 1, "type": ""}]}
 }

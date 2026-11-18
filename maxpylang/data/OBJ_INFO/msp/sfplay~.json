@@ -154,6 +154,7 @@
         "argtype": "n",
         "index": 0,
         "add_amt": 1,
+        "min": 1,
         "type": {
           "default": "signal",
           "last": [
@@ -169,6 +170,7 @@
           1,
           2
         ],
+        "optional": true,
         "type": {
           "default": "signal",
           "last": [

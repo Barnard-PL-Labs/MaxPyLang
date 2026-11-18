@@ -1,67 +1,91 @@
 {
- "bangbang": {"numoutlets": [{"argtype": "a", "index": 0, "type": "bang"}]}, 
-    
- "bondo": {"numinlets": [{"argtype": "a", "index": 0, "type": null}], 
-           "numoutlets": [{"argtype": "a", "index": 0, "type": ""}]}, 
-    
- "bucket": {"numoutlets": [{"argtype": "a", "index": 0, "type": ""}]}, 
-    
- "buddy": {"numinlets": [{"argtype": "a", "index": 0, "comparitor": ">=2", "type": null}], 
-           "numoutlets": [{"argtype": "a", "index": 0, "comparitor": ">=2", "type": ""}]}, 
-    
- "combine": {"numinlets": [{"argtype": "a", "index": "all", "type": null}]}, 
-    
- "cycle": {"numoutlets": [{"argtype": "a", "index": 0, "type": ""}]}, 
-    
- "decode": {"numoutlets": [{"argtype": "a", "index": 0, "type": "int"}]}, 
-    
+ "bangbang": {"numoutlets": [{"argtype": "a", "index": 0, "type": "bang"}]},
+
+ "bondo": {"numinlets": [{"argtype": "a", "index": 0, "type": null}], "numoutlets": [{"argtype": "a", "index": 0, "type": ""}]},
+
+ "bucket": {"numoutlets": [{"argtype": "a", "index": 0, "type": ""}]},
+
+ "buddy": {"numinlets": [{"argtype": "a", "index": 0, "comparitor": ">=2", "type": null}], "numoutlets": [{"argtype": "a", "index": 0, "comparitor": ">=2", "type": ""}]},
+
+ "combine": {"numinlets": [{"argtype": "a", "index": "all", "type": null}]},
+
+ "cycle": {"numoutlets": [{"argtype": "a", "index": 0, "type": ""}]},
+
+ "decode": {"numoutlets": [{"argtype": "a", "index": 0, "type": "int"}]},
+
  "expr": {"numinlets": [{"argtype": "dollar", "type": null}]},
 
- "funnel": {"numinlets": [{"argtype": "a", "index": 0, "type": null}]}, 
-    
- "gate": {"numoutlets": [{"argtype": "a", "index": 0, "type": ""}]}, 
-    
- "grab": {"numoutlets": [{"argtype": "a", "index": 0, "add_amt": 1, "type": ""}]}, 
-    
- "if": {"numinlets": [{"argtype": "dollar", "type": null}],
-        "numoutlets": [{"argtype": "word", "word": "out2", "add_amt": 1, "type": ""}]},
+ "funnel": {"numinlets": [{"argtype": "a", "index": 0, "type": null}]},
 
- "js": {"numinlets": [{"argtype": "n", "index": 1, "type": null}], 
-        "numoutlets": [{"argtype": "n", "index": 0, "type": ""}]}, 
-    
- "mpeformat": {"numinlets": [{"argtype": "a", "index": 0, "add_amt": 1, "type": null}]}, 
-    
- "pack": {"numinlets": [{"argtype": "a", "index": "all", "type": null}]}, 
-    
- "pak": {"numinlets": [{"argtype": "a", "index": "all", "type": null}]}, 
-    
- "pvar": {"numoutlets": [{"argtype": "n", "index": 0, "type": ""}]}, 
-    
- "route": {"numinlets": [{"argtype": "a", "index": "all", "add_amt": 1, "type": null}], 
-           "numoutlets": [{"argtype": "a", "index": "all", "add_amt": 1, "type": ""}]}, 
-    
- "routepass": {"numinlets": [{"argtype": "a", "index": "all", "add_amt": 1, "type": null}], 
-               "numoutlets": [{"argtype": "a", "index": "all", "add_amt": 1, "type": ""}]}, 
-    
- "router": {"numinlets": [{"argtype": "a", "index": 0, "add_amt": 1, "type": null}], 
-            "numoutlets": [{"argtype": "a", "index": 1, "add_amt": 1, "type": ""}]}, 
-    
- "select": {"numinlets": [{"argtype": "a", "index": "all", "add_amt": 1, "type": null}], 
-            "numoutlets": [{"argtype": "a", "index": "all", "add_amt": 1, 
-                            "type": {"default": "bang", "last": [1, ""]}}]}, 
-    
- "spray": {"numoutlets": [{"argtype": "a", "index": 0, "type": ""}]}, 
-    
+ "gate": {"numoutlets": [{"argtype": "n", "index": 0, "min": 1, "type": ""}]},
+
+ "grab": {"numoutlets": [{"argtype": "a", "index": 0, "add_amt": 1, "type": ""}]},
+
+ "if": {"numinlets": [{"argtype": "dollar", "type": null}], "numoutlets": [{"argtype": "word", "word": "out2", "add_amt": 1, "type": ""}]},
+
+ "js": {"numinlets": [{"argtype": "n", "index": 1, "type": null}], "numoutlets": [{"argtype": "n", "index": 0, "type": ""}]},
+
+ "mpeformat": {"numinlets": [{"argtype": "a", "index": 0, "add_amt": 1, "type": null}]},
+
+ "pack": {"numinlets": [{"argtype": "a", "index": "all", "type": null}]},
+
+ "pak": {"numinlets": [{"argtype": "a", "index": "all", "type": null}]},
+
+ "pvar": {"numoutlets": [{"argtype": "n", "index": 0, "type": ""}]},
+
+ "route": {"numinlets": [{"argtype": "a", "index": "all", "add_amt": 1, "type": null}], "numoutlets": [{"argtype": "a", "index": "all", "add_amt": 1, "type": ""}]},
+
+ "routepass": {"numinlets": [{"argtype": "a", "index": "all", "add_amt": 1, "type": null}], "numoutlets": [{"argtype": "a", "index": "all", "add_amt": 1, "type": ""}]},
+
+ "router": {"numinlets": [{"argtype": "a", "index": 0, "add_amt": 1, "type": null}], "numoutlets": [{"argtype": "a", "index": 1, "add_amt": 1, "type": ""}]},
+
+ "select": {"numinlets": [{"argtype": "a", "index": "all", "add_amt": 1, "type": null}], "numoutlets": [{"argtype": "a", "index": "all", "add_amt": 1, "type": {"default": "bang", "last": [1, ""]}}]},
+
+ "spray": {"numoutlets": [{"argtype": "a", "index": 0, "type": ""}]},
+
  "sprintf": {"numinlets": [{"argtype": "format", "type": null}]},
 
  "switch": {"numinlets": [{"argtype": "n", "index": 0, "add_amt": 1, "type": null}]},
- "receive": {"numinlets": [{"argtype": "fixed", "num": 0, "type": null}]}, 
-    
- "trigger": {"numoutlets": [{"argtype": "a", "index": "all", "type": "trigger_out"}]}, 
-    
- "unjoin": {"numoutlets": [{"argtype": "a", "index": 0, "add_amt": 1, "comparitor": ">=2", "type": ""}]}, 
-    
+
+ "receive": {"numinlets": [{"argtype": "fixed", "num": 0, "type": null}]},
+
+ "trigger": {"numoutlets": [{"argtype": "a", "index": "all", "type": "trigger_out"}]},
+
+ "unjoin": {"numoutlets": [{"argtype": "a", "index": 0, "add_amt": 1, "comparitor": ">=2", "type": ""}]},
+
  "unpack": {"numoutlets": [{"argtype": "a", "index": "all", "type": "unpack_out"}]},
 
- "vexpr": {"numinlets": [{"argtype": "dollar", "type": null}]}
+ "vexpr": {"numinlets": [{"argtype": "dollar", "type": null}]},
+
+ "dict.pack": {"numinlets": [{"argtype": "keys", "add_amt": 1, "type": null}]},
+
+ "dict.unpack": {"numoutlets": [{"argtype": "keys", "add_amt": 1, "type": ""}]},
+
+ "join": {"numinlets": [{"argtype": "n", "index": 0, "comparitor": ">=2", "type": null}]},
+
+ "pipe": {"numinlets": [{"argtype": "a", "index": "all", "comparitor": ">=2", "type": null}], "numoutlets": [{"argtype": "a", "index": "all", "add_amt": -1, "comparitor": ">=2", "type": ""}]},
+
+ "makenote": {"numinlets": [{"argtype": "a", "index": "all", "add_amt": 1, "comparitor": ">=3", "type": null}], "numoutlets": [{"argtype": "a", "index": "all", "comparitor": ">=3", "type": "float"}]},
+
+ "matrix": {"numinlets": [{"argtype": "n", "index": 0, "add_amt": 1, "type": null}], "numoutlets": [{"argtype": "n", "index": 1, "add_amt": 1, "type": {"default": "", "first": [1, "dictionary"]}}]},
+
+ "mtr": {"numinlets": [{"argtype": "n", "index": 0, "add_amt": 1, "type": null}], "numoutlets": [{"argtype": "n", "index": 0, "add_amt": 1, "type": ""}]},
+
+ "sxformat": {"numinlets": [{"argtype": "dollar", "type": null}]},
+
+ "notein": {"numoutlets": [{"argtype": "midi", "num": 3, "type": "int"}]},
+
+ "ctlin": {"numoutlets": [{"argtype": "midi", "num": 3, "type": "int"}]},
+
+ "polyin": {"numoutlets": [{"argtype": "midi", "num": 3, "type": "int"}]},
+
+ "xnotein": {"numoutlets": [{"argtype": "midi", "num": 4, "type": "int"}]},
+
+ "xctlin": {"numoutlets": [{"argtype": "midi", "num": 3, "type": "int"}]},
+
+ "xbendin": {"numoutlets": [{"argtype": "midi", "num": 2, "type": "int"}]},
+
+ "nrpnin": {"numoutlets": [{"argtype": "midi", "num": 4, "type": "int"}]},
+
+ "rpnin": {"numoutlets": [{"argtype": "midi", "num": 4, "type": "int"}]}
 }

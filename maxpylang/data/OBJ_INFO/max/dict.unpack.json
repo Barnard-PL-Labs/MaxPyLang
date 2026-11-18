@@ -44,5 +44,13 @@
       "size": "256"
     }
   ],
-  "in/out": {}
+  "in/out": {
+    "numoutlets": [
+      {
+        "argtype": "keys",
+        "add_amt": 1,
+        "type": ""
+      }
+    ]
+  }
 }

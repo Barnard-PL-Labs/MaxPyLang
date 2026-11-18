@@ -40,5 +40,15 @@
       "size": "1"
     }
   ],
-  "in/out": {}
+  "in/out": {
+    "numoutlets": [
+      {
+        "argtype": "n",
+        "index": "all",
+        "add_amt": 1,
+        "comparitor": ">=1",
+        "type": "multichannelsignal"
+      }
+    ]
+  }
 }

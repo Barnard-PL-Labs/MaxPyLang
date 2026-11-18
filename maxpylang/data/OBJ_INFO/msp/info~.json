@@ -4,7 +4,7 @@
       "id": "obj-108",
       "maxclass": "newobj",
       "numinlets": 1,
-      "numoutlets": 9,
+      "numoutlets": 10,
       "outlettype": [
         "float",
         "list",
@@ -14,7 +14,8 @@
         "float",
         "float",
         "",
-        "int"
+        "int",
+        ""
       ],
       "patching_rect": [
         100.0,

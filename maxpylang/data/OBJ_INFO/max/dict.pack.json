@@ -54,5 +54,13 @@
       "size": "256"
     }
   ],
-  "in/out": {}
+  "in/out": {
+    "numinlets": [
+      {
+        "argtype": "keys",
+        "add_amt": 1,
+        "type": null
+      }
+    ]
+  }
 }

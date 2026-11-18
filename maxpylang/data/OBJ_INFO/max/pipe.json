@@ -48,5 +48,23 @@
       "size": "10"
     }
   ],
-  "in/out": {}
+  "in/out": {
+    "numinlets": [
+      {
+        "argtype": "a",
+        "index": "all",
+        "comparitor": ">=2",
+        "type": null
+      }
+    ],
+    "numoutlets": [
+      {
+        "argtype": "a",
+        "index": "all",
+        "add_amt": -1,
+        "comparitor": ">=2",
+        "type": ""
+      }
+    ]
+  }
 }

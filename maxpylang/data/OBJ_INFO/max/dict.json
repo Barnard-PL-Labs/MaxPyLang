@@ -4,9 +4,10 @@
       "id": "obj-87",
       "maxclass": "newobj",
       "numinlets": 2,
-      "numoutlets": 4,
+      "numoutlets": 5,
       "outlettype": [
         "dictionary",
+        "",
         "",
         "",
         ""
