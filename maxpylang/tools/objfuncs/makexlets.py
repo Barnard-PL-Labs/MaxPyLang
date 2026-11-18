@@ -141,7 +141,9 @@ def parse_io_num(self, info, default_num):
         else:                       #otherwise, look for arg at specified index
             if len(args) <= index:
                 return default_num       #if not enough args of type, return default number of xlets
-            base_num = int(args[index])  #otherwise, take the arg at index
+            if not tc.check_number(args[index]):
+                return default_num       #a patcher argument (#1) or a name where a count is asked for
+            base_num = int(float(args[index]))  #otherwise, take the arg at index
 
         #then, parse accepted values term
         if 'acc_vals' in term.keys():

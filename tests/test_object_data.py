@@ -271,6 +271,19 @@ def test_arguments_max_does_not_accept_are_still_caught(text):
         mp.MaxObject(text)
 
 
+@pytest.mark.parametrize("text", ["gate #1", "bondo foo", "bucket 4n", "spray #1 0", "bangbang #2"])
+def test_an_argument_that_is_not_a_number_where_a_count_is_asked_for_keeps_the_default(text):
+    assert counts(text) == counts(text.split()[0])
+
+
+@pytest.mark.parametrize("text, types", [
+    ("t l l", ["", ""]), ("t b i", ["bang", "int"]), ("t f s", ["float", ""]), ("t 1 2.5", ["int", "float"]),
+    ("t b clear", ["bang", "clear"]),                       # a constant symbol is saved as itself
+])
+def test_trigger_outlet_types_are_the_ones_max_saves(text, types):
+    assert build(text)._dict["box"]["outlettype"] == types
+
+
 def test_a_number_argument_may_be_a_time_value_or_a_patcher_argument():
     for arg in ("4n", "16nd", "8nt", "100ms", "2.5s", "10hz", "480ticks", "1:30", "0:1:30", "2.1.0", "#1", "#0_name"):
         assert typechecks.check_type(["int"], arg), arg
