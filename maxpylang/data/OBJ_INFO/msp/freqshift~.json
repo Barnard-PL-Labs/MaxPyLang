@@ -19,16 +19,15 @@
     }
   },
   "args": {
-    "required": [
+    "required": [],
+    "optional": [
       {
         "name": "frequency-shift",
         "units": "hz",
         "type": [
           "int"
         ]
-      }
-    ],
-    "optional": [
+      },
       {
         "name": "frequency-shift",
         "units": "hz",

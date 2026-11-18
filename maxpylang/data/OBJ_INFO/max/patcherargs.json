@@ -19,7 +19,8 @@
     }
   },
   "args": {
-    "required": [
+    "required": [],
+    "optional": [
       {
         "name": "defaults",
         "type": [
@@ -28,8 +29,7 @@
           "float"
         ]
       }
-    ],
-    "optional": []
+    ]
   },
   "attribs": [
     {

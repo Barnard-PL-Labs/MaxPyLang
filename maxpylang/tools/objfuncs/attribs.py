@@ -61,7 +61,7 @@ def remove_bad_attribs(self, attribs, attrib_speclist):
     for attrib, vals in attribs.items():
 
         #make it a list...
-        if isinstance(vals, int or float):
+        if isinstance(vals, (int, float)):
             vals = [vals]
 
         #check for no value specified

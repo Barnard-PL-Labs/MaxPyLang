@@ -30,15 +30,16 @@
         "type": [
           "symbol"
         ]
-      },
+      }
+    ],
+    "optional": [
       {
         "name": "multiplier",
         "type": [
           "float"
         ]
       }
-    ],
-    "optional": []
+    ]
   },
   "attribs": [
     {

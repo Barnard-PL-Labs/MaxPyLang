@@ -18,15 +18,15 @@
     }
   },
   "args": {
-    "required": [
+    "required": [],
+    "optional": [
       {
         "name": "time",
         "type": [
           "any"
         ]
       }
-    ],
-    "optional": []
+    ]
   },
   "attribs": [
     {

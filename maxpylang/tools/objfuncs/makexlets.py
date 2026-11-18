@@ -79,15 +79,15 @@ def update_ins_outs(self, inout_info, default_info):
 
             diff = new_xlets - curr_xlets #get difference between new number and current number
 
-            if diff != 0: #don't do anything if same num
-                #add or remove xlets
-                if diff > 0:
-                    self.add_xlets(diff, xlet_type)
-                elif diff < 0:
-                    self.remove_xlets(diff, xlet_type)
+            #add or remove xlets
+            if diff > 0:
+                self.add_xlets(diff, xlet_type)
+            elif diff < 0:
+                self.remove_xlets(diff, xlet_type)
 
-                #update typing
-                self.update_xlet_typing(inout_info, xlet_type, new_xlets)
+            #update typing, also when the number is unchanged: trigger b i has the default
+            #two outlets, but not the default types
+            self.update_xlet_typing(inout_info, xlet_type, new_xlets)
 
     #update numbers in self._dict, based on self._ins and self._outs
     self.update_dict_io_nums()
@@ -141,7 +141,9 @@ def parse_io_num(self, info, default_num):
         else:                       #otherwise, look for arg at specified index
             if len(args) <= index:
                 return default_num       #if not enough args of type, return default number of xlets
-            base_num = int(args[index])  #otherwise, take the arg at index
+            if not tc.check_number(args[index]):
+                return default_num       #a patcher argument (#1) or a name where a count is asked for
+            base_num = int(float(args[index]))  #otherwise, take the arg at index
 
         #then, parse accepted values term
         if 'acc_vals' in term.keys():

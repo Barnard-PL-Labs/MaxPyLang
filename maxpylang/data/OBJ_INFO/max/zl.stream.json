@@ -19,7 +19,8 @@
     }
   },
   "args": {
-    "required": [
+    "required": [],
+    "optional": [
       {
         "id": "0",
         "name": "initial-length",
@@ -27,8 +28,7 @@
           "int"
         ]
       }
-    ],
-    "optional": []
+    ]
   },
   "attribs": [
     {

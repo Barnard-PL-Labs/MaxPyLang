@@ -19,7 +19,8 @@
     }
   },
   "args": {
-    "required": [
+    "required": [],
+    "optional": [
       {
         "id": "0",
         "name": "UI element name",
@@ -27,8 +28,7 @@
           "symbol"
         ]
       }
-    ],
-    "optional": []
+    ]
   },
   "attribs": [
     {

@@ -18,15 +18,15 @@
     }
   },
   "args": {
-    "required": [
+    "required": [],
+    "optional": [
       {
         "name": "inlets",
         "type": [
           "int"
         ]
       }
-    ],
-    "optional": []
+    ]
   },
   "attribs": [
     {

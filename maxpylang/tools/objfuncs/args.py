@@ -44,9 +44,12 @@ def args_valid(self, name, args, arg_info):
         )
         return False
 
-    #check remaining args against optional args
+    #check remaining args against optional args. Max takes optional arguments by their type
+    #more than by their place (cycle~ mybuffer, svf~ 0.2 radians), so an argument is fine if
+    #it fits any of the optional arguments
     opt_types = [arg['type'] for arg in args_opt]
-    if not all([tc.check_type(t, a) for t, a in zip(opt_types, args[len(args_req):])]):
+    if not all([any(tc.check_type(t, a) for t in opt_types)
+                for a in args[len(args_req):len(args_req) + len(opt_types)]]):
         req_table = tabulate.tabulate([[x['name'], x['type']] for x in args_req],
                                       ['req arg', 'type'], tablefmt='pretty')
         opt_table = tabulate.tabulate([[x['name'], x['type']] for x in args_opt],

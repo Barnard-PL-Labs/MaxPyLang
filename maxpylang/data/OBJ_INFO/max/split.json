@@ -25,15 +25,16 @@
         "type": [
           "number"
         ]
-      },
+      }
+    ],
+    "optional": [
       {
         "name": "maximum",
         "type": [
           "number"
         ]
       }
-    ],
-    "optional": []
+    ]
   },
   "attribs": [
     {

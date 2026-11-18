@@ -7,6 +7,8 @@ Methods that deal with MaxObject text.
     update_text() --> update MaxObject dict with name, args, attribs
 """
 
+import re
+
 
 def parse_text(self, text):
     """
@@ -19,8 +21,9 @@ def parse_text(self, text):
     text_attribs --> dict, {attribute_name: [vals]}
     """
 
-    #remove leading/trailing whitespace and split into pieces
-    text = text.strip(" ").split(" ")
+    #split into pieces at whitespace; a double-quoted string is one piece, quotes kept,
+    #as Max reads it: route "Send to..." has one argument
+    text = re.findall(r'"[^"]*"|\S+', text) or [""]
 
     #name is first word
     name = text[0]

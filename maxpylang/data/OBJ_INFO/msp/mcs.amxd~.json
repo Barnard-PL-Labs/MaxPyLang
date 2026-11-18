@@ -47,7 +47,8 @@
     }
   },
   "args": {
-    "required": [
+    "required": [],
+    "optional": [
       {
         "id": "0",
         "name": "devicename",
@@ -55,8 +56,7 @@
           "symbol"
         ]
       }
-    ],
-    "optional": []
+    ]
   },
   "attribs": [
     {

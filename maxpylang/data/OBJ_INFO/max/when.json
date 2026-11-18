@@ -19,15 +19,15 @@
     }
   },
   "args": {
-    "required": [
+    "required": [],
+    "optional": [
       {
         "name": "transport",
         "type": [
           "symbol"
         ]
       }
-    ],
-    "optional": []
+    ]
   },
   "attribs": [
     {

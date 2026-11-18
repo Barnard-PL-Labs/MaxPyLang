@@ -18,7 +18,8 @@
     }
   },
   "args": {
-    "required": [
+    "required": [],
+    "optional": [
       {
         "name": "minimum",
         "units": "ms",
@@ -26,8 +27,7 @@
           "int"
         ]
       }
-    ],
-    "optional": []
+    ]
   },
   "attribs": [
     {

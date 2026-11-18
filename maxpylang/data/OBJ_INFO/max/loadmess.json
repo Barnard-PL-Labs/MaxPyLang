@@ -18,15 +18,15 @@
     }
   },
   "args": {
-    "required": [
+    "required": [],
+    "optional": [
       {
         "name": "message",
         "type": [
           "symbol"
         ]
       }
-    ],
-    "optional": []
+    ]
   },
   "attribs": [
     {
