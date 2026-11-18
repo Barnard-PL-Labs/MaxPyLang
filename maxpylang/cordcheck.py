@@ -10,6 +10,7 @@ written in (objects placed by string or by stub, connections as lists or tuples)
     verdict()         --> judge() for one cord between an Outlet and an Inlet
     warn_if_problem() --> ConnectionWarning, reported at the user's line
     coverage()        --> verdict counts over every cord in a patch
+    unchecked()       --> the objects behind the cords that could not be checked, and why
 
 A verdict is "unknown" when the type data cannot decide it: the outlet's rate is not
 known, or audio goes into an inlet that is not known to take or refuse it.
@@ -131,3 +132,33 @@ def coverage(patch):
             for inlet in outlet.destinations:
                 counts[verdict(outlet, inlet)] += 1
     return counts
+
+
+def _why_unknown(outlet, inlet):
+    """The inlet or outlet a cord's "unknown" verdict is owed to, and the reason. The outlet comes
+    first: when its rate is not known, the inlet is never looked at."""
+    xlet = outlet if rate(outlet, "outs") is None else inlet
+    ref = xlet.parent._ref_file
+    if ref == "abstraction":
+        return xlet, "abstraction"
+    if not ref or ref == "not_found":
+        return xlet, "unknown object"
+    return xlet, "no type data"
+
+
+def unchecked(patch):
+    """
+    Why cords were not checked: [(object text, reason, number of cords)], most cords first.
+    The reason is "unknown object", "abstraction" (its inlets and outlets are whatever the
+    file inside makes them) or "no type data" (a known object whose inlet or outlet is not
+    recorded as audio or message).
+    """
+    counts = {}
+    for obj in patch.objs.values():
+        for outlet in obj.outs:
+            for inlet in outlet.destinations:
+                if verdict(outlet, inlet) == "unknown":
+                    owner, why = _why_unknown(outlet, inlet)
+                    key = (_describe(owner), why)
+                    counts[key] = counts.get(key, 0) + 1
+    return [(label, why, n) for (label, why), n in sorted(counts.items(), key=lambda item: (-item[1], item[0]))]

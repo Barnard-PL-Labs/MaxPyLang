@@ -9,7 +9,7 @@ import pytest
 
 import maxpylang as mp
 from maxpylang import ConnectionWarning
-from maxpylang.cordcheck import coverage, rate_of, verdict
+from maxpylang.cordcheck import coverage, rate_of, unchecked, verdict
 from maxpylang.objects import cycle_tilde, flonum
 
 SNIPPET = Path(__file__).parent / "typing_snippets" / "connections.py"
@@ -140,6 +140,79 @@ def test_save_reports_coverage(tmp_path, capsys):
     patch.save(str(tmp_path / "p"), verbose=False)
     assert ("PatchCheck: cords : 3 cords, 1 sending audio into an inlet that takes none, "
             "1 not checked (no type data)") in capsys.readouterr().out
+
+
+def mixed_patch():
+    """Cords that can be checked next to ones that cannot: an abstraction, a subpatcher and
+    an object that does not exist."""
+    patch = mp.MaxPatch(verbose=False)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        osc, dac, sub, nope = (patch.place(text, verbose=False)[0]
+                               for text in ("cycle~ 440", "ezdac~", "p sub", "notarealobject"))
+        synth = patch.place(mp.MaxObject("my_synth", abstraction=True, inlets=2, outlets=1), verbose=False)[0]
+        patch.connect([osc.outs[0], dac.ins[0]], [osc.outs[0], synth.ins[0]], [osc.outs[0], synth.ins[1]],
+                      [synth.outs[0], dac.ins[1]], verbose=False)
+    return patch
+
+
+def test_unchecked_names_the_object_behind_each_cord_and_why():
+    assert unchecked(mixed_patch()) == [("my_synth (obj-5)", "abstraction", 3)]
+
+
+def test_unchecked_is_empty_when_every_cord_is_judged():
+    patch = mp.MaxPatch(verbose=False)
+    osc, dac = (patch.place(text, verbose=False)[0] for text in ("cycle~ 440", "ezdac~"))
+    patch.connect([osc.outs[0], dac.ins[0]], verbose=False)
+    assert unchecked(patch) == []
+
+
+def test_get_coverage_counts_cords_and_objects_the_checks_could_not_judge():
+    report = mixed_patch().get_coverage()
+    assert report["cords"] == {"total": 4, "checked": 1, "flagged": 0, "not_checked": 3,
+                               "not_checked_because": [("my_synth (obj-5)", "abstraction", 3)]}
+    assert report["objects"] == {"total": 5, "not_seen_into": ["p (obj-3)", "notarealobject (obj-4)",
+                                                               "my_synth (obj-5)"]}
+
+
+def test_save_lists_what_was_not_checked(tmp_path, capsys):
+    patch = mixed_patch()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        patch.save(str(tmp_path / "p"), verbose=False)
+    out = capsys.readouterr().out
+    assert "not checked: 3 on my_synth (obj-5) (abstraction)" in out
+    assert "not seen into: p (obj-3), notarealobject (obj-4), my_synth (obj-5)" in out
+
+
+def test_save_adds_no_line_when_everything_was_checked(tmp_path, capsys):
+    patch = mp.MaxPatch(verbose=False)
+    osc, dac = (patch.place(text, verbose=False)[0] for text in ("cycle~ 440", "ezdac~"))
+    patch.connect([osc.outs[0], dac.ins[0]], verbose=False)
+    patch.save(str(tmp_path / "p"), verbose=False)
+    out = capsys.readouterr().out
+    assert "not checked:" not in out and "not seen into:" not in out
+
+
+def test_save_does_not_name_a_known_object_with_no_type_data(tmp_path, capsys):
+    """gain~ is a real object whose rate data is missing: the user cannot act on that, so
+    save() only counts the cord. get_coverage() still names it."""
+    patch = mp.MaxPatch(verbose=False)
+    osc, gain, dac = (patch.place(text, verbose=False)[0] for text in ("cycle~ 440", "gain~", "ezdac~"))
+    patch.connect([osc.outs[0], gain.ins[0]], [gain.outs[0], dac.ins[0]], verbose=False)
+    assert patch.get_coverage()["cords"]["not_checked_because"] == [("gain~ (obj-2)", "no type data", 1)]
+    patch.save(str(tmp_path / "p"), verbose=False)
+    out = capsys.readouterr().out
+    assert "1 not checked (no type data)" in out and "not checked:" not in out
+
+
+def test_a_long_list_of_unchecked_objects_is_cut_short(tmp_path, capsys):
+    patch = mp.MaxPatch(verbose=False)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        patch.place("p sub", num_objs=8, verbose=False)
+        patch.save(str(tmp_path / "p"), verbose=False)
+    assert "p (obj-5), and 3 more" in capsys.readouterr().out
 
 
 def test_multichannel_audio_into_control_warns():
