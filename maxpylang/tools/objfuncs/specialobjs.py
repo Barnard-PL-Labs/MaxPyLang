@@ -358,9 +358,9 @@ def get_trigger_out_types(self):
             types.append('int')
         elif tc.check_number(arg) or arg =='f':
             types.append('float')
-        elif arg == 's':
+        elif arg in ('s', 'l'):
             types.append('')
-        else:
+        else:   #a constant symbol (t clear b): Max saves the symbol itself
             types.append(arg)
     return types
 

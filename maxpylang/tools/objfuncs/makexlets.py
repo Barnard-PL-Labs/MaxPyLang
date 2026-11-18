@@ -174,7 +174,7 @@ def parse_io_num(self, info, default_num):
         if 'add_amt' in term.keys():
             sum += term['add_amt']
 
-    return sum
+    return max(sum, 0)      #a negative argument (jit.unpack -1) is not a negative count
 
 
 def add_xlets(self, num, xlet_type):
@@ -310,7 +310,7 @@ def parse_io_typing(self, type_info, num_xlets):
                 first_types = [first_types] * num_firsts
 
             #fill in the first xlets with first types
-            for i in range(num_firsts):
+            for i in range(min(num_firsts, num_xlets)):
                 new_types[i] = first_types[i]
 
 
@@ -324,7 +324,7 @@ def parse_io_typing(self, type_info, num_xlets):
                 last_types = [last_types] * num_lasts
 
             #fill in last xlets with last types, from the back
-            for i in range(num_lasts):
+            for i in range(min(num_lasts, num_xlets)):
                 new_types[ -(i+1) ] = last_types[ -(i+1) ]
 
 

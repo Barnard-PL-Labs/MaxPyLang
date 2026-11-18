@@ -31,7 +31,7 @@
 
  "record~": {"numinlets": [{"argtype": "a", "index": 1, "add_amt": 2, "type": null}]},
 
- "sfplay~": {"numoutlets": [{"argtype": "n", "index": 0, "add_amt": 1, "type": {"default": "signal", "last": [1, "bang"]}}, {"argtype": "n", "index": 2, "acc_vals": [1, 2], "optional": true, "type": {"default": "signal", "last": [1, "bang"]}}]},
+ "sfplay~": {"numoutlets": [{"argtype": "n", "index": 0, "add_amt": 1, "min": 1, "type": {"default": "signal", "last": [1, "bang"]}}, {"argtype": "n", "index": 2, "acc_vals": [1, 2], "optional": true, "type": {"default": "signal", "last": [1, "bang"]}}]},
 
  "sfrecord~": {"numinlets": [{"argtype": "a", "index": 0, "type": null}]},
 
@@ -57,7 +57,7 @@
 
  "limi~": {"numinlets": [{"argtype": "n", "index": 0, "type": null}], "numoutlets": [{"argtype": "n", "index": 0, "type": "signal"}]},
 
- "pitchshift~": {"numinlets": [{"argtype": "n", "index": 0, "add_amt": 1, "type": null}], "numoutlets": [{"argtype": "n", "index": 0, "add_amt": 1, "type": {"default": "signal", "last": [1, ""]}}]},
+ "pitchshift~": {"numinlets": [{"argtype": "n", "index": 0, "add_amt": 1, "min": 1, "type": null}], "numoutlets": [{"argtype": "n", "index": 0, "add_amt": 1, "min": 1, "type": {"default": "signal", "last": [1, ""]}}]},
 
  "tapout~": {"numinlets": [{"argtype": "n", "index": "all", "comparitor": ">=1", "type": null}], "numoutlets": [{"argtype": "n", "index": "all", "comparitor": ">=1", "type": "signal"}]},
 
