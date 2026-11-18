@@ -93,7 +93,10 @@ def check(self, *flags, device_type=None):
         plural = "" if total == 1 else "s"
         print(f"PatchCheck: cords : {total} cord{plural}, {counts['problem']} sending audio into an inlet "
               f"that takes none, {counts['unknown']} not checked (no type data)")
-        _print_some("not checked:", [f"{n} on {label} ({why})" for label, why, n in unchecked(self)])
+        # an object with no type data is a gap in maxpylang, not something the user can act on,
+        # so those cords stay in the count above and in get_coverage() and are not named here
+        _print_some("not checked:", [f"{n} on {label} ({why})" for label, why, n in unchecked(self)
+                                     if why != "no type data"])
         print()
 
     if 'graph' in flags:

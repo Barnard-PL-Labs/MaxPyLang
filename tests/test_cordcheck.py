@@ -194,6 +194,18 @@ def test_save_adds_no_line_when_everything_was_checked(tmp_path, capsys):
     assert "not checked:" not in out and "not seen into:" not in out
 
 
+def test_save_does_not_name_a_known_object_with_no_type_data(tmp_path, capsys):
+    """gain~ is a real object whose rate data is missing: the user cannot act on that, so
+    save() only counts the cord. get_coverage() still names it."""
+    patch = mp.MaxPatch(verbose=False)
+    osc, gain, dac = (patch.place(text, verbose=False)[0] for text in ("cycle~ 440", "gain~", "ezdac~"))
+    patch.connect([osc.outs[0], gain.ins[0]], [gain.outs[0], dac.ins[0]], verbose=False)
+    assert patch.get_coverage()["cords"]["not_checked_because"] == [("gain~ (obj-2)", "no type data", 1)]
+    patch.save(str(tmp_path / "p"), verbose=False)
+    out = capsys.readouterr().out
+    assert "1 not checked (no type data)" in out and "not checked:" not in out
+
+
 def test_a_long_list_of_unchecked_objects_is_cut_short(tmp_path, capsys):
     patch = mp.MaxPatch(verbose=False)
     with warnings.catch_warnings():
