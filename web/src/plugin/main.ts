@@ -231,7 +231,15 @@ function renderCheck(r: RunResult): void {
 
   const lines: string[] = [];
   for (const w of r.warnings) lines.push(`${w.category}: ${w.message}`);
-  for (const reason of cords?.not_checked_because ?? []) lines.push(`not checked: ${JSON.stringify(reason)}`);
+  // A reason arrives as [object, why, how many cords]. The same object class usually
+  // appears once per channel, so the lines are merged by class.
+  const unjudged = new Map<string, number>();
+  for (const reason of cords?.not_checked_because ?? []) {
+    const [what, why, count] = Array.isArray(reason) ? reason : [String(reason), '', 1];
+    const key = `${String(what).replace(/ \(obj-\d+\)$/, '')}: ${String(why)}`;
+    unjudged.set(key, (unjudged.get(key) ?? 0) + (Number(count) || 1));
+  }
+  for (const [key, count] of unjudged) lines.push(`not checked, ${count} cord${count === 1 ? '' : 's'} from ${key}`);
   for (const name of objects?.not_seen_into ?? []) lines.push(`cannot see into: ${name}`);
   if (lines.length) {
     const ul = document.createElement('ul');
@@ -244,9 +252,9 @@ function renderCheck(r: RunResult): void {
   // workaround in the script names its gap, so the list is read off the script itself.
   const ids = [...new Set([...r.script.matchAll(/gap (M4L-\d+)/g)].map((m) => m[1]))].sort();
   if (ids.length) {
-    const gaps = document.createElement('div');
+    const gaps = document.createElement('details');
     gaps.className = 'gaps';
-    const head = document.createElement('p');
+    const head = document.createElement('summary');
     head.innerHTML = `<b>${ids.length} things this device needs that MaxPyLang cannot say yet.</b> The script works around each one, and each is in the <a href="${GAP_LOG}" target="_blank" rel="noopener">gap log</a>.`;
     const ul = document.createElement('ul');
     for (const id of ids) {
@@ -280,7 +288,7 @@ function fitDevice(): void {
   if (!deviceWidth) return;
   const wrap = $('device-wrap');
   const room = wrap.clientWidth - 48;
-  const zoom = Math.max(0.62, Math.min(1.6, room / deviceWidth));
+  const zoom = Math.max(0.62, Math.min(2, room / deviceWidth));
   const device = $('device');
   device.style.transform = `scale(${zoom})`;
   // A transform does not change layout size, so the wrapper is sized by hand.
@@ -307,15 +315,42 @@ function markCustom(): void {
   for (const el of document.querySelectorAll('.preset.is-active')) el.classList.remove('is-active');
 }
 
+/** The preset sections, in file order: one per effect, as the left panel lists them. */
+const SECTIONS = [...new Set(PRESETS.map((p) => p.group))];
+let section = 'All';
+
+function renderSections(): void {
+  const host = $('sections');
+  host.replaceChildren();
+  // 'Start' holds only the empty device; it is listed under All and needs no chip.
+  for (const name of ['All', ...SECTIONS.filter((g) => g !== 'Start')]) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'section-chip';
+    b.textContent = name;
+    b.setAttribute('role', 'radio');
+    b.setAttribute('aria-checked', String(name === section));
+    b.addEventListener('click', () => {
+      section = name;
+      renderSections();
+      renderPresets();
+      $('presets').scrollIntoView({ block: 'nearest' });
+    });
+    host.append(b);
+  }
+}
+
 function renderPresets(): void {
   const host = $('presets');
   host.replaceChildren();
-  const groups = new Map<string, Preset[]>();
-  for (const p of PRESETS) groups.set(p.group, [...(groups.get(p.group) ?? []), p]);
-  for (const [group, list] of groups) {
-    host.append(Object.assign(document.createElement('h3'), { textContent: group }));
-    const grid = document.createElement('div');
-    grid.className = 'preset-grid';
+  for (const group of SECTIONS) {
+    if (section !== 'All' && section !== group) continue;
+    const list = PRESETS.filter((p) => p.group === group);
+    const head = document.createElement('h3');
+    head.append(group, Object.assign(document.createElement('small'), { textContent: String(list.length) }));
+    host.append(head);
+    const rows = document.createElement('div');
+    rows.className = 'preset-list';
     for (const p of list) {
       const b = document.createElement('button');
       b.type = 'button';
@@ -327,9 +362,9 @@ function renderPresets(): void {
         Object.assign(document.createElement('span'), { textContent: p.tag }),
       );
       b.addEventListener('click', () => loadPreset(p));
-      grid.append(b);
+      rows.append(b);
     }
-    host.append(grid);
+    host.append(rows);
   }
 }
 
@@ -506,6 +541,7 @@ function setTab(tab: 'presets' | 'build'): void {
 }
 
 function renderSide(): void {
+  renderSections();
   renderPresets();
   $<HTMLInputElement>('name').value = settings.name;
   applyAccent();
@@ -782,4 +818,9 @@ function init(): void {
 
 init();
 
-if (import.meta.env.DEV) Object.assign(window, { __fx: { engine, track, get settings() { return settings; }, get result() { return result; } } });
+if (import.meta.env.DEV) {
+  const fx = { engine, track, get settings() { return settings; }, get result() { return result; } };
+  Object.assign(window, { __fx: fx });
+  // The offline renderer used to compare this engine with Max (see offline.ts).
+  void import('./offline').then((offline) => Object.assign(fx, offline));
+}

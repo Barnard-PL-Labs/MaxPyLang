@@ -40,14 +40,18 @@ describe('audio filter objects', () => {
     expect(node.signalOuts.length).toBe(4);
     expect(node.signalOuts.every(Boolean)).toBe(true);
     expect(val(node.signalIns[1])).toBe(800); // center frequency arg
-    // resonance 0.5 -> quality factor 1 -> 0 dB on the lowpass, whose Q is in decibels
-    expect(val(node.signalIns[2])).toBeCloseTo(0, 6);
+    // Max's mapping, measured: Q = 1 / (1.2 * (1 - resonance))^2, so 0.5 is a Q of 2.78.
+    // The lowpass takes its Q in decibels.
+    expect(val(node.signalIns[2])).toBeCloseTo(20 * Math.log10(1 / 0.36), 4);
     node.controlIns![1]!([2000] as Msg);
-    node.controlIns![2]!([0.95] as Msg);
+    node.controlIns![2]!([0.75] as Msg);
     expect(val(node.signalIns[1])).toBe(2000);
-    expect(val(node.signalIns[2])).toBeCloseTo(20, 4); // quality factor 10 = 20 dB
+    expect(val(node.signalIns[2])).toBeCloseTo(20 * Math.log10(1 / 0.09), 4);
     // The bandpass outlet takes the same resonance as a linear Q.
-    expect(((node.signalOuts[2] as BiquadFilterNode).Q as AudioParam).value).toBeCloseTo(10, 4);
+    expect(((node.signalOuts[2] as BiquadFilterNode).Q as AudioParam).value).toBeCloseTo(1 / 0.09, 4);
+    // Up to about 0.17 the filter is flat: the quality factor does not go below 1.
+    node.controlIns![2]!([0.05] as Msg);
+    expect(((node.signalOuts[2] as BiquadFilterNode).Q as AudioParam).value).toBeCloseTo(1, 6);
   });
 
   it('reson~ lands gain/frequency/Q args on the right params', () => {

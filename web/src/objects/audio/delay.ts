@@ -13,6 +13,7 @@
 import { num, register, type MaxNode } from '../../engine/registry';
 import { firstNum, type Msg } from '../../runtime/atoms';
 import { makeOutlets } from '../../runtime/outlets';
+import { PROCESSORS, tryWorkletNode } from '../../runtime/worklet';
 
 // DelayNode.maxDelayTime must be finite, > 0 and (per spec) < 180s.
 function clampMax(sec: number): number {
@@ -50,8 +51,12 @@ register('delay~', (args, { ctx }) => {
 // pair in a patch silently read the first pair's line.
 //
 // Feedback (tapout~ -> *~ -> tapin~) is legal for the reason it is in Max: the cycle
-// contains a delay. Web Audio rounds a delay inside a cycle up to one render quantum
-// (128 samples, about 3 ms), which is shorter than any musical echo.
+// contains a delay. A cycle costs one extra render quantum in the browser (128 samples,
+// about 3 ms, measured in Chrome as every repeat arriving that much late while the first
+// echo is on time). So each tap has a second, "early" read of the line, one quantum
+// shorter, and the engine wires the cords that go back round the loop from that one
+// (MaxNode.loopOuts). The repeats then land where Max has them. A delay inside a cycle
+// cannot be shorter than a quantum, so a loop under about 6 ms stays too long.
 
 interface TapLine { input: GainNode; maxSeconds: number }
 const tapLines = new Map<string, TapLine>();
@@ -85,48 +90,67 @@ register('tapin~', (args, { ctx }) => {
 // signal (the time in ms, continuously, which is how a chorus sweeps it).
 register('tapout~', (args, { ctx }) => {
   const count = Math.max(1, args.length);
+  const quantum = 128 / ctx.sampleRate;
   const outs: GainNode[] = [];
+  const earlyOuts: GainNode[] = [];
   const timeIns: GainNode[] = [];
   const delays: (DelayNode | undefined)[] = [];
+  const earlies: (DelayNode | undefined)[] = [];
   const times: number[] = [];
   let line: TapLine | undefined;
+  // What the early read of each tap is shortened by.
+  const trim = new ConstantSourceNode(ctx, { offset: -quantum });
+  trim.start();
 
   for (let i = 0; i < count; i++) {
     outs[i] = new GainNode(ctx, { gain: 1 });
+    earlyOuts[i] = new GainNode(ctx, { gain: 1 });
     // A signal at the inlet is a time in ms; DelayNode.delayTime wants seconds.
     timeIns[i] = new GainNode(ctx, { gain: 0.001 });
     times[i] = Math.max(0, num(args[i], 0)) / 1000;
   }
 
+  const cut = (delay: DelayNode | undefined, i: number): void => {
+    if (!delay) return;
+    try { line?.input.disconnect(delay); } catch { /* already cut */ }
+    try { timeIns[i].disconnect(delay.delayTime); } catch { /* already cut */ }
+    try { delay.disconnect(); } catch { /* already cut */ }
+  };
+
   const attach = (next: TapLine): void => {
     for (let i = 0; i < count; i++) {
-      const old = delays[i];
-      if (old) {
-        try { line?.input.disconnect(old); } catch { /* already cut */ }
-        try { timeIns[i].disconnect(old.delayTime); } catch { /* already cut */ }
-        try { old.disconnect(); } catch { /* already cut */ }
-      }
-      const delay = new DelayNode(ctx, {
-        maxDelayTime: next.maxSeconds,
-        delayTime: Math.min(times[i], next.maxSeconds),
-      });
-      next.input.connect(delay);
+      cut(delays[i], i);
+      cut(earlies[i], i);
+      const make = (): DelayNode => {
+        const delay = new DelayNode(ctx, {
+          maxDelayTime: next.maxSeconds,
+          delayTime: Math.min(times[i], next.maxSeconds),
+        });
+        next.input.connect(delay);
+        timeIns[i].connect(delay.delayTime);
+        return delay;
+      };
+      const delay = make();
       delay.connect(outs[i]);
-      timeIns[i].connect(delay.delayTime);
       delays[i] = delay;
+      const early = make();
+      trim.connect(early.delayTime);
+      early.connect(earlyOuts[i]);
+      earlies[i] = early;
     }
     line = next;
   };
 
   const setTime = (i: number, ms: number): void => {
     times[i] = Math.max(0, ms) / 1000;
-    const delay = delays[i];
-    if (!delay) return;
     const target = Math.min(times[i], line?.maxSeconds ?? times[i]);
-    // Glide instead of jumping: a jump in delay time is a click, a glide is the pitch
-    // bend a real delay line makes when its time knob is turned.
-    delay.delayTime.cancelScheduledValues(ctx.currentTime);
-    delay.delayTime.setTargetAtTime(target, ctx.currentTime, 0.03);
+    for (const delay of [delays[i], earlies[i]]) {
+      if (!delay) continue;
+      // Glide instead of jumping: a jump in delay time is a click, a glide is the pitch
+      // bend a real delay line makes when its time knob is turned.
+      delay.delayTime.cancelScheduledValues(ctx.currentTime);
+      delay.delayTime.setTargetAtTime(target, ctx.currentTime, 0.03);
+    }
   };
 
   const controlIns = timeIns.map((_, i) => (m: Msg) => {
@@ -142,16 +166,16 @@ register('tapout~', (args, { ctx }) => {
   return {
     signalIns: timeIns,
     signalOuts: outs,
+    loopOuts: earlyOuts,
     controlIns,
     dispose: () => {
+      try { trim.stop(); trim.disconnect(); } catch { /* already stopped */ }
       for (let i = 0; i < count; i++) {
-        const delay = delays[i];
-        if (delay) {
-          try { line?.input.disconnect(delay); } catch { /* already cut */ }
-          try { delay.disconnect(); } catch { /* already cut */ }
-        }
+        cut(delays[i], i);
+        cut(earlies[i], i);
         try { timeIns[i].disconnect(); } catch { /* already cut */ }
         try { outs[i].disconnect(); } catch { /* already cut */ }
+        try { earlyOuts[i].disconnect(); } catch { /* already cut */ }
       }
     },
   } satisfies MaxNode;
@@ -159,12 +183,43 @@ register('tapout~', (args, { ctx }) => {
 
 // comb~ : comb filter = delay line with feedforward + feedback taps.
 //   y(n) = a*x(n) + b*x(n-D) + c*y(n-D)
-// Realised as a single DelayNode with a feedback gain into its own input, a
-// feedforward gain on the delayed tap, and a direct gain, summed at the output.
 // Inlets: 0 audio in, 1 delay time (ms), 2 gain (a), 3 feedforward (b), 4 feedback (c).
-// arg 0 = max delay (ms), 1 = initial delay (ms), 2 = a, 3 = b, 4 = c.
+// arg 0 = max delay (ms, 10 if not given), 1 = initial delay (ms), 2 = a, 3 = b, 4 = c.
+//
+// The real thing is a worklet running that recurrence, matched to Max 9: the feedback
+// repeats land on the same sample as in Max (a delay set by a number is cut down to whole
+// samples), and a delay driven by a signal is read between samples.
+//
+// Without a worklet it is a DelayNode with a feedback gain into its own input. That is
+// the right shape, but a cycle costs the browser one extra render quantum, so the loop
+// runs 128 samples long: a reverb built on it comes out detuned.
 register('comb~', (args, { ctx }) => {
-  const maxDelayTime = clampMax(num(args[0], 100) / 1000); // ms -> seconds
+  const maxMs = num(args[0], 10);
+  const node = tryWorkletNode(ctx, PROCESSORS.comb, { numberOfInputs: 2, processorOptions: { maxDelayMs: maxMs } });
+  if (node) {
+    const names = ['delay', 'a', 'b', 'c'] as const;
+    const params = names.map((n) => node.parameters.get(n));
+    params.forEach((p, i) => { if (p) p.value = num(args[i + 1], 0); });
+    // A delay time arriving as a signal goes to the worklet's second input, not to the
+    // param: that is how the worklet can tell a swept delay (read between samples, as in
+    // Max) from one set by a number (whole samples), even when the signal holds still.
+    const sweep = new GainNode(ctx, { gain: 1 });
+    sweep.connect(node, 0, 1);
+    return {
+      signalIns: [node, sweep, ...params.slice(1).map((p) => p ?? undefined)],
+      signalOuts: [node],
+      controlIns: [
+        undefined,
+        ...params.map((p) => (m: Msg) => { const n = firstNum(m); if (n !== undefined && p) p.value = n; }),
+      ],
+      dispose: () => {
+        try { sweep.disconnect(); } catch { /* nothing connected */ }
+        try { node.disconnect(); } catch { /* nothing connected */ }
+      },
+    } satisfies MaxNode;
+  }
+
+  const maxDelayTime = clampMax(maxMs / 1000); // ms -> seconds
   const initDelay = Math.min(num(args[1], 0) / 1000, maxDelayTime);
 
   const input = new GainNode(ctx, { gain: 1 });

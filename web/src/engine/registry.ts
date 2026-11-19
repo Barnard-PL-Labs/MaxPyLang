@@ -79,6 +79,13 @@ export interface MaxNode {
   /** Patch reload / teardown: cancel timers, unsubscribe from buses, etc. */
   dispose?: () => void;
   /**
+   * For a delay that can sit in a feedback loop: outlet i's signal one render quantum
+   * early. The browser runs every cycle a quantum (128 samples) late, so the engine wires
+   * a cord that closes a loop from here instead of from signalOuts, and the loop comes out
+   * the length the patch asked for. Cords that leave the loop still use signalOuts.
+   */
+  loopOuts?: (AudioNode | undefined)[];
+  /**
    * A `p`/`patcher` box's inside (objects/control/subpatch.ts): the nested Engine that
    * runs the embedded patch — which is what a canvas showing that patch mounts widgets
    * from — and the hook Engine.applyOps() forwards a `sub` op's inner ops to, so an

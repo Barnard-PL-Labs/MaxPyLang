@@ -7,13 +7,14 @@ import { describe, expect, it } from 'vitest';
 import {
   biquadProcess, makeBiquadState, lowpassCoeffs,
   onepoleProcess, makeOnePoleState, onepoleCoef,
-  svfProcess, makeSVFState, svfF, svfQ,
+  svfProcess, makeSVFState, svfF, svfQ, svfDamping,
   combProcess, makeCombState,
   allpassProcess, makeAllpassState,
   accumProcess, makeAccumState,
   rampsmoothProcess, makeRampSmoothState,
   deltaclipProcess, makeDeltaClipState,
   degradeProcess, makeDegradeState,
+  overdrive, fold, wrap,
 } from '../../src/dsp/kernels';
 
 const SR = 44100;
@@ -137,6 +138,64 @@ describe('svfProcess', () => {
   });
 });
 
+// The numbers below were read off Max 9 itself: test signals rendered through the real
+// objects and recorded. They are here so the browser engine cannot drift away from Max.
+describe('svf~ as measured in Max', () => {
+  it('damping follows (1.2 * (1 - resonance))^2, capped at 1', () => {
+    // gain at the cutoff, measured: 1.41 at 0.3, 2.77 at 0.5, 7.7 at 0.7, 66.8 at 0.9
+    expect(1 / svfDamping(0.3)).toBeCloseTo(1.417, 2);
+    expect(1 / svfDamping(0.5)).toBeCloseTo(2.778, 2);
+    expect(1 / svfDamping(0.7)).toBeCloseTo(7.716, 2);
+    expect(1 / svfDamping(0.9)).toBeCloseTo(69.44, 1);
+    expect(svfDamping(0)).toBe(1);
+    expect(svfDamping(0.1)).toBe(1);
+    expect(svfDamping(1)).toBeGreaterThan(0); // never quite self-oscillating
+  });
+
+  it('the frequency coefficient is sin(2*pi*fc/sr) and stops at a quarter of the sample rate', () => {
+    expect(svfF(1000, SR)).toBeCloseTo(Math.sin((2 * Math.PI * 1000) / SR), 12);
+    expect(svfF(SR / 4, SR)).toBeCloseTo(1, 12);
+    expect(svfF(20000, SR)).toBeCloseTo(1, 12);
+  });
+
+  it('a tone at the cutoff comes out of the lowpass louder by the quality factor', () => {
+    const x = sine(44100, 1000);
+    const lp = svfProcess(x, svfF(1000, SR), svfDamping(0.5), makeSVFState()).lp;
+    const tail = (v: Float32Array) => energy(v.subarray(22050));
+    expect(Math.sqrt(tail(lp) / tail(x))).toBeCloseTo(2.78, 1);
+  });
+});
+
+describe('waveshapers as measured in Max', () => {
+  it('overdrive~ is 1 - (1 - |x|)^drive', () => {
+    // a ramp through overdrive~ at drive 2: 0.2 -> 0.36, 0.4 -> 0.64, 0.6 -> 0.84
+    expect(overdrive(0.2, 2)).toBeCloseTo(0.36, 6);
+    expect(overdrive(0.4, 2)).toBeCloseTo(0.64, 6);
+    expect(overdrive(-0.6, 2)).toBeCloseTo(-0.84, 6);
+    expect(overdrive(0.2, 3)).toBeCloseTo(0.488, 6);
+    expect(overdrive(0.2, 1.5)).toBeCloseTo(0.284, 3);
+    expect(overdrive(0.37, 1)).toBeCloseTo(0.37, 6); // drive 1 is a straight line
+    expect(overdrive(1.7, 5)).toBe(1); // flat past full scale
+    expect(overdrive(-1.7, 5)).toBe(-1);
+  });
+
+  it('pong~ mode 0 folds the signal back at the limits', () => {
+    // a ramp times 3 through pong~ 0 -1. 1.: 1.2 -> 0.8, 1.8 -> 0.2, 2.4 -> -0.4, 2.85 -> -0.85
+    expect(fold(1.2, -1, 1)).toBeCloseTo(0.8, 6);
+    expect(fold(1.8, -1, 1)).toBeCloseTo(0.2, 6);
+    expect(fold(2.4, -1, 1)).toBeCloseTo(-0.4, 6);
+    expect(fold(-2.85, -1, 1)).toBeCloseTo(0.85, 6);
+    expect(fold(0.3, -1, 1)).toBeCloseTo(0.3, 6);
+    for (const x of [-37.2, -4, 5.5, 91]) expect(Math.abs(fold(x, -1, 1))).toBeLessThanOrEqual(1);
+  });
+
+  it('pong~ mode 1 wraps round to the other limit', () => {
+    expect(wrap(1.25, -1, 1)).toBeCloseTo(-0.75, 6);
+    expect(wrap(-1.5, -1, 1)).toBeCloseTo(0.5, 6);
+    expect(wrap(0.3, -1, 1)).toBeCloseTo(0.3, 6);
+  });
+});
+
 // ── comb~ ────────────────────────────────────────────────────────────────────────
 describe('combProcess', () => {
   it('feedback comb produces decaying echoes at the delay length', () => {
@@ -252,6 +311,20 @@ describe('degradeProcess', () => {
     const transitions = (v: Float32Array) => { let t = 0; for (let i = 1; i < v.length; i++) if (v[i] !== v[i - 1]) t++; return t; };
     // Downsampling by ~2 roughly halves the number of value changes.
     expect(transitions(half)).toBeLessThan(transitions(full) * 0.75);
+  });
+
+  it('rounds down, as Max does, so 4 bits puts 0.1 at 0 and -0.1 at -0.125', () => {
+    const x = Float32Array.from([0.1, -0.1, 0.124, 0.126, -0.7, 0.7]);
+    const y = degradeProcess(x, { ratio: 1, bits: 4 }, makeDegradeState());
+    expect(Array.from(y)).toEqual([0, -0.125, 0, 0.125, -0.75, 0.625]);
+  });
+
+  it('at a ratio of 0.1 every tenth sample is taken and held for ten', () => {
+    const x = Float32Array.from({ length: 40 }, (_, i) => i / 64);
+    const y = degradeProcess(x, { ratio: 0.1, bits: 24 }, makeDegradeState());
+    expect(y[0]).toBeCloseTo(0, 6);
+    for (let i = 1; i < 10; i++) expect(y[i]).toBe(y[0]);
+    expect(y[10]).not.toBe(y[9]);
   });
 
   it('bit reduction limits the number of distinct output levels', () => {

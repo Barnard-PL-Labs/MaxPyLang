@@ -8,12 +8,31 @@
 
 import { num, register, type MaxNode } from '../../engine/registry';
 import { firstNum } from '../../runtime/atoms';
+import { PROCESSORS, tryWorkletNode } from '../../runtime/worklet';
 
-// onepole~ : one-pole lowpass. inlet 0 signal, inlet 1 sets center frequency (Hz).
-// A one-pole filter has no resonance, so a lowpass biquad (Q left at default) is a
-// good, cheap approximation of the -6 dB/oct rolloff. The mode symbol arg
-// (Hz/linear/radians) is accepted but ignored; we treat the value as Hz.
+// Max takes filter cutoffs up to a quarter of the sample rate (svf~ and onepole~ both
+// document it), so a dial that goes higher does nothing more in Live. Mirror that.
+const quarterRate = (ctx: BaseAudioContext, hz: number): number => Math.max(0, Math.min(ctx.sampleRate / 4, hz));
+
+// onepole~ : one-pole lowpass, 6 dB per octave. inlet 0 signal, inlet 1 the cutoff (Hz).
+// The real thing is a worklet running Max's own recurrence. Without one (Node, or a
+// context nobody preloaded) a lowpass biquad stands in: right cutoff, steeper slope.
+// The mode symbol arg (Hz/linear/radians) is accepted but ignored; the value is Hz.
 register('onepole~', (args, { ctx }) => {
+  const node = tryWorkletNode(ctx, PROCESSORS.onepole);
+  const pFreq = node?.parameters.get('freq');
+  if (node && pFreq) {
+    pFreq.value = quarterRate(ctx, num(args[0], 100));
+    return {
+      signalIns: [node, pFreq],
+      signalOuts: [node],
+      controlIns: [
+        undefined,
+        (m) => { const n = firstNum(m); if (n !== undefined) pFreq.value = quarterRate(ctx, n); },
+      ],
+      dispose: () => { try { node.disconnect(); } catch { /* nothing connected */ } },
+    } satisfies MaxNode;
+  }
   const filter = new BiquadFilterNode(ctx, {
     type: 'lowpass',
     frequency: num(args[0], 100),
@@ -29,20 +48,51 @@ register('onepole~', (args, { ctx }) => {
 });
 
 // svf~ : state-variable filter. One input, four simultaneous outputs (lowpass,
-// highpass, bandpass, notch). Web Audio has no single SVF node, so we run four
-// biquads of the matching type off a shared input, kept in sync on frequency and
-// resonance. inlet 1 = center frequency, inlet 2 = resonance.
+// highpass, bandpass, notch). inlet 1 = center frequency, inlet 2 = resonance.
 //
-// Max's resonance runs 0..1 and is not a Q: 0 is no peak at all and 1 is the edge of
-// self-oscillation. It is mapped to a quality factor of 0.5 / (1 - r), so 0 is a gentle
-// 0.5, 0.5 is 1 and 0.95 is 10. A biquad then wants that number in two different units:
-// linear for bandpass and notch, decibels for lowpass and highpass.
-const svfQ = (resonance: number): number => 0.5 / (1 - Math.min(0.98, Math.max(0, resonance)));
+// Max's resonance runs 0..1 and is not a Q. Rendering svf~ in Max 9 shows the quality
+// factor is 1 / (1.2 * (1 - resonance))^2, never below 1: flat up to about 0.17, 2.8 at
+// 0.5, 67 at 0.9. The worklet runs the recurrence fitted to those recordings sample for
+// sample, so all four outputs come out at Max's levels (the bandpass peaks at that same
+// gain, it is not normalised to 1).
+//
+// Without a worklet, four biquads of the matching type stand in, with the resonance
+// mapped to the same quality factor: linear for bandpass and notch, decibels for lowpass
+// and highpass. Their bandpass is normalised, so it reads quieter than Max's.
+const svfQ = (resonance: number): number => {
+  const d = 1.2 * (1 - Math.min(1, Math.max(0, resonance)));
+  return 1 / Math.max(0.0001, Math.min(1, d * d));
+};
 const svfQdB = (resonance: number): number => 20 * Math.log10(svfQ(resonance));
 
 register('svf~', (args, { ctx }) => {
   const freq = num(args[0], 1000);
   const res = num(args[1], 0);
+  const node = tryWorkletNode(ctx, PROCESSORS.svf, { numberOfInputs: 1, numberOfOutputs: 4, outputChannelCount: [1, 1, 1, 1] });
+  const pFreq = node?.parameters.get('freq');
+  const pRes = node?.parameters.get('res');
+  if (node && pFreq && pRes) {
+    pFreq.value = quarterRate(ctx, freq);
+    pRes.value = res;
+    const outs = [0, 1, 2, 3].map((i) => {
+      const g = new GainNode(ctx, { gain: 1 });
+      node.connect(g, i);
+      return g;
+    });
+    return {
+      signalIns: [node, pFreq, pRes],
+      signalOuts: outs,
+      controlIns: [
+        undefined,
+        (m) => { const n = firstNum(m); if (n !== undefined) pFreq.value = quarterRate(ctx, n); },
+        (m) => { const n = firstNum(m); if (n !== undefined) pRes.value = n; },
+      ],
+      dispose: () => {
+        try { node.disconnect(); } catch { /* nothing connected */ }
+        for (const g of outs) { try { g.disconnect(); } catch { /* nothing connected */ } }
+      },
+    } satisfies MaxNode;
+  }
   const input = new GainNode(ctx, { gain: 1 });
   const mk = (type: BiquadFilterType, q: number) => {
     const f = new BiquadFilterNode(ctx, { type, frequency: freq, Q: q });

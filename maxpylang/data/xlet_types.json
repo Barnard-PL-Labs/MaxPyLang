@@ -1141,7 +1141,7 @@
     "swing~": {"ins": ["signal"], "outs": ["signal", "signal", "control"]},
     "sync~": {"ins": ["any"], "outs": ["signal", "control", "control"]},
     "table~": {"ins": ["signal"], "outs": ["signal"]},
-    "tanh~": {"ins": ["any"], "outs": ["signal"]},
+    "tanh~": {"ins": ["signal"], "outs": ["signal"]},
     "tanx~": {"ins": ["any"], "outs": ["signal"]},
     "tapin~": {"ins": ["signal"], "outs": ["control"]},
     "tapout~": {"ins": "signal", "outs": "signal"},

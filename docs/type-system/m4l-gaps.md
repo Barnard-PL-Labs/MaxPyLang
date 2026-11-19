@@ -37,6 +37,7 @@ current device had to work around, read off the generated script.
 | M4L-08 | check | Duplicate parameter names are accepted | open |
 | M4L-09 | check | Output level is unbounded: the `clip~` rule is not checked | open |
 | M4L-10 | check | A parameter that controls nothing is accepted | open |
+| M4L-11 | check | About fifty audio objects have an inlet with no type, so cords into them are not judged | open (`tanh~` fixed) |
 
 "Express" gaps block the generator and are worked around in its script. "Check" gaps
 do not block it: the generator happens to build correct devices, and the checks would
@@ -177,6 +178,23 @@ range and ends at an inlet with an expected one.
 which takes 0 to 1, saves with no warning. The generator avoids this only because one
 table (`schema.json`) is the single source of each dial's range.
 
+It then happened for real. The first version of the generator shipped four dials whose
+range ran past what the object behind them accepts, and nothing said so:
+
+| Dial | Declared | What the object takes |
+|---|---|---|
+| Filter Cutoff into `svf~` | up to 18000 Hz | up to a quarter of the sample rate (11025 Hz) |
+| Distortion Tone into `onepole~` | up to 18000 Hz | the same |
+| Reverb Damp into `onepole~` | up to 16000 Hz | the same |
+| Distortion Drive into `overdrive~` | up to 12 | 1 to 10 |
+
+In Live the top third of each of those dials would have turned and changed nothing. They
+were found by reading Max's reference pages, which state each limit in prose. The limits
+are in the scraped reference data already, as text; this gap is about turning them into
+something a check can read. A fifth case was a matter of degree, not of limits: `svf~`'s
+resonance is nominally 0 to 1, and measured in Max it is flat below 0.17 and rings for
+seconds above 0.85, so the dial now maps onto 0.17 to 0.75.
+
 **Proposed fix.** This is the refinement the formal model leaves open. A first step that
 does not need full interval typing: record the documented range of the few dozen inlets
 where it matters (resonance, feedback, gain coefficients), read the dial's range from its
@@ -225,6 +243,41 @@ require a cord from an outlet, or a `varname` that something refers to.
 
 **Test.** `test_m4l_10_a_parameter_controls_something`.
 
+## M4L-11: audio objects whose inlets have no type
+
+**Missing.** A type for the inlet of about fifty audio objects, among them `tanh~`,
+`cosh~`, `sinh~`, `tanx~`, `sinx~`, `cosx~`, `receive~` and `gen~`.
+
+**Evidence.** `cycle~ -> tanh~` was reported as a cord the checks could not judge
+("no type data"), on an object that takes a signal and nothing else. The cause is
+upstream: the reference pages Max ships for these objects have a placeholder where the
+inlet type goes (`<inlet id="0" type="INLET_TYPE">`), so the type table records the inlet
+as `any`. 53 objects in `msp-ref` have both the placeholder and an `any` inlet.
+
+It showed up as soon as the generator used `tanh~` for its tube distortion and for the
+saturating delay loop: the page's "Type check" panel went from "all cords checked" to
+"2 not checked".
+
+**Done so far.** `tanh~`'s inlet is set to `signal` in `data/xlet_types.json`, by hand,
+after confirming in Max that it processes audio.
+
+**Proposed fix.** The same pages describe each inlet in their method list
+(`<method name="signal">`), and for most of the fifty that is enough to tell a signal
+inlet from a message inlet. Use it as a fallback when the inlet type is the placeholder.
+
+**Tests.** `test_m4l_11_tanh_is_judged` (passes), `test_m4l_11_a_cord_into_cosh_is_judged`.
+
+---
+
+## A gap the checks caught
+
+Worth recording because it is the loop working in the other direction. While the filter
+was being reworked, a control object in the generated script was given the same variable
+name as the Reso dial. Every cord written against the dial landed on the new object
+instead, so the dial fed nothing and the object fed itself. The graph check reported it
+on the next build ("hot loop through scale: every cord lands on a hot inlet"), and seven
+presets failed their test. The generator now refuses a name used twice.
+
 ---
 
 ## Outside the type system
@@ -243,5 +296,15 @@ maxpylang's types, and are listed so they are not lost.
   is connected to an `AudioParam`, which sums with the value it already holds. The
   generator avoids the difference by giving an object no argument (or 0) wherever a
   signal drives that inlet.
-- **The preview is an approximation.** `svf~`, `overdrive~`, `comb~` and `degrade~` are
-  stand-ins built from Web Audio nodes. They are close in character, not sample-exact.
+- **A feedback loop runs 128 samples late in the browser.** Chrome adds one render
+  quantum to every cycle in the audio graph, so each repeat of a `tapin~` / `tapout~`
+  echo arrived 2.9 ms after it does in Max, and a reverb built on looped delays came out
+  detuned. `tapout~` now has an early read for the cords that close a loop, and `comb~`
+  is a worklet with its loop inside.
+- **The preview is checked against Max, not assumed.** `web/scripts/maxcheck/` renders
+  one test signal through the same generated patches in Max and in the engine and
+  compares the recordings. The filter, every distortion type, the crusher, the delay, the
+  flanger and the reverb now match a Max 9 recording to its last bit. What still differs
+  (where an LFO starts, and a one-vector offset inside Max) is listed in that folder's
+  README, along with the formulas the measurements gave for `svf~`, `overdrive~`,
+  `onepole~`, `degrade~`, `comb~` and `allpass~`.
