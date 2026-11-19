@@ -54,6 +54,13 @@ settings ──▶ src/plugin/fxgen.py (maxpylang, in Pyodide) ──▶ patcher
 - **The engine plays the device as a host would.** `runtime/host.ts` is a pair of buses
   standing in for the Live track: the page plays a sample into `plugin~` and listens to
   `plugout~`. `live.dial` is a real object whose widget is mounted in the device view.
+- **Presets are filed by effect** (Distortion, Lo-Fi, Filter, Chorus, Tremolo, Delay,
+  Reverb), and the left panel has a chip for each section.
+- **The sound is checked against Max.** `scripts/maxcheck/` renders a test signal through
+  the same generated patches in Max and in this engine and compares the recordings. The
+  filter, the distortion types, the crusher, the delay, the flanger and the reverb match
+  a Max 9 recording to its last bit. That folder's README has the method and what Max's
+  objects were measured to do.
 - **Gaps feed back into the type system.** Wherever the script has to work around
   maxpylang it says `gap M4L-NN`; the entries are in `docs/type-system/m4l-gaps.md` and
   each is pinned by a strict xfail in `tests/test_m4l_gaps.py`.

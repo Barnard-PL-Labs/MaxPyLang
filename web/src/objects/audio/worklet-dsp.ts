@@ -127,7 +127,8 @@ register('deltaclip~', (args, { ctx }) => {
 // The worklet param `delay` is in SAMPLES; control messages convert ms -> samples.
 register('allpass~', (args, { ctx }) => {
   const sr = ctx.sampleRate || 44100;
-  const ms2samp = (ms: number) => Math.max(1, Math.round((ms / 1000) * sr));
+  // Whole samples, rounded down: what Max's allpass~ does with a delay given in ms.
+  const ms2samp = (ms: number) => Math.max(1, Math.floor((ms / 1000) * sr));
   const maxDelay = ms2samp(num(args[0], 100));
   const initDelay = Math.min(maxDelay, ms2samp(num(args[1], 0)));
   const g = num(args[2], 0);

@@ -23,7 +23,7 @@ function quantizeCurve(bits: number) {
   const curve = new Float32Array(new ArrayBuffer(CURVE_LEN * 4));
   for (let i = 0; i < CURVE_LEN; i++) {
     const x = (i / (CURVE_LEN - 1)) * 2 - 1;
-    curve[i] = Math.round(x * half) / half;
+    curve[i] = Math.floor(x * half) / half; // Max rounds down
   }
   return curve;
 }
@@ -96,26 +96,41 @@ register('degrade~', (args, { ctx }) => {
 });
 
 // ── overdrive~ : soft-clipping distortion ─────────────────────────────────────────
-// inlet 0 = signal, inlet 1 = drive factor (1 = clean, higher = more). A memoryless
-// curve, tanh(drive * x) scaled so full scale stays at full scale: quiet signals get
-// louder and denser as the drive rises while the peaks stay put. Max's own curve is not
-// published, so this is the same family of shape rather than a copy of it.
-function overdriveCurve(drive: number) {
-  const d = Math.max(1, Number.isFinite(drive) ? drive : 1);
-  const norm = Math.tanh(d);
+// inlet 0 = signal, inlet 1 = drive factor (1 = clean, 10 = as far as it goes).
+//
+// The curve is Max's own, read off a ramp rendered through overdrive~ in Max 9:
+//   y = sign(x) * (1 - (1 - |x|) ^ drive), and flat past full scale.
+// A worklet evaluates it per sample, with no oversampling because Max has none. Without
+// a worklet a WaveShaper holds the same curve as a table.
+const overdriveCurveAt = (x: number, drive: number): number => {
+  const a = Math.min(1, Math.abs(x));
+  const y = 1 - Math.pow(1 - a, Math.max(0, drive));
+  return x < 0 ? -y : y;
+};
+
+function overdriveCurve(drive: number): Float32Array<ArrayBuffer> {
   const curve = new Float32Array(new ArrayBuffer(CURVE_LEN * 4));
-  for (let i = 0; i < CURVE_LEN; i++) {
-    const x = (i / (CURVE_LEN - 1)) * 2 - 1;
-    // At drive 1 the object is clean, so blend from the identity into the tanh.
-    const shaped = Math.tanh(d * x) / norm;
-    const blend = Math.min(1, d - 1);
-    curve[i] = x + (shaped - x) * blend;
-  }
+  for (let i = 0; i < CURVE_LEN; i++) curve[i] = overdriveCurveAt((i / (CURVE_LEN - 1)) * 2 - 1, drive);
   return curve;
 }
 
 register('overdrive~', (args, { ctx }) => {
-  const shaper = new WaveShaperNode(ctx, { curve: overdriveCurve(num(args[0], 1)), oversample: '4x' });
+  const drive = num(args[0], 1);
+  const node = tryWorkletNode(ctx, PROCESSORS.shaper, { processorOptions: { mode: 'overdrive' } });
+  const pDrive = node?.parameters.get('drive');
+  if (node && pDrive) {
+    pDrive.value = drive;
+    return {
+      signalIns: [node, pDrive],
+      signalOuts: [node],
+      controlIns: [
+        undefined,
+        (m) => { const n = firstNum(m); if (n !== undefined) pDrive.value = n; },
+      ],
+      dispose: () => { try { node.disconnect(); } catch { /* nothing connected */ } },
+    } satisfies MaxNode;
+  }
+  const shaper = new WaveShaperNode(ctx, { curve: overdriveCurve(drive) });
   return {
     signalIns: [shaper, undefined],
     signalOuts: [shaper],
@@ -124,6 +139,60 @@ register('overdrive~', (args, { ctx }) => {
       (m) => { const n = firstNum(m); if (n !== undefined) shaper.curve = overdriveCurve(n); },
     ],
   } satisfies MaxNode;
+});
+
+// ── tanh~ : hyperbolic tangent of a signal ────────────────────────────────────────
+// The smooth clipper: straight through for quiet signals, levelling off at +/- 1.
+// A WaveShaper only reads inputs between -1 and 1, so the fallback scales the input down
+// by 8 and stores tanh(8x): anything past +/- 8 is within a millionth of the limit.
+const TANH_REACH = 8;
+register('tanh~', (_args, { ctx }) => {
+  const node = tryWorkletNode(ctx, PROCESSORS.shaper, { processorOptions: { mode: 'tanh' } });
+  if (node) {
+    return {
+      signalIns: [node],
+      signalOuts: [node],
+      dispose: () => { try { node.disconnect(); } catch { /* nothing connected */ } },
+    } satisfies MaxNode;
+  }
+  const curve = new Float32Array(new ArrayBuffer(CURVE_LEN * 4));
+  for (let i = 0; i < CURVE_LEN; i++) curve[i] = Math.tanh(((i / (CURVE_LEN - 1)) * 2 - 1) * TANH_REACH);
+  const input = new GainNode(ctx, { gain: 1 / TANH_REACH });
+  const shaper = new WaveShaperNode(ctx, { curve });
+  input.connect(shaper);
+  return { signalIns: [input], signalOuts: [shaper] } satisfies MaxNode;
+});
+
+// ── pong~ : fold, wrap or clip a signal between two limits ────────────────────────
+// args: mode (0 fold, 1 wrap, 2 clip), low, high. inlets: signal, low, high.
+// With one limit given Max treats it as the low one and leaves the high at 1.
+// Folding has no stock Web Audio equivalent, so without a worklet this clips.
+const PONG_MODES = ['fold', 'wrap', 'clip'] as const;
+register('pong~', (args, { ctx }) => {
+  const mode = PONG_MODES[Math.min(2, Math.max(0, Math.trunc(num(args[0], 0))))];
+  const lo = num(args[1], 0);
+  const hi = num(args[2], 1);
+  const node = tryWorkletNode(ctx, PROCESSORS.shaper, { processorOptions: { mode } });
+  const pLo = node?.parameters.get('lo');
+  const pHi = node?.parameters.get('hi');
+  if (node && pLo && pHi) {
+    pLo.value = lo;
+    pHi.value = hi;
+    return {
+      signalIns: [node, pLo, pHi],
+      signalOuts: [node],
+      controlIns: [
+        undefined,
+        (m) => { const n = firstNum(m); if (n !== undefined) pLo.value = n; },
+        (m) => { const n = firstNum(m); if (n !== undefined) pHi.value = n; },
+      ],
+      dispose: () => { try { node.disconnect(); } catch { /* nothing connected */ } },
+    } satisfies MaxNode;
+  }
+  const curve = new Float32Array(new ArrayBuffer(CURVE_LEN * 4));
+  for (let i = 0; i < CURVE_LEN; i++) curve[i] = Math.max(lo, Math.min(hi, (i / (CURVE_LEN - 1)) * 2 - 1));
+  const shaper = new WaveShaperNode(ctx, { curve });
+  return { signalIns: [shaper, undefined, undefined], signalOuts: [shaper], controlIns: [undefined, undefined, undefined] } satisfies MaxNode;
 });
 
 // ── gate~ : route a signal through an amplitude gate ──────────────────────────────

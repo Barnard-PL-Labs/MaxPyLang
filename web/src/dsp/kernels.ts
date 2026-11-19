@@ -83,13 +83,26 @@ export interface SVFState { low: number; band: number; }
 export interface SVFOut { lp: Float32Array; hp: Float32Array; bp: Float32Array; notch: Float32Array; }
 export function makeSVFState(): SVFState { return { low: 0, band: 0 }; }
 
-/** Cutoff (Hz) -> the Chamberlin `f` coefficient. */
+/**
+ * Cutoff (Hz) -> the `f` coefficient. Max uses sin(2*pi*fc/sr) and stops at a quarter of
+ * the sample rate, where it reaches 1. (The textbook 2*sin(pi*fc/sr) agrees at low
+ * cutoffs and drifts apart near the top.)
+ */
 export function svfF(freqHz: number, sr: number): number {
-  return 2 * Math.sin((Math.PI * Math.min(freqHz, sr / 2)) / sr);
+  return Math.sin((2 * Math.PI * Math.max(0, Math.min(freqHz, sr / 4))) / sr);
 }
 /** Resonance (>= ~0.5) -> the damping `q` (= 1/Q); higher resonance -> lower damping. */
 export function svfQ(resonance: number): number {
   return 1 / Math.max(0.5, resonance);
+}
+/**
+ * Max's svf~ resonance (0..1) -> the damping `q`. Measured in Max 9 from the gain at the
+ * cutoff over eleven settings: q = (1.2 * (1 - resonance))^2, capped at 1. So anything up
+ * to about 0.17 is flat, 0.5 is a Q of 2.8, and 0.9 is a Q of 67, close to ringing forever.
+ */
+export function svfDamping(resonance01: number): number {
+  const d = 1.2 * (1 - Math.min(1, Math.max(0, resonance01)));
+  return Math.max(0.0001, Math.min(1, d * d));
 }
 
 export function svfProcess(x: Float32Array, f: number, q: number, s: SVFState): SVFOut {
@@ -251,25 +264,64 @@ export interface DegradeParams { ratio: number; bits: number; }
 export interface DegradeState { phase: number; hold: number; }
 export function makeDegradeState(): DegradeState { return { phase: 1, hold: 0 }; }
 
+// Max rounds down, not to nearest (measured against Max 9: at 4 bits every input in
+// [0, 0.125) comes out 0 and every input in [-0.125, 0) comes out -0.125). That is why a
+// crushed signal sits half a step below centre.
 function quantize(v: number, bits: number): number {
   const b = Number.isFinite(bits) && bits >= 1 ? Math.floor(bits) : 1;
   const levels = Math.pow(2, b);
   const half = levels / 2;
-  return Math.round(v * half) / half;
+  return Math.floor(v * half) / half;
 }
 
 export function degradeProcess(x: Float32Array, p: DegradeParams, s: DegradeState): Float32Array {
   const out = new Float32Array(x.length);
-  const ratio = Math.min(1, Math.max(1e-6, p.ratio));
+  // Single precision, like Max: ten steps of 0.1 then reach 1 and the hold is exactly ten
+  // samples long. In double precision they stop a hair short and every other hold is eleven.
+  const ratio = Math.fround(Math.min(1, Math.max(1e-6, p.ratio)));
   let phase = s.phase, hold = s.hold;
   for (let i = 0; i < x.length; i++) {
-    phase += ratio;
+    // Take a new sample first, then advance: the order that lands the holds on the same
+    // samples as Max.
     if (phase >= 1) {
-      phase -= 1;
+      phase = Math.fround(phase - 1);
       hold = quantize(x[i], p.bits);
     }
+    phase = Math.fround(phase + ratio);
     out[i] = hold;
   }
   s.phase = phase; s.hold = hold;
   return out;
+}
+
+// ── waveshapers: overdrive~, tanh~, pong~ ─────────────────────────────────────────
+// Memoryless curves, one output sample per input sample. Max does not oversample any of
+// these, so neither do we: the aliasing a hard fold makes is part of its sound.
+
+/**
+ * overdrive~. Measured against Max 9 with a ramp: y = sign(x) * (1 - (1 - |x|) ^ drive),
+ * and anything past full scale stays at full scale. Drive 1 is a straight line.
+ */
+export function overdrive(x: number, drive: number): number {
+  const a = Math.min(1, Math.abs(x));
+  const y = 1 - Math.pow(1 - a, Math.max(0, drive));
+  return x < 0 ? -y : y;
+}
+
+/** pong~ mode 0: reflect the signal back at `lo` and `hi`, as many times as it takes. */
+export function fold(x: number, lo: number, hi: number): number {
+  const range = hi - lo;
+  if (!(range > 0)) return lo;
+  let t = (x - lo) % (2 * range);
+  if (t < 0) t += 2 * range;
+  return lo + (t <= range ? t : 2 * range - t);
+}
+
+/** pong~ mode 1: wrap around from one limit to the other. */
+export function wrap(x: number, lo: number, hi: number): number {
+  const range = hi - lo;
+  if (!(range > 0)) return lo;
+  let t = (x - lo) % range;
+  if (t < 0) t += range;
+  return lo + t;
 }

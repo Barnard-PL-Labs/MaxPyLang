@@ -208,3 +208,24 @@ def test_ezdac_in_a_device_is_caught(tmp_path):
     osc, dac = place(patch, "cycle~ 440", "ezdac~")
     patch.connect([osc.outs[0], dac.ins[0]], verbose=False)
     assert any("never reaches an output" in message for message in save_warnings(patch, tmp_path))
+
+
+# ── M4L-11: audio objects whose inlets Max's own reference leaves untyped ─────────
+
+@gap
+def test_m4l_11_a_cord_into_cosh_is_judged():
+    """cosh~ takes a signal and nothing else, yet a cord into it is "not checked": its
+    reference page has a placeholder where the inlet type goes, so the type table says
+    "any". tanh~ had the same problem and was fixed by hand; about fifty objects remain."""
+    patch = mp.MaxPatch(verbose=False)
+    osc, shaper = place(patch, "cycle~ 440", "cosh~")
+    patch.connect([osc.outs[0], shaper.ins[0]], verbose=False)
+    assert patch.get_coverage()["cords"]["not_checked"] == 0
+
+
+def test_m4l_11_tanh_is_judged():
+    """The one member of that family the generator uses, fixed in the type table."""
+    patch = mp.MaxPatch(verbose=False)
+    osc, shaper = place(patch, "cycle~ 440", "tanh~")
+    patch.connect([osc.outs[0], shaper.ins[0]], verbose=False)
+    assert patch.get_coverage()["cords"]["not_checked"] == 0

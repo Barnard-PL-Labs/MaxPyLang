@@ -1,5 +1,201 @@
 [
  {
+  "id": "tube",
+  "name": "Warm Tube",
+  "tag": "A gentle push into smooth tanh saturation",
+  "group": "Distortion",
+  "sample": "guitar",
+  "settings": {
+   "name": "Warm Tube",
+   "accent": "#ff7a45",
+   "chain": [
+    {
+     "module": "drive",
+     "on": true,
+     "options": {
+      "character": "tube"
+     },
+     "values": {
+      "amount": 2.5,
+      "tone": 7500
+     }
+    }
+   ],
+   "output": {
+    "gain": 0
+   }
+  }
+ },
+ {
+  "id": "overdrive",
+  "name": "Overdrive",
+  "tag": "Max's own overdrive~, turned up halfway",
+  "group": "Distortion",
+  "sample": "guitar",
+  "settings": {
+   "name": "Overdrive",
+   "accent": "#ff7a45",
+   "chain": [
+    {
+     "module": "drive",
+     "on": true,
+     "options": {
+      "character": "soft"
+     },
+     "values": {
+      "amount": 5,
+      "tone": 6500
+     }
+    }
+   ],
+   "output": {
+    "gain": 0
+   }
+  }
+ },
+ {
+  "id": "crunch",
+  "name": "Crunch",
+  "tag": "Hard clipping with the top rolled off",
+  "group": "Distortion",
+  "sample": "drums",
+  "settings": {
+   "name": "Crunch",
+   "accent": "#f5c542",
+   "chain": [
+    {
+     "module": "drive",
+     "on": true,
+     "options": {
+      "character": "hard"
+     },
+     "values": {
+      "amount": 4,
+      "tone": 5200
+     }
+    }
+   ],
+   "output": {
+    "gain": 0
+   }
+  }
+ },
+ {
+  "id": "fuzz",
+  "name": "Fuzz Box",
+  "tag": "Lopsided clipping, square and buzzy",
+  "group": "Distortion",
+  "sample": "guitar",
+  "settings": {
+   "name": "Fuzz Box",
+   "accent": "#f472b6",
+   "chain": [
+    {
+     "module": "drive",
+     "on": true,
+     "options": {
+      "character": "fuzz"
+     },
+     "values": {
+      "amount": 6,
+      "tone": 4200
+     }
+    }
+   ],
+   "output": {
+    "gain": 0
+   }
+  }
+ },
+ {
+  "id": "fold",
+  "name": "Wavefolder",
+  "tag": "Peaks fold back on themselves instead of flattening",
+  "group": "Distortion",
+  "sample": "piano",
+  "settings": {
+   "name": "Wavefolder",
+   "accent": "#a78bfa",
+   "chain": [
+    {
+     "module": "drive",
+     "on": true,
+     "options": {
+      "character": "fold"
+     },
+     "values": {
+      "amount": 2.6,
+      "tone": 8000
+     }
+    }
+   ],
+   "output": {
+    "gain": 0
+   }
+  }
+ },
+ {
+  "id": "shoegaze",
+  "name": "Shoegaze Wall",
+  "tag": "Overdrive into chorus into echo into a long room",
+  "group": "Distortion",
+  "sample": "guitar",
+  "settings": {
+   "name": "Shoegaze Wall",
+   "accent": "#f472b6",
+   "chain": [
+    {
+     "module": "drive",
+     "on": true,
+     "options": {
+      "character": "soft"
+     },
+     "values": {
+      "amount": 6,
+      "tone": 6000
+     }
+    },
+    {
+     "module": "chorus",
+     "on": true,
+     "options": {
+      "voice": "chorus"
+     },
+     "values": {
+      "rate": 0.5,
+      "depth": 4,
+      "mix": 50
+     }
+    },
+    {
+     "module": "delay",
+     "on": true,
+     "options": {
+      "style": "stereo"
+     },
+     "values": {
+      "time": 420,
+      "feedback": 50,
+      "mix": 28
+     }
+    },
+    {
+     "module": "reverb",
+     "on": true,
+     "options": {},
+     "values": {
+      "size": 80,
+      "damp": 5000,
+      "mix": 42
+     }
+    }
+   ],
+   "output": {
+    "gain": 2
+   }
+  }
+ },
+ {
   "id": "tape",
   "name": "Tape Lo-Fi",
   "tag": "Worn cassette: soft crush, dull top, slow wobble",
@@ -26,13 +222,15 @@
      },
      "values": {
       "cutoff": 3400,
-      "res": 0.2
+      "res": 10
      }
     },
     {
      "module": "chorus",
      "on": true,
-     "options": {},
+     "options": {
+      "voice": "chorus"
+     },
      "values": {
       "rate": 0.35,
       "depth": 2.4,
@@ -66,7 +264,7 @@
     }
    ],
    "output": {
-    "gain": -4
+    "gain": -2
    }
   }
  },
@@ -88,7 +286,7 @@
      },
      "values": {
       "cutoff": 1500,
-      "res": 0.5
+      "res": 45
      }
     },
     {
@@ -104,7 +302,54 @@
     }
    ],
    "output": {
-    "gain": 2
+    "gain": 3
+   }
+  }
+ },
+ {
+  "id": "speaker",
+  "name": "Blown Speaker",
+  "tag": "Fuzz, a crushed top end and no highs",
+  "group": "Lo-Fi",
+  "sample": "drums",
+  "settings": {
+   "name": "Blown Speaker",
+   "accent": "#ff7a45",
+   "chain": [
+    {
+     "module": "drive",
+     "on": true,
+     "options": {
+      "character": "fuzz"
+     },
+     "values": {
+      "amount": 3,
+      "tone": 3000
+     }
+    },
+    {
+     "module": "crush",
+     "on": true,
+     "options": {},
+     "values": {
+      "rate": 55,
+      "bits": 9
+     }
+    },
+    {
+     "module": "filter",
+     "on": true,
+     "options": {
+      "mode": "lowpass"
+     },
+     "values": {
+      "cutoff": 2600,
+      "res": 25
+     }
+    }
+   ],
+   "output": {
+    "gain": 0
    }
   }
  },
@@ -112,7 +357,7 @@
   "id": "underwater",
   "name": "Underwater",
   "tag": "Everything above 600 Hz gone, and drifting",
-  "group": "Lo-Fi",
+  "group": "Filter",
   "sample": "guitar",
   "settings": {
    "name": "Underwater",
@@ -126,13 +371,15 @@
      },
      "values": {
       "cutoff": 620,
-      "res": 0.55
+      "res": 55
      }
     },
     {
      "module": "chorus",
      "on": true,
-     "options": {},
+     "options": {
+      "voice": "chorus"
+     },
      "values": {
       "rate": 0.22,
       "depth": 6,
@@ -156,53 +403,15 @@
   }
  },
  {
-  "id": "tube",
-  "name": "Warm Tube",
-  "tag": "A gentle push into soft saturation",
-  "group": "Drive",
-  "sample": "guitar",
+  "id": "sweep",
+  "name": "Resonant Low-Pass",
+  "tag": "A sharp peak, ready to be swept by hand",
+  "group": "Filter",
+  "sample": "drums",
   "settings": {
-   "name": "Warm Tube",
+   "name": "Resonant Low-Pass",
    "accent": "#ff7a45",
    "chain": [
-    {
-     "module": "drive",
-     "on": true,
-     "options": {
-      "character": "soft"
-     },
-     "values": {
-      "amount": 3.2,
-      "tone": 7500
-     }
-    }
-   ],
-   "output": {
-    "gain": -3
-   }
-  }
- },
- {
-  "id": "fuzz",
-  "name": "Fuzz Box",
-  "tag": "Hard clipping, then a filter to tame it",
-  "group": "Drive",
-  "sample": "guitar",
-  "settings": {
-   "name": "Fuzz Box",
-   "accent": "#ff7a45",
-   "chain": [
-    {
-     "module": "drive",
-     "on": true,
-     "options": {
-      "character": "hard"
-     },
-     "values": {
-      "amount": 10,
-      "tone": 5200
-     }
-    },
     {
      "module": "filter",
      "on": true,
@@ -210,95 +419,128 @@
       "mode": "lowpass"
      },
      "values": {
-      "cutoff": 4800,
-      "res": 0.3
+      "cutoff": 900,
+      "res": 85
      }
     }
    ],
    "output": {
-    "gain": -9
+    "gain": 0
    }
   }
  },
  {
-  "id": "shoegaze",
-  "name": "Shoegaze Wall",
-  "tag": "Drive into chorus into echo into a long room",
-  "group": "Drive",
-  "sample": "guitar",
+  "id": "thin",
+  "name": "Thin Air",
+  "tag": "High-pass at 900 Hz: all air, no body",
+  "group": "Filter",
+  "sample": "vocals",
   "settings": {
-   "name": "Shoegaze Wall",
-   "accent": "#f472b6",
+   "name": "Thin Air",
+   "accent": "#38bdf8",
    "chain": [
     {
-     "module": "drive",
+     "module": "filter",
      "on": true,
      "options": {
-      "character": "soft"
+      "mode": "highpass"
      },
      "values": {
-      "amount": 6,
-      "tone": 6000
+      "cutoff": 900,
+      "res": 25
      }
-    },
+    }
+   ],
+   "output": {
+    "gain": 2
+   }
+  }
+ },
+ {
+  "id": "notch",
+  "name": "Hollow Notch",
+  "tag": "A notch scooped out of the middle",
+  "group": "Filter",
+  "sample": "piano",
+  "settings": {
+   "name": "Hollow Notch",
+   "accent": "#a78bfa",
+   "chain": [
+    {
+     "module": "filter",
+     "on": true,
+     "options": {
+      "mode": "notch"
+     },
+     "values": {
+      "cutoff": 1100,
+      "res": 70
+     }
+    }
+   ],
+   "output": {
+    "gain": 0
+   }
+  }
+ },
+ {
+  "id": "wide",
+  "name": "Wide Chorus",
+  "tag": "Doubles the sound and spreads it out",
+  "group": "Chorus",
+  "sample": "piano",
+  "settings": {
+   "name": "Wide Chorus",
+   "accent": "#4bd08a",
+   "chain": [
     {
      "module": "chorus",
      "on": true,
-     "options": {},
+     "options": {
+      "voice": "chorus"
+     },
      "values": {
-      "rate": 0.5,
+      "rate": 0.8,
       "depth": 4,
+      "mix": 50
+     }
+    }
+   ],
+   "output": {
+    "gain": 0
+   }
+  }
+ },
+ {
+  "id": "ensemble",
+  "name": "Slow Ensemble",
+  "tag": "Deep, slow and lush",
+  "group": "Chorus",
+  "sample": "guitar",
+  "settings": {
+   "name": "Slow Ensemble",
+   "accent": "#38bdf8",
+   "chain": [
+    {
+     "module": "chorus",
+     "on": true,
+     "options": {
+      "voice": "chorus"
+     },
+     "values": {
+      "rate": 0.25,
+      "depth": 7,
       "mix": 50
      }
     },
     {
-     "module": "delay",
-     "on": true,
-     "options": {
-      "style": "stereo"
-     },
-     "values": {
-      "time": 420,
-      "feedback": 55,
-      "mix": 32
-     }
-    },
-    {
      "module": "reverb",
      "on": true,
      "options": {},
      "values": {
-      "size": 86,
-      "damp": 5000,
-      "mix": 48
-     }
-    }
-   ],
-   "output": {
-    "gain": -8
-   }
-  }
- },
- {
-  "id": "slapback",
-  "name": "Slapback",
-  "tag": "One quick repeat, rockabilly style",
-  "group": "Space",
-  "sample": "vocals",
-  "settings": {
-   "name": "Slapback",
-   "accent": "#38bdf8",
-   "chain": [
-    {
-     "module": "delay",
-     "on": true,
-     "options": {
-      "style": "stereo"
-     },
-     "values": {
-      "time": 115,
-      "feedback": 6,
-      "mix": 34
+      "size": 40,
+      "damp": 6000,
+      "mix": 18
      }
     }
    ],
@@ -308,126 +550,58 @@
   }
  },
  {
-  "id": "dub",
-  "name": "Dub Echo",
-  "tag": "Ping-pong repeats that keep on going",
-  "group": "Space",
+  "id": "vibrato",
+  "name": "Vibrato",
+  "tag": "All wet: the pitch wobbles, nothing is doubled",
+  "group": "Chorus",
+  "sample": "vocals",
+  "settings": {
+   "name": "Vibrato",
+   "accent": "#f472b6",
+   "chain": [
+    {
+     "module": "chorus",
+     "on": true,
+     "options": {
+      "voice": "chorus"
+     },
+     "values": {
+      "rate": 5,
+      "depth": 1.5,
+      "mix": 100
+     }
+    }
+   ],
+   "output": {
+    "gain": 0
+   }
+  }
+ },
+ {
+  "id": "jet",
+  "name": "Jet Flanger",
+  "tag": "A short swept comb with feedback",
+  "group": "Chorus",
   "sample": "drums",
   "settings": {
-   "name": "Dub Echo",
-   "accent": "#4bd08a",
+   "name": "Jet Flanger",
+   "accent": "#a78bfa",
    "chain": [
     {
-     "module": "filter",
+     "module": "chorus",
      "on": true,
      "options": {
-      "mode": "highpass"
+      "voice": "flanger"
      },
      "values": {
-      "cutoff": 320,
-      "res": 0.2
-     }
-    },
-    {
-     "module": "delay",
-     "on": true,
-     "options": {
-      "style": "pingpong"
-     },
-     "values": {
-      "time": 375,
-      "feedback": 64,
-      "mix": 40
-     }
-    },
-    {
-     "module": "reverb",
-     "on": true,
-     "options": {},
-     "values": {
-      "size": 45,
-      "damp": 4200,
-      "mix": 14
+      "rate": 0.2,
+      "depth": 7,
+      "mix": 50
      }
     }
    ],
    "output": {
     "gain": 0
-   }
-  }
- },
- {
-  "id": "cathedral",
-  "name": "Cathedral",
-  "tag": "A very long, bright tail",
-  "group": "Space",
-  "sample": "vocals",
-  "settings": {
-   "name": "Cathedral",
-   "accent": "#a78bfa",
-   "chain": [
-    {
-     "module": "filter",
-     "on": true,
-     "options": {
-      "mode": "highpass"
-     },
-     "values": {
-      "cutoff": 180,
-      "res": 0.1
-     }
-    },
-    {
-     "module": "reverb",
-     "on": true,
-     "options": {},
-     "values": {
-      "size": 93,
-      "damp": 7500,
-      "mix": 55
-     }
-    }
-   ],
-   "output": {
-    "gain": 0
-   }
-  }
- },
- {
-  "id": "station",
-  "name": "Space Station",
-  "tag": "Wide echoes dissolving into reverb",
-  "group": "Space",
-  "sample": "piano",
-  "settings": {
-   "name": "Space Station",
-   "accent": "#a78bfa",
-   "chain": [
-    {
-     "module": "delay",
-     "on": true,
-     "options": {
-      "style": "pingpong"
-     },
-     "values": {
-      "time": 540,
-      "feedback": 70,
-      "mix": 45
-     }
-    },
-    {
-     "module": "reverb",
-     "on": true,
-     "options": {},
-     "values": {
-      "size": 82,
-      "damp": 3600,
-      "mix": 45
-     }
-    }
-   ],
-   "output": {
-    "gain": -2
    }
   }
  },
@@ -435,7 +609,7 @@
   "id": "surf",
   "name": "Surf Tremolo",
   "tag": "Fast tremolo into a splashy room",
-  "group": "Motion",
+  "group": "Tremolo",
   "sample": "guitar",
   "settings": {
    "name": "Surf Tremolo",
@@ -469,10 +643,64 @@
   }
  },
  {
+  "id": "pulse",
+  "name": "Slow Pulse",
+  "tag": "A gentle swell, twice a second",
+  "group": "Tremolo",
+  "sample": "piano",
+  "settings": {
+   "name": "Slow Pulse",
+   "accent": "#4bd08a",
+   "chain": [
+    {
+     "module": "tremolo",
+     "on": true,
+     "options": {
+      "mode": "tremolo"
+     },
+     "values": {
+      "rate": 2,
+      "depth": 55
+     }
+    }
+   ],
+   "output": {
+    "gain": 1
+   }
+  }
+ },
+ {
+  "id": "chopper",
+  "name": "Helicopter",
+  "tag": "Full depth, twelve times a second",
+  "group": "Tremolo",
+  "sample": "vocals",
+  "settings": {
+   "name": "Helicopter",
+   "accent": "#ff7a45",
+   "chain": [
+    {
+     "module": "tremolo",
+     "on": true,
+     "options": {
+      "mode": "tremolo"
+     },
+     "values": {
+      "rate": 12,
+      "depth": 100
+     }
+    }
+   ],
+   "output": {
+    "gain": 3
+   }
+  }
+ },
+ {
   "id": "drift",
   "name": "Auto-Pan Drift",
   "tag": "Slow side-to-side movement with a faint echo",
-  "group": "Motion",
+  "group": "Tremolo",
   "sample": "piano",
   "settings": {
    "name": "Auto-Pan Drift",
@@ -508,22 +736,218 @@
   }
  },
  {
-  "id": "wide",
-  "name": "Wide Chorus",
-  "tag": "Doubles the sound and spreads it out",
-  "group": "Motion",
-  "sample": "piano",
+  "id": "slapback",
+  "name": "Slapback",
+  "tag": "One quick repeat, rockabilly style",
+  "group": "Delay",
+  "sample": "vocals",
   "settings": {
-   "name": "Wide Chorus",
+   "name": "Slapback",
+   "accent": "#38bdf8",
+   "chain": [
+    {
+     "module": "delay",
+     "on": true,
+     "options": {
+      "style": "stereo"
+     },
+     "values": {
+      "time": 115,
+      "feedback": 6,
+      "mix": 34
+     }
+    }
+   ],
+   "output": {
+    "gain": 0
+   }
+  }
+ },
+ {
+  "id": "quarter",
+  "name": "Quarter Echo",
+  "tag": "Half-second repeats that fade away",
+  "group": "Delay",
+  "sample": "guitar",
+  "settings": {
+   "name": "Quarter Echo",
    "accent": "#4bd08a",
    "chain": [
     {
-     "module": "chorus",
+     "module": "delay",
+     "on": true,
+     "options": {
+      "style": "stereo"
+     },
+     "values": {
+      "time": 500,
+      "feedback": 42,
+      "mix": 28
+     }
+    }
+   ],
+   "output": {
+    "gain": 0
+   }
+  }
+ },
+ {
+  "id": "pingpong",
+  "name": "Ping-Pong",
+  "tag": "Repeats bouncing left and right",
+  "group": "Delay",
+  "sample": "drums",
+  "settings": {
+   "name": "Ping-Pong",
+   "accent": "#a78bfa",
+   "chain": [
+    {
+     "module": "delay",
+     "on": true,
+     "options": {
+      "style": "pingpong"
+     },
+     "values": {
+      "time": 300,
+      "feedback": 50,
+      "mix": 34
+     }
+    }
+   ],
+   "output": {
+    "gain": 0
+   }
+  }
+ },
+ {
+  "id": "dub",
+  "name": "Dub Echo",
+  "tag": "Dark ping-pong repeats that keep on going",
+  "group": "Delay",
+  "sample": "drums",
+  "settings": {
+   "name": "Dub Echo",
+   "accent": "#4bd08a",
+   "chain": [
+    {
+     "module": "filter",
+     "on": true,
+     "options": {
+      "mode": "highpass"
+     },
+     "values": {
+      "cutoff": 320,
+      "res": 5
+     }
+    },
+    {
+     "module": "delay",
+     "on": true,
+     "options": {
+      "style": "pingpong"
+     },
+     "values": {
+      "time": 375,
+      "feedback": 66,
+      "mix": 40
+     }
+    },
+    {
+     "module": "reverb",
      "on": true,
      "options": {},
      "values": {
-      "rate": 0.8,
-      "depth": 4,
+      "size": 45,
+      "damp": 4200,
+      "mix": 14
+     }
+    }
+   ],
+   "output": {
+    "gain": 0
+   }
+  }
+ },
+ {
+  "id": "room",
+  "name": "Small Room",
+  "tag": "A short, tight space",
+  "group": "Reverb",
+  "sample": "drums",
+  "settings": {
+   "name": "Small Room",
+   "accent": "#f5c542",
+   "chain": [
+    {
+     "module": "reverb",
+     "on": true,
+     "options": {},
+     "values": {
+      "size": 12,
+      "damp": 7000,
+      "mix": 22
+     }
+    }
+   ],
+   "output": {
+    "gain": 0
+   }
+  }
+ },
+ {
+  "id": "hall",
+  "name": "Concert Hall",
+  "tag": "Big and smooth, two seconds of tail",
+  "group": "Reverb",
+  "sample": "piano",
+  "settings": {
+   "name": "Concert Hall",
+   "accent": "#38bdf8",
+   "chain": [
+    {
+     "module": "reverb",
+     "on": true,
+     "options": {},
+     "values": {
+      "size": 62,
+      "damp": 5500,
+      "mix": 32
+     }
+    }
+   ],
+   "output": {
+    "gain": 0
+   }
+  }
+ },
+ {
+  "id": "cathedral",
+  "name": "Cathedral",
+  "tag": "A very long, bright tail",
+  "group": "Reverb",
+  "sample": "vocals",
+  "settings": {
+   "name": "Cathedral",
+   "accent": "#a78bfa",
+   "chain": [
+    {
+     "module": "filter",
+     "on": true,
+     "options": {
+      "mode": "highpass"
+     },
+     "values": {
+      "cutoff": 180,
+      "res": 0
+     }
+    },
+    {
+     "module": "reverb",
+     "on": true,
+     "options": {},
+     "values": {
+      "size": 92,
+      "damp": 7500,
       "mix": 50
      }
     }
@@ -534,29 +958,40 @@
   }
  },
  {
-  "id": "sweep",
-  "name": "Resonant Low-Pass",
-  "tag": "A sharp filter, ready to be swept by hand",
-  "group": "Motion",
-  "sample": "drums",
+  "id": "station",
+  "name": "Space Station",
+  "tag": "Wide echoes dissolving into reverb",
+  "group": "Reverb",
+  "sample": "piano",
   "settings": {
-   "name": "Resonant Low-Pass",
-   "accent": "#ff7a45",
+   "name": "Space Station",
+   "accent": "#a78bfa",
    "chain": [
     {
-     "module": "filter",
+     "module": "delay",
      "on": true,
      "options": {
-      "mode": "lowpass"
+      "style": "pingpong"
      },
      "values": {
-      "cutoff": 900,
-      "res": 0.82
+      "time": 540,
+      "feedback": 68,
+      "mix": 42
+     }
+    },
+    {
+     "module": "reverb",
+     "on": true,
+     "options": {},
+     "values": {
+      "size": 82,
+      "damp": 3600,
+      "mix": 42
      }
     }
    ],
    "output": {
-    "gain": -4
+    "gain": 0
    }
   }
  },

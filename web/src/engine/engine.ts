@@ -129,7 +129,8 @@ export class Engine {
     // the same way. Wiring a file's cords by a second code path is how the two would
     // drift, and the symptom would be a cord the user deletes from the canvas that
     // keeps making sound until the next full build.
-    for (const edge of patch.edges) this.connect(edge);
+    const early = this.loopCords(patch);
+    for (const edge of patch.edges) this.connect(edge, early.has(edge));
 
     // node.start/stop are the transport hooks (see start()/stop()). On a FIRST build
     // they stay uncalled: timed control objects (metro, delay) begin only when the user
@@ -151,6 +152,46 @@ export class Engine {
       unknown: [...unknown],
       videoCords: this.videoEdges.size,
     };
+  }
+
+  /**
+   * The cords that close a feedback loop through a delay, which get wired from the
+   * delay's early output (MaxNode.loopOuts).
+   *
+   * A cycle in a Web Audio graph is legal as long as it contains a delay, and the browser
+   * then runs it one quantum (128 samples) late: measured in Chrome, every pass round a
+   * tapout~ -> tapin~ loop arrives that much after it does in Max, while the first echo,
+   * which does not go round the loop, is on time. So only the cords that lead back to the
+   * delay are moved to its early output. The cycle pays the quantum once however many
+   * delays are in it, so once one delay has been used, later searches may not pass
+   * through it: a ping-pong delay (two lines in one cycle) gets one correction, two
+   * independent stereo lines get one each.
+   */
+  private loopCords(patch: IRPatch): Set<IREdge> {
+    const out = new Set<IREdge>();
+    const from = new Map<string, IREdge[]>();
+    for (const edge of patch.edges) from.set(edge.from.id, [...(from.get(edge.from.id) ?? []), edge]);
+    const used = new Set<string>();
+    const reaches = (start: string, target: string): boolean => {
+      const seen = new Set<string>();
+      const stack = [start];
+      while (stack.length) {
+        const at = stack.pop() as string;
+        if (at === target) return true;
+        if (seen.has(at) || used.has(at)) continue;
+        seen.add(at);
+        for (const e of from.get(at) ?? []) stack.push(e.to.id);
+      }
+      return false;
+    };
+    for (const [id, node] of this.nodes) {
+      if (!node.loopOuts) continue;
+      const closing = (from.get(id) ?? []).filter((e) => e.domain === 'signal' && reaches(e.to.id, id));
+      if (!closing.length) continue;
+      used.add(id);
+      for (const e of closing) out.add(e);
+    }
+    return out;
   }
 
   // ── Video frame loop ──────────────────────────────────────────────────────
@@ -311,7 +352,7 @@ export class Engine {
    * has no target for its transport (a signal into a control-only inlet). That last case
    * is a legal cord the document keeps and the canvas draws; see ir/connect.ts.
    */
-  connect(edge: IREdge): boolean {
+  connect(edge: IREdge, closesLoop = false): boolean {
     const key = edgeKey(edge);
     if (this.cords.has(key)) return false; // a cord is identified by its ports
     const src = this.nodes.get(edge.from.id);
@@ -319,7 +360,7 @@ export class Engine {
     if (!src || !dst) return false;
 
     if (edge.domain === 'signal') {
-      const out = src.signalOuts[edge.from.outlet];
+      const out = (closesLoop ? src.loopOuts?.[edge.from.outlet] : undefined) ?? src.signalOuts[edge.from.outlet];
       const inn = dst.signalIns[edge.to.inlet];
       if (!out || !inn) return false;
       // .connect accepts AudioNode or AudioParam as destination.

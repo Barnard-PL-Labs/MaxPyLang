@@ -177,8 +177,8 @@ describe('settings model', () => {
     expect(s.name).toBe('scriptalert1script');
     expect(s.accent).toBe(SCHEMA.accents[0]);
     const filter = s.chain[0];
-    expect(filter.values.cutoff).toBe(18000);
-    expect(filter.values.res).toBe(0.35);
+    expect(filter.values.cutoff).toBe(10000); // a quarter of the sample rate is as far as svf~ goes
+    expect(filter.values.res).toBe(30);
     expect(filter.options.mode).toBe('lowpass');
     expect(s.chain.filter((e) => e.module === 'filter').length).toBe(1);
     expect(s.output.gain).toBe(12);

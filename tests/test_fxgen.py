@@ -77,8 +77,47 @@ def test_every_preset_is_a_loadable_device(preset, tmp_path):
 def test_presets_cover_every_module_and_are_distinct():
     used = {entry["module"] for p in PRESETS for entry in p["settings"]["chain"]}
     assert used == {m["id"] for m in SCHEMA["modules"]}
-    assert len({p["id"] for p in PRESETS}) == len(PRESETS) >= 12
+    assert len({p["id"] for p in PRESETS}) == len(PRESETS) >= 28
     assert len({p["name"] for p in PRESETS}) == len(PRESETS)
+
+
+def test_presets_are_filed_under_the_effect_they_are():
+    """The page lists presets by effect. Each section has a few, and each preset in a
+    section named after a module actually uses that module."""
+    sections = {}
+    for p in PRESETS:
+        sections.setdefault(p["group"], []).append(p)
+    assert list(sections) == ["Distortion", "Lo-Fi", "Filter", "Chorus", "Tremolo", "Delay", "Reverb", "Start"]
+    by_label = {m["label"]: m["id"] for m in SCHEMA["modules"]}
+    for name, presets in sections.items():
+        if name == "Start":
+            continue
+        assert len(presets) >= 4, name
+        if name in by_label:
+            for p in presets:
+                assert by_label[name] in [e["module"] for e in p["settings"]["chain"]], p["id"]
+
+
+def test_presets_stay_inside_the_dials():
+    """A preset value outside its dial's range would be clamped without a word."""
+    for p in PRESETS:
+        normal = {e["module"]: e for e in fxgen.normalize(p["settings"])["chain"]}
+        for entry in p["settings"]["chain"]:
+            for key, value in entry["values"].items():
+                assert normal[entry["module"]]["values"][key] == value, (p["id"], key)
+            for key, value in entry["options"].items():
+                assert normal[entry["module"]]["options"][key] == value, (p["id"], key)
+
+
+def test_frequency_dials_stay_inside_what_max_accepts():
+    """svf~ and onepole~ take cutoffs up to a quarter of the sample rate (their reference
+    pages say so). Past that the dial would turn and nothing would change in Live."""
+    for mod in SCHEMA["modules"]:
+        for param in mod["params"]:
+            if param["unit"] == "Hz" and (mod["id"], param["id"]) != ("chorus", "rate") and param["max"] > 100:
+                assert param["max"] <= 44100 / 4, (mod["id"], param["id"])
+    drive = next(m for m in SCHEMA["modules"] if m["id"] == "drive")
+    assert next(p for p in drive["params"] if p["id"] == "amount")["max"] <= 10  # overdrive~'s range
 
 
 def test_device_shape(full):
@@ -126,7 +165,7 @@ def test_chain_order_is_signal_order():
     assert src.index("# ── Reverb") < src.index("# ── Filter")
     assert "reverb -> filter -> output gain" in src
     # the filter reads the reverb's output, not the input
-    assert "[reverb_outL.outs[0], filter_L.ins[0]]" in src
+    assert "[reverb_outL.outs[0], filter_inL.ins[0]]" in src
 
 
 def test_options_change_the_patch():
@@ -136,9 +175,50 @@ def test_options_change_the_patch():
     soft = texts([{"module": "drive", "options": {"character": "soft"}}])
     hard = texts([{"module": "drive", "options": {"character": "hard"}}])
     assert any(t.startswith("overdrive~") for t in soft) and not any(t.startswith("overdrive~") for t in hard)
+    # each distortion type is built on its own Max object
+    shaper = {"soft": "overdrive~", "tube": "tanh~", "hard": "clip~ -1", "fuzz": "clip~ -0.35", "fold": "pong~ 0"}
+    for kind, obj in shaper.items():
+        made = texts([{"module": "drive", "options": {"character": kind}}])
+        assert any(t.startswith(obj) for t in made), kind
+        assert any(t.startswith("pow ") for t in made), "the makeup gain follows the Drive dial"
+    # a flanger is a swept comb~; a chorus is a tapin~ / tapout~ pair
+    flanger = texts([{"module": "chorus", "options": {"voice": "flanger"}}])
+    chorus = texts([{"module": "chorus", "options": {"voice": "chorus"}}])
+    assert any(t.startswith("comb~") for t in flanger) and not any(t.startswith("tapin~") for t in flanger)
+    assert any(t.startswith("tapin~") for t in chorus) and not any(t.startswith("comb~") for t in chorus)
+    # the delay time reaches the taps as a gliding signal, and the loop saturates
+    delay = texts([{"module": "delay"}])
+    assert any(t.startswith("line~") for t in delay) and "tanh~" in delay
     lowpass = fxgen.script({"chain": [{"module": "filter", "options": {"mode": "lowpass"}}]})
     notch = fxgen.script({"chain": [{"module": "filter", "options": {"mode": "notch"}}]})
     assert "filter_L.outs[0]" in lowpass and "filter_L.outs[3]" in notch
+
+
+def test_level_matching_constants():
+    """The numbers the generator bakes in as starting values are the ones its control
+    objects compute, so the device sounds the same before and after a dial is touched."""
+    assert fxgen.drive_makeup("soft", 4) == pytest.approx(0.5)
+    assert fxgen.drive_makeup("soft", 1) == 1.0
+    assert fxgen.drive_makeup("fuzz", 10) < fxgen.drive_makeup("fuzz", 1)
+    # a longer reverb is not a louder one: the comb sum is scaled down as feedback rises
+    assert fxgen.reverb_level(fxgen.reverb_feedback(100)) < fxgen.reverb_level(fxgen.reverb_feedback(0))
+    assert fxgen.reverb_feedback(100) < 1.0
+    # the Reso dial covers the part of svf~'s range that is neither flat nor ringing forever
+    assert 0.15 < fxgen.svf_resonance(0) < fxgen.svf_resonance(100) <= 0.8
+    assert fxgen.filter_trim(100) == 0.5
+
+
+def test_a_name_used_twice_in_the_script_is_an_error():
+    """Two objects under one variable would silently rewire every cord of the first.
+    (It happened: a control object took the Reso dial's name and the dial fed nothing.)"""
+    import re
+
+    names = re.findall(r"^(\w+) = (?:place|dial)\(", fxgen.script(everything_on()), re.M)
+    assert len(names) == len(set(names)) > 80
+    emitter = fxgen.Script()
+    emitter.place("twice", "cycle~", 0, 0)
+    with pytest.raises(ValueError):
+        emitter.place("twice", "cycle~", 0, 0)
 
 
 def test_the_script_is_the_program_that_ran(tmp_path, monkeypatch):
@@ -166,7 +246,7 @@ def test_settings_are_bounded_before_they_reach_the_script():
     assert st["accent"] == SCHEMA["accents"][0]
     assert [e["module"] for e in st["chain"]].count("filter") == 1
     filt = next(e for e in st["chain"] if e["module"] == "filter")
-    assert filt["values"]["cutoff"] == 18000 and 0 <= filt["values"]["res"] <= 0.95
+    assert filt["values"]["cutoff"] == 10000 and 0 <= filt["values"]["res"] <= 100
     assert filt["options"]["mode"] == "lowpass"
     assert st["output"]["gain"] == -24
     src = fxgen.script(hostile)

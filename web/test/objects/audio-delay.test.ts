@@ -67,10 +67,19 @@ describe('delay batch', () => {
       input.connect = (n: unknown) => { connected.push([tapin, n]); return original(n); };
       tapin.node.onControlOut!(0, tapout.node.controlIns![0]!);
     }
-    expect(connected.length).toBe(2);
-    expect((connected[0] as unknown[])[0]).toBe(a);
-    expect((connected[1] as unknown[])[0]).toBe(b);
-    expect((connected[0] as unknown[])[1]).not.toBe((connected[1] as unknown[])[1]);
+    // Each tap reads its line twice: once on time, and once a render quantum early for
+    // cords that go back round a feedback loop.
+    expect(connected.length).toBe(4);
+    expect(connected.map((c) => (c as unknown[])[0])).toEqual([a, a, b, b]);
+    expect(new Set(connected.map((c) => (c as unknown[])[1])).size).toBe(4);
+  });
+
+  it('tapout~ offers an early output per tap for cords that close a loop', () => {
+    const { node } = build('tapout~', 100, 200);
+    expect(node.signalOuts.length).toBe(2);
+    expect(node.loopOuts?.length).toBe(2);
+    expect(node.loopOuts?.every(Boolean)).toBe(true);
+    expect(node.loopOuts?.[0]).not.toBe(node.signalOuts[0]);
   });
 
   it('tapout~ accepts a tap time before and after it is linked', () => {
