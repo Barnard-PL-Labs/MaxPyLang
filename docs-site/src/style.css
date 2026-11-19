@@ -98,5 +98,5 @@ a { color: var(--link); }
 @media (max-width: 900px) {
   .top, .layout { padding-left: 16px; padding-right: 16px; }
   .layout { grid-template-columns: minmax(0, 1fr); }
-  .panel { position: static; max-height: none; order: -1; }
+  .panel { position: relative; max-height: none; order: -1; } /* relative: keeps ✖ inside it */
 }

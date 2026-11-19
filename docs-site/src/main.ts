@@ -6,7 +6,7 @@
 import './style.css';
 import { play, stop, playing, onChange } from './player';
 import { categories, findEntry, pyArg, type Entry, type Example } from './entries';
-import { compile, lastLine, onStatus, pythonLoaded } from './compiler';
+import { compile, lastLine, LoadError, onStatus, pythonLoaded } from './compiler';
 import { mountEditor } from './editor';
 import { mountScope } from './scope';
 import { patchSvg } from './patchsvg';
@@ -175,7 +175,8 @@ function showPanel(name: string, index: number): void {
       await play(key, patch);
       setStatus(edited ? 'Playing your edited code.' : 'Playing. Edit the code and press ▶ or Ctrl+Enter to run it.', 'ok');
     } catch (err) {
-      setStatus(lastLine(String((err as Error).message ?? err)), 'error');
+      if (err instanceof LoadError) console.warn('Python failed to start:', err.detail);
+      setStatus(err instanceof LoadError ? err.message : lastLine(String((err as Error).message ?? err)), 'error');
     }
   }
 

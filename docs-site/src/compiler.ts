@@ -19,6 +19,13 @@ type Reply =
   | { type: 'result'; id: number; json: string }
   | { type: 'error'; id?: number; phase: 'init' | 'compile'; message: string };
 
+/** Python itself could not start (usually the network); the code was never run. */
+export class LoadError extends Error {
+  constructor(readonly detail: string) {
+    super("Couldn't load Python in the browser (check your connection), so your edit didn't run. Press ▶ to try again.");
+  }
+}
+
 let worker: Worker | null = null;
 let ready: Promise<void> | null = null;
 let nextId = 1;
@@ -45,8 +52,12 @@ function start(): Promise<void> {
         pending.delete(msg.id);
       } else if (msg.type === 'error') {
         if (msg.phase === 'init') {
-          ready = null; // let the next run try again
-          reject(new Error(msg.message));
+          // Starting Python downloads Pyodide and a package from PyPI; a network hiccup is
+          // the usual cause. Drop the worker so the next run starts over.
+          worker?.terminate();
+          worker = null;
+          ready = null;
+          reject(new LoadError(msg.message));
         } else if (msg.id !== undefined) {
           pending.get(msg.id)?.reject(new Error(msg.message));
           pending.delete(msg.id);
