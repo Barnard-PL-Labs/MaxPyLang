@@ -20,6 +20,9 @@ export default defineConfig(({ command }) => ({
         index: resolve(__dirname, 'index.html'),
         studio: resolve(__dirname, 'studio.html'),
         patcher: resolve(__dirname, 'patcher.html'),
+        // The plugin generator: its own page, sharing the engine and the Pyodide worker.
+        // GitHub Pages serves it at /app/interactive-plugin as well as with the extension.
+        'interactive-plugin': resolve(__dirname, 'interactive-plugin.html'),
       },
     },
   },

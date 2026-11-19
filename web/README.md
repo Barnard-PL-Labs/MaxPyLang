@@ -34,6 +34,36 @@ RMS + dominant frequency — an automatable "does it make sound?" check.
   `control/`, `ui/`). Unsupported objects render as dashed placeholders and are listed in
   the coverage line; they never crash a patch.
 
+## Plugin generator (`interactive-plugin.html`)
+
+A second page, served at `/app/interactive-plugin`: pick a preset or build an effect
+chain, hear it on a sample, download a Max for Live `.amxd`.
+
+```
+settings ──▶ src/plugin/fxgen.py (maxpylang, in Pyodide) ──▶ patcher JSON ──┬─▶ engine (sound)
+    ▲                                                                      ├─▶ device view
+    └────────────── a dial turned in the device view ◀─────────────────────┴─▶ .amxd
+```
+
+- **Python is the source of truth.** `fxgen.py` emits a plain maxpylang script for the
+  current settings and executes it; the page plays the resulting JSON and the download is
+  the same patch through `save(..., device_type="audio_effect")`. "View Python" shows
+  the script that ran.
+- **`src/plugin/schema.json`** describes the modules and every dial's range, and is read
+  by both the generator and the page. **`presets.json`** is the preset library.
+- **The engine plays the device as a host would.** `runtime/host.ts` is a pair of buses
+  standing in for the Live track: the page plays a sample into `plugin~` and listens to
+  `plugout~`. `live.dial` is a real object whose widget is mounted in the device view.
+- **Gaps feed back into the type system.** Wherever the script has to work around
+  maxpylang it says `gap M4L-NN`; the entries are in `docs/type-system/m4l-gaps.md` and
+  each is pinned by a strict xfail in `tests/test_m4l_gaps.py`.
+
+`fxgen.py` is tested natively (`pytest tests/test_fxgen.py`: every preset builds, checks
+clean and round-trips through `.amxd`); the browser half is in `test/plugin.test.ts`.
+
+The wheel in `public/py/` must contain the `m4l` object data. Rebuild it from the repo
+root with `python -m pip wheel . --no-deps -w web/public/py` after library changes.
+
 ## Object coverage
 
 Every one of the **1004 Max/MSP/Jitter objects** in maxpylang's metadata database is

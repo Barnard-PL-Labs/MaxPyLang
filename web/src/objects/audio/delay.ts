@@ -11,7 +11,7 @@
 //   • comb~             : Max measures its delay in MILLISECONDS -> seconds = ms / 1000
 
 import { num, register, type MaxNode } from '../../engine/registry';
-import { firstNum } from '../../runtime/atoms';
+import { firstNum, type Msg } from '../../runtime/atoms';
 import { makeOutlets } from '../../runtime/outlets';
 
 // DelayNode.maxDelayTime must be finite, > 0 and (per spec) < 180s.
@@ -37,49 +37,123 @@ register('delay~', (args, { ctx }) => {
   } satisfies MaxNode;
 });
 
-// tapin~ / tapout~ share a delay line. tapin~ writes the incoming signal into a
-// DelayNode; tapout~ reads it back out at a tap time. In Max they're joined by a
-// special cord (a control-domain outlet on tapin~ -> tapout~'s inlet); here they
-// share the delay line through a module-local reference to the most recent tapin~.
-let sharedDelay: DelayNode | undefined;
-let sharedMax = 1; // seconds — max delay of the shared line (kept as a plain number,
-// since DelayNode.maxDelayTime is a read-only attribute, not an AudioParam).
+// tapin~ / tapout~ : a delay line and the taps that read it.
+//
+// In Max the two are joined by a cord: tapin~'s outlet carries a `tapconnect` message
+// and every tapout~ it reaches reads that tapin~'s line. Here the cord does the same job.
+// A tapin~ keeps its input under a token, and announces the token to each cord as the
+// cord is made; a tapout~ that hears it builds its own DelayNode off that input.
+//
+// Each tap owning a DelayNode is what lets one tapin~ feed taps at different times, and
+// lets two tapin~ / tapout~ pairs (a stereo delay) coexist. An earlier version shared
+// one DelayNode through a module-level "most recent tapin~" variable, so the second
+// pair in a patch silently read the first pair's line.
+//
+// Feedback (tapout~ -> *~ -> tapin~) is legal for the reason it is in Max: the cycle
+// contains a delay. Web Audio rounds a delay inside a cycle up to one render quantum
+// (128 samples, about 3 ms), which is shorter than any musical echo.
 
-// tapin~ : the write end. inlet 0 = audio in. outlet 0 is a CONTROL tap link
-// (never carries a Msg here — the sharing is done via the shared DelayNode).
-// arg 0 = maximum delay (ms).
+interface TapLine { input: GainNode; maxSeconds: number }
+const tapLines = new Map<string, TapLine>();
+let tapSerial = 0;
+
+// tapin~ : the write end. inlet 0 = audio in. outlet 0 = the tap link. arg 0 = line
+// length (ms).
 register('tapin~', (args, { ctx }) => {
-  const maxDelayTime = clampMax(num(args[0], 1000) / 1000); // ms -> seconds
-  const delay = new DelayNode(ctx, { maxDelayTime, delayTime: 0 });
-  sharedDelay = delay;
-  sharedMax = maxDelayTime;
+  const maxSeconds = clampMax(num(args[0], 1000) / 1000);
+  const input = new GainNode(ctx, { gain: 1 });
+  const token = `tap-${++tapSerial}`;
+  tapLines.set(token, { input, maxSeconds });
   const o = makeOutlets();
   return {
-    signalIns: [delay],          // inlet 0 = audio into the delay line
-    signalOuts: [undefined],     // outlet 0 is a control tap link, not signal
-    onControlOut: o.onControlOut,
+    signalIns: [input],
+    signalOuts: [undefined], // the outlet is a tap link, not a signal
+    onControlOut(outlet, cb) {
+      const off = o.onControlOut(outlet, cb);
+      if (outlet === 0) cb(['tapconnect', token]);
+      return off;
+    },
+    dispose: () => {
+      tapLines.delete(token);
+      try { input.disconnect(); } catch { /* nothing connected */ }
+    },
   } satisfies MaxNode;
 });
 
-// tapout~ : the read end. Reads the shared delay line at a tap time. inlet 0
-// receives the tapin~ link and also sets the tap time (float, ms). outlet 0 =
-// delayed signal. arg 0 = initial delay (ms).
+// tapout~ : the read end. One inlet and one outlet per argument; each argument is that
+// tap's delay time in ms. An inlet takes the tap link, a float (the time in ms) or a
+// signal (the time in ms, continuously, which is how a chorus sweeps it).
 register('tapout~', (args, { ctx }) => {
-  // Reuse the most recent tapin~'s delay line; fall back to a fresh line so a
-  // lone tapout~ still builds and is audible.
-  const delay = sharedDelay ?? new DelayNode(ctx, { maxDelayTime: 1, delayTime: 0 });
-  const max = sharedDelay ? sharedMax : 1;
-  const tap = Math.min(num(args[0], 0) / 1000, max); // ms -> seconds
-  delay.delayTime.value = tap;
+  const count = Math.max(1, args.length);
+  const outs: GainNode[] = [];
+  const timeIns: GainNode[] = [];
+  const delays: (DelayNode | undefined)[] = [];
+  const times: number[] = [];
+  let line: TapLine | undefined;
+
+  for (let i = 0; i < count; i++) {
+    outs[i] = new GainNode(ctx, { gain: 1 });
+    // A signal at the inlet is a time in ms; DelayNode.delayTime wants seconds.
+    timeIns[i] = new GainNode(ctx, { gain: 0.001 });
+    times[i] = Math.max(0, num(args[i], 0)) / 1000;
+  }
+
+  const attach = (next: TapLine): void => {
+    for (let i = 0; i < count; i++) {
+      const old = delays[i];
+      if (old) {
+        try { line?.input.disconnect(old); } catch { /* already cut */ }
+        try { timeIns[i].disconnect(old.delayTime); } catch { /* already cut */ }
+        try { old.disconnect(); } catch { /* already cut */ }
+      }
+      const delay = new DelayNode(ctx, {
+        maxDelayTime: next.maxSeconds,
+        delayTime: Math.min(times[i], next.maxSeconds),
+      });
+      next.input.connect(delay);
+      delay.connect(outs[i]);
+      timeIns[i].connect(delay.delayTime);
+      delays[i] = delay;
+    }
+    line = next;
+  };
+
+  const setTime = (i: number, ms: number): void => {
+    times[i] = Math.max(0, ms) / 1000;
+    const delay = delays[i];
+    if (!delay) return;
+    const target = Math.min(times[i], line?.maxSeconds ?? times[i]);
+    // Glide instead of jumping: a jump in delay time is a click, a glide is the pitch
+    // bend a real delay line makes when its time knob is turned.
+    delay.delayTime.cancelScheduledValues(ctx.currentTime);
+    delay.delayTime.setTargetAtTime(target, ctx.currentTime, 0.03);
+  };
+
+  const controlIns = timeIns.map((_, i) => (m: Msg) => {
+    if (m[0] === 'tapconnect') {
+      const next = tapLines.get(String(m[1]));
+      if (next) attach(next);
+      return;
+    }
+    const n = firstNum(m);
+    if (n !== undefined) setTime(i, n);
+  });
+
   return {
-    signalIns: [delay.delayTime], // inlet 0 sets the tap time
-    signalOuts: [delay],          // outlet 0 = delayed signal
-    controlIns: [
-      (m) => {
-        const n = firstNum(m);
-        if (n !== undefined) delay.delayTime.value = Math.min(n / 1000, max);
-      },
-    ],
+    signalIns: timeIns,
+    signalOuts: outs,
+    controlIns,
+    dispose: () => {
+      for (let i = 0; i < count; i++) {
+        const delay = delays[i];
+        if (delay) {
+          try { line?.input.disconnect(delay); } catch { /* already cut */ }
+          try { delay.disconnect(); } catch { /* already cut */ }
+        }
+        try { timeIns[i].disconnect(); } catch { /* already cut */ }
+        try { outs[i].disconnect(); } catch { /* already cut */ }
+      }
+    },
   } satisfies MaxNode;
 });
 

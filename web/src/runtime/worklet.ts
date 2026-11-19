@@ -1,6 +1,6 @@
 // AudioWorklet host.
 //
-// Custom-DSP MSP objects (biquad~, +=~, rampsmooth~, deltaclip~, allpass~) need
+// Custom-DSP MSP objects (biquad~, +=~, rampsmooth~, deltaclip~, allpass~, degrade~) need
 // per-sample stateful math that no stock Web Audio node can express. They run inside
 // AudioWorkletProcessors whose source is the INLINE string below — a worklet module
 // runs in its own global scope and cannot import our TypeScript, so the processors
@@ -19,6 +19,7 @@ export const PROCESSORS = {
   rampsmooth: 'mpl-rampsmooth',
   deltaclip: 'mpl-deltaclip',
   allpass: 'mpl-allpass',
+  degrade: 'mpl-degrade',
 } as const;
 
 // The worklet module source. One class per DSP object; each mirrors the matching
@@ -189,6 +190,40 @@ class AllpassProcessor extends AudioWorkletProcessor {
   }
 }
 registerProcessor('${PROCESSORS.allpass}', AllpassProcessor);
+
+// degrade~ : sample-and-hold at a fraction of the sample rate, then quantise.
+//   ratio 1 keeps every sample, 0.25 keeps one in four and holds it for the other three.
+//   bits is the word length the held sample is rounded to (24 and up is left alone).
+class DegradeProcessor extends AudioWorkletProcessor {
+  static get parameterDescriptors() {
+    return [
+      { name: 'ratio', defaultValue: 1, minValue: 0, maxValue: 1, automationRate: 'k-rate' },
+      { name: 'bits', defaultValue: 24, minValue: 1, maxValue: 32, automationRate: 'k-rate' },
+    ];
+  }
+  constructor() { super(); this.st = []; }
+  process(inputs, outputs, params) {
+    const inp = inputs[0], out = outputs[0];
+    if (!inp || !inp.length) return true;
+    const ratio = Math.max(0.0001, Math.min(1, params.ratio[0]));
+    const bits = params.bits[0];
+    const half = bits >= 24 ? 0 : Math.pow(2, Math.max(1, bits)) / 2;
+    for (let ch = 0; ch < out.length; ch++) {
+      const x = inp[ch] || inp[0], y = out[ch];
+      const s = this.st[ch] || (this.st[ch] = { phase: 1, held: 0 });
+      for (let i = 0; i < y.length; i++) {
+        s.phase += ratio;
+        if (s.phase >= 1) {
+          s.phase -= 1;
+          s.held = half ? Math.round(x[i] * half) / half : x[i];
+        }
+        y[i] = s.held;
+      }
+    }
+    return true;
+  }
+}
+registerProcessor('${PROCESSORS.degrade}', DegradeProcessor);
 `;
 
 // Contexts whose worklet module has been successfully loaded.
