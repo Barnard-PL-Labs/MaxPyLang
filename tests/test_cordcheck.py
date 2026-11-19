@@ -9,7 +9,7 @@ import pytest
 
 import maxpylang as mp
 from maxpylang import ConnectionWarning
-from maxpylang.cordcheck import coverage, rate_of, unchecked, verdict
+from maxpylang.cordcheck import coverage, outlet_rate, rate_of, unchecked, verdict
 from maxpylang.objects import cycle_tilde, flonum
 
 SNIPPET = Path(__file__).parent / "typing_snippets" / "connections.py"
@@ -195,15 +195,52 @@ def test_save_adds_no_line_when_everything_was_checked(tmp_path, capsys):
 
 
 def test_save_does_not_name_a_known_object_with_no_type_data(tmp_path, capsys):
-    """gain~ is a real object whose rate data is missing: the user cannot act on that, so
-    save() only counts the cord. get_coverage() still names it."""
+    """plot~ is a real object whose inlets are not recorded as taking audio or not: the user
+    cannot act on that, so save() only counts the cord. get_coverage() still names it."""
     patch = mp.MaxPatch(verbose=False)
-    osc, gain, dac = (patch.place(text, verbose=False)[0] for text in ("cycle~ 440", "gain~", "ezdac~"))
-    patch.connect([osc.outs[0], gain.ins[0]], [gain.outs[0], dac.ins[0]], verbose=False)
-    assert patch.get_coverage()["cords"]["not_checked_because"] == [("gain~ (obj-2)", "no type data", 1)]
+    osc, plot = (patch.place(text, verbose=False)[0] for text in ("cycle~ 440", "plot~"))
+    patch.connect([osc.outs[0], plot.ins[0]], verbose=False)
+    assert patch.get_coverage()["cords"]["not_checked_because"] == [("plot~ (obj-2)", "no type data", 1)]
     patch.save(str(tmp_path / "p"), verbose=False)
     out = capsys.readouterr().out
     assert "1 not checked (no type data)" in out and "not checked:" not in out
+
+
+def cord(source, dest, outlet=0, inlet=0):
+    patch = mp.MaxPatch(verbose=False)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        src, dst = (patch.place(text, verbose=False)[0] for text in (source, dest))
+        patch.connect([src.outs[outlet], dst.ins[inlet]], verbose=False)
+    return verdict(src.outs[outlet], dst.ins[inlet])
+
+
+def test_an_outlet_the_table_leaves_open_is_read_from_the_object():
+    """line~ and groove~ have a count that changes with arguments, so the table gives their
+    outlets no rate. The object's own outlet types do."""
+    assert rate_of("line~", "outs", 0) is None and rate_of("groove~", "outs", 0) is None
+    assert cord("line~", "ezdac~") == "ok"
+    assert cord("line~", "metro 500") == "problem"
+    assert cord("line~", "metro 500", outlet=1) == "ok"      # the done bang
+    assert cord("groove~ buf 2", "metro 500", outlet=2) == "problem"   # the sync outlet is audio too
+
+
+def test_play_has_an_outlet_per_channel_then_its_done_bang():
+    assert cord("play~ buf 2", "metro 500", outlet=1) == "problem"
+    assert cord("play~ buf 2", "metro 500", outlet=2) == "ok"
+    assert cord("play~ buf", "metro 500", outlet=1) == "ok"
+
+
+def test_outlets_made_by_what_is_inside_or_sent_in_stay_unknown():
+    for name in ("inlet", "patcher", "bpatcher", "gen~", "js"):
+        assert outlet_rate(name, 0, ["signal"]) is None
+        assert outlet_rate(name, 0, [""]) is None
+
+
+def test_gain_takes_audio_in_its_first_inlet_only():
+    assert cord("cycle~ 440", "gain~") == "ok"
+    assert cord("cycle~ 440", "gain~", inlet=1) == "problem"
+    assert cord("gain~", "ezdac~") == "ok"
 
 
 def test_a_long_list_of_unchecked_objects_is_cut_short(tmp_path, capsys):
@@ -223,11 +260,11 @@ def test_multichannel_audio_into_control_warns():
 
 
 def test_outlet_of_unknown_rate_is_not_checked():
-    # play~'s outlets depend on its channel count, so the data cannot type them
-    assert rate_of("play~", "outs", 0) is None
+    # an inlet passes on whatever the parent patch sends it, so nothing can type its outlet
+    assert rate_of("inlet", "outs", 0) is None
     patch = mp.MaxPatch(verbose=False)
-    play, num = (patch.place(text, verbose=False)[0] for text in ("play~ mybuffer", "flonum"))
-    assert verdict(play.outs[0], num.ins[0]) == "unknown"
+    inlet, num = (patch.place(text, verbose=False)[0] for text in ("inlet", "flonum"))
+    assert verdict(inlet.outs[0], num.ins[0]) == "unknown"
 
 
 def placed_bad_chain():

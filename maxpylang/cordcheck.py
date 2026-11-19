@@ -14,6 +14,12 @@ written in (objects placed by string or by stub, connections as lists or tuples)
 
 A verdict is "unknown" when the type data cannot decide it: the outlet's rate is not
 known, or audio goes into an inlet that is not known to take or refuse it.
+
+Where the table leaves an outlet open (its count changes with arguments, as line~'s and
+groove~'s do), the object's own saved outlet type decides: the one Max wrote for a loaded
+patch, or the one maxpylang's count rules gave a new object. Objects whose outlets come
+from what is inside them (patcher, gen~, js...) or from what is sent in (inlet) are left
+unknown.
 """
 
 import functools
@@ -28,6 +34,13 @@ _PACKAGE_DIR = str(Path(__file__).resolve().parent)
 _DATA = Path(_PACKAGE_DIR) / "data" / "xlet_types.json"
 
 AUDIO = ("signal", "mc")
+
+# a box's saved outlet type, as a rate; every other type ("", "int", "bang"...) is a message
+_SAVED_KINDS = {"signal": "signal", "multichannelsignal": "mc", "jit_matrix": "matrix"}
+
+# objects whose saved outlet types say nothing sure: they pass on what they are sent, or
+# their outlets are made by a patcher or a script inside them
+_CONTENT_DECIDES = {"inlet", "outlet", "gen", "jit.gen", "jit.pix", "jit.gl.pix", "mxj", "mxj~"}
 
 
 @functools.lru_cache(maxsize=None)
@@ -61,10 +74,31 @@ def rate_of(name, side, index):
     return None if rates == "any" else rates
 
 
+@functools.lru_cache(maxsize=None)
+def _content_decides():
+    with open(Path(_PACKAGE_DIR) / "data" / "graph_roles.json", encoding="utf-8") as f:
+        return _CONTENT_DECIDES | set(json.load(f)["opaque"])
+
+
+def outlet_rate(name, index, saved_types):
+    """
+    Rate of outlet `index` of the object called `name`: from the type data, else from
+    `saved_types`, the box's own "outlettype" list. None when neither can say.
+    """
+    known = rate_of(name, "outs", index)
+    if known is not None or name in _content_decides() or index >= len(saved_types or []):
+        return known
+    return _SAVED_KINDS.get(saved_types[index], "control")
+
+
 def rate(xlet, side):
     """Rate of an Inlet (side "ins") or Outlet ("outs"), or None when not known."""
     name = _max_name(xlet.parent)
-    return rate_of(name, side, xlet.index) if name else None
+    if not name:
+        return None
+    if side == "outs":
+        return outlet_rate(name, xlet.index, (xlet.parent._dict or {}).get("box", {}).get("outlettype"))
+    return rate_of(name, side, xlet.index)
 
 
 def judge(out_rate, in_rate):
