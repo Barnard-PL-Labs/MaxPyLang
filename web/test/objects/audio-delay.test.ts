@@ -38,18 +38,48 @@ describe('delay batch', () => {
     expect(typeof node.onControlOut).toBe('function');
   });
 
-  it('tapout~ reads the shared line; initial-delay arg (ms) lands on delayTime (s)', () => {
-    build('tapin~', 1000);              // establishes the shared delay line
-    const { node } = build('tapout~', 250); // 250 ms -> 0.25 s
-    expect(node.signalOuts[0]).toBeDefined();      // outlet 0 is signal
-    expect((node.signalIns[0] as AudioParam).value).toBeCloseTo(0.25, 6);
+  it('tapin~ announces its line to each cord as the cord is made', () => {
+    const { node } = build('tapin~', 1000);
+    const heard: Msg[] = [];
+    node.onControlOut!(0, (m) => heard.push(m));
+    expect(heard.length).toBe(1);
+    expect(heard[0][0]).toBe('tapconnect');
   });
 
-  it('tapout~ float to inlet 0 sets the tap time (ms -> seconds)', () => {
-    build('tapin~', 1000);
+  it('tapout~ has one inlet and one outlet per tap time', () => {
+    const { node } = build('tapout~', 100, 250, 400);
+    expect(node.signalOuts.length).toBe(3);
+    expect(node.signalIns.length).toBe(3);
+    expect(node.signalOuts.every(Boolean)).toBe(true);
+  });
+
+  it('two tapin~ / tapout~ pairs each read their own line', () => {
+    // The regression this guards: a module-level "most recent tapin~" made the second
+    // pair in a patch (the right channel of a stereo delay) read the first pair's line.
+    const a = build('tapin~', 1000);
+    const b = build('tapin~', 1000);
+    const tapA = build('tapout~', 250);
+    const tapB = build('tapout~', 250);
+    const connected: unknown[] = [];
+    for (const [tapin, tapout] of [[a, tapA], [b, tapB]] as const) {
+      const input = tapin.node.signalIns[0] as unknown as { connect: (n: unknown) => unknown };
+      const original = input.connect.bind(input);
+      input.connect = (n: unknown) => { connected.push([tapin, n]); return original(n); };
+      tapin.node.onControlOut!(0, tapout.node.controlIns![0]!);
+    }
+    expect(connected.length).toBe(2);
+    expect((connected[0] as unknown[])[0]).toBe(a);
+    expect((connected[1] as unknown[])[0]).toBe(b);
+    expect((connected[0] as unknown[])[1]).not.toBe((connected[1] as unknown[])[1]);
+  });
+
+  it('tapout~ accepts a tap time before and after it is linked', () => {
+    const tapin = build('tapin~', 1000);
     const { node, send } = build('tapout~', 0);
-    send([100]); // 100 ms -> 0.1 s
-    expect((node.signalIns[0] as AudioParam).value).toBeCloseTo(0.1, 6);
+    expect(() => send([100])).not.toThrow();
+    tapin.node.onControlOut!(0, node.controlIns![0]!);
+    expect(() => send([200])).not.toThrow();
+    expect(() => node.dispose?.()).not.toThrow();
   });
 
   it('comb~ builds with 5 inlets, a signal outlet, and coefficient params on args', () => {

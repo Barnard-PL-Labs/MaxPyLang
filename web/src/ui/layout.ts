@@ -68,6 +68,7 @@ export const WIDGET_SIZE: Record<string, [number, number]> = {
   'number~': [66, 24], toggle: [26, 26], button: [26, 26], bng: [26, 26],
   led: [20, 20], umenu: [130, 26], tab: [150, 28], matrixctrl: [128, 128],
   multislider: [150, 64], comment: [130, 22], panel: [90, 64],
+  'live.dial': [44, 48],
 };
 
 /**

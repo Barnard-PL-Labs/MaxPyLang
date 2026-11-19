@@ -35,17 +35,19 @@ describe('audio filter objects', () => {
     expect(val(node.signalIns[1])).toBe(1200);
   });
 
-  it('svf~ exposes four signal outlets and syncs freq/Q across them', () => {
-    const node = build('svf~', 800, 3);
+  it('svf~ exposes four signal outlets and maps Max resonance (0..1) to a biquad Q', () => {
+    const node = build('svf~', 800, 0.5);
     expect(node.signalOuts.length).toBe(4);
     expect(node.signalOuts.every(Boolean)).toBe(true);
     expect(val(node.signalIns[1])).toBe(800); // center frequency arg
-    expect(val(node.signalIns[2])).toBe(3);   // resonance -> Q arg
+    // resonance 0.5 -> quality factor 1 -> 0 dB on the lowpass, whose Q is in decibels
+    expect(val(node.signalIns[2])).toBeCloseTo(0, 6);
     node.controlIns![1]!([2000] as Msg);
-    node.controlIns![2]!([9] as Msg);
-    // The lowpass (exposed on the signal inlets) tracks the control messages.
+    node.controlIns![2]!([0.95] as Msg);
     expect(val(node.signalIns[1])).toBe(2000);
-    expect(val(node.signalIns[2])).toBe(9);
+    expect(val(node.signalIns[2])).toBeCloseTo(20, 4); // quality factor 10 = 20 dB
+    // The bandpass outlet takes the same resonance as a linear Q.
+    expect(((node.signalOuts[2] as BiquadFilterNode).Q as AudioParam).value).toBeCloseTo(10, 4);
   });
 
   it('reson~ lands gain/frequency/Q args on the right params', () => {

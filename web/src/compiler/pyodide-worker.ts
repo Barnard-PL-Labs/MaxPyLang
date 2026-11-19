@@ -8,6 +8,14 @@
 //   ← {type:'ready'} | {type:'error', phase:'init', message}
 //   → {type:'compile', id, source}
 //   ← {type:'result', id, json} | {type:'error', id, phase:'compile', message}
+//   → {type:'install', id, dir, files: {name: text}}   (put Python modules on sys.path)
+//   ← {type:'result', id, json: ''} | {type:'error', id, phase:'install', message}
+//   → {type:'call', id, module, fn, args: (string|number|boolean)[]}
+//   ← {type:'result', id, json} | {type:'error', id, phase:'call', message}
+//
+// `install` + `call` are how a page runs its OWN Python against maxpylang (the plugin
+// generator's fxgen.py) instead of a script the user typed. The function must return a
+// string; by convention it is JSON, which is why the reply reuses the `json` field.
 
 // We rely on the ambient `self`/`postMessage` from the DOM lib rather than pulling
 // the WebWorker lib (which would clash with DOM's `self` in the shared tsc program).
@@ -17,7 +25,7 @@ interface Pyodide {
   loadPackage(names: string[]): Promise<void>;
   pyimport(name: string): any;
   runPython(code: string): unknown;
-  FS: { writeFile(path: string, data: Uint8Array): void };
+  FS: { writeFile(path: string, data: Uint8Array): void; mkdirTree(path: string): void };
   globals: { get(name: string): any };
 }
 
@@ -45,7 +53,12 @@ async function init(pyodideCdn: string, wheelUrl: string): Promise<Pyodide> {
   // the JSON (so ordinary MaxPy scripts "just work"), and fall back to finding a
   // MaxPatch instance in the namespace if they never call save.
   py.runPython(`
-import json, maxpylang as mp
+import json, sys, importlib, maxpylang as mp
+
+def __add_path(d):
+    if d not in sys.path:
+        sys.path.insert(0, d)
+    importlib.invalidate_caches()
 
 def __compile(src):
     captured = {}
@@ -81,6 +94,36 @@ self.onmessage = async (e: MessageEvent) => {
       post({ type: 'ready' });
     } catch (err) {
       post({ type: 'error', phase: 'init', message: String((err as Error).message || err) });
+    }
+    return;
+  }
+  if (msg.type === 'install') {
+    try {
+      const py = await ready;
+      if (!py) throw new Error('runtime not initialised');
+      const dir = String(msg.dir);
+      py.FS.mkdirTree(dir);
+      const enc = new TextEncoder();
+      for (const [name, text] of Object.entries(msg.files as Record<string, string>)) {
+        py.FS.writeFile(`${dir}/${name}`, enc.encode(text));
+      }
+      py.globals.get('__add_path')(dir);
+      post({ type: 'result', id: msg.id, json: '' });
+    } catch (err) {
+      post({ type: 'error', id: msg.id, phase: 'install', message: String((err as Error).message || err) });
+    }
+    return;
+  }
+  if (msg.type === 'call') {
+    try {
+      const py = await ready;
+      if (!py) throw new Error('runtime not initialised');
+      const mod = py.pyimport(String(msg.module));
+      const out = mod[String(msg.fn)](...(msg.args as unknown[]));
+      mod.destroy?.();
+      post({ type: 'result', id: msg.id, json: String(out) });
+    } catch (err) {
+      post({ type: 'error', id: msg.id, phase: 'call', message: String((err as Error).message || err) });
     }
     return;
   }

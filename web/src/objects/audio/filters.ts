@@ -31,21 +31,35 @@ register('onepole~', (args, { ctx }) => {
 // svf~ : state-variable filter. One input, four simultaneous outputs (lowpass,
 // highpass, bandpass, notch). Web Audio has no single SVF node, so we run four
 // biquads of the matching type off a shared input, kept in sync on frequency and
-// resonance (mapped to Q). inlet 1 = center frequency, inlet 2 = resonance.
+// resonance. inlet 1 = center frequency, inlet 2 = resonance.
+//
+// Max's resonance runs 0..1 and is not a Q: 0 is no peak at all and 1 is the edge of
+// self-oscillation. It is mapped to a quality factor of 0.5 / (1 - r), so 0 is a gentle
+// 0.5, 0.5 is 1 and 0.95 is 10. A biquad then wants that number in two different units:
+// linear for bandpass and notch, decibels for lowpass and highpass.
+const svfQ = (resonance: number): number => 0.5 / (1 - Math.min(0.98, Math.max(0, resonance)));
+const svfQdB = (resonance: number): number => 20 * Math.log10(svfQ(resonance));
+
 register('svf~', (args, { ctx }) => {
   const freq = num(args[0], 1000);
-  const res = num(args[1], 1);
+  const res = num(args[1], 0);
   const input = new GainNode(ctx, { gain: 1 });
-  const mk = (type: BiquadFilterType) => {
-    const f = new BiquadFilterNode(ctx, { type, frequency: freq, Q: res });
+  const mk = (type: BiquadFilterType, q: number) => {
+    const f = new BiquadFilterNode(ctx, { type, frequency: freq, Q: q });
     input.connect(f);
     return f;
   };
-  const lp = mk('lowpass');
-  const hp = mk('highpass');
-  const bp = mk('bandpass');
-  const notch = mk('notch');
+  const lp = mk('lowpass', svfQdB(res));
+  const hp = mk('highpass', svfQdB(res));
+  const bp = mk('bandpass', svfQ(res));
+  const notch = mk('notch', svfQ(res));
   const all = [lp, hp, bp, notch];
+  const setRes = (r: number): void => {
+    lp.Q.value = svfQdB(r);
+    hp.Q.value = svfQdB(r);
+    bp.Q.value = svfQ(r);
+    notch.Q.value = svfQ(r);
+  };
   return {
     // Signal-rate freq/Q target the lowpass; control messages fan out to all four.
     signalIns: [input, lp.frequency, lp.Q],
@@ -53,7 +67,7 @@ register('svf~', (args, { ctx }) => {
     controlIns: [
       undefined,
       (m) => { const n = firstNum(m); if (n !== undefined) for (const f of all) f.frequency.value = n; },
-      (m) => { const n = firstNum(m); if (n !== undefined) for (const f of all) f.Q.value = n; },
+      (m) => { const n = firstNum(m); if (n !== undefined) setRes(n); },
     ],
   } satisfies MaxNode;
 });

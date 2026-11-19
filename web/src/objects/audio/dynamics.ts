@@ -8,6 +8,7 @@
 
 import { num, register, type MaxNode } from '../../engine/registry';
 import { firstNum } from '../../runtime/atoms';
+import { PROCESSORS, tryWorkletNode } from '../../runtime/worklet';
 
 // ── curve helpers ──────────────────────────────────────────────────────────────
 
@@ -58,13 +59,30 @@ register('limi~', (_args, { ctx }) => {
 });
 
 // ── degrade~ : sample-rate ratio + bit reduction ─────────────────────────────────
-// inlet 0 = signal, inlet 1 = resampling frequency ratio, inlet 2 = quantisation bits.
-// A WaveShaper models the bit-depth quantisation. Sample-rate reduction is stateful
-// (needs a hold across samples) so it is not modelled here; the ratio is stored and
-// left to a later worklet. 1 signal outlet.
+// inlet 0 = signal, inlet 1 = resampling frequency ratio (1 = untouched), inlet 2 =
+// quantisation bits. Both halves are stateful together (the held sample is the one that
+// gets quantised), so the real thing is a worklet. Where no worklet is available (Node,
+// or a context nobody preloaded) a WaveShaper still models the bit depth, and the ratio
+// is stored but inaudible.
 register('degrade~', (args, { ctx }) => {
-  // ratio is stored for a future sample-rate-reduction worklet; unused acoustically now.
-  const state = { ratio: num(args[0], 1), bits: num(args[1], 16) };
+  const state = { ratio: num(args[0], 1), bits: num(args[1], 24) };
+  const node = tryWorkletNode(ctx, PROCESSORS.degrade);
+  if (node) {
+    const pRatio = node.parameters.get('ratio');
+    const pBits = node.parameters.get('bits');
+    if (pRatio) pRatio.value = Math.min(1, Math.max(0, state.ratio));
+    if (pBits) pBits.value = Math.min(32, Math.max(1, state.bits));
+    return {
+      signalIns: [node, undefined, undefined],
+      signalOuts: [node],
+      controlIns: [
+        undefined,
+        (m) => { const n = firstNum(m); if (n !== undefined && pRatio) pRatio.value = Math.min(1, Math.max(0, n)); },
+        (m) => { const n = firstNum(m); if (n !== undefined && pBits) pBits.value = Math.min(32, Math.max(1, n)); },
+      ],
+      dispose: () => { try { node.disconnect(); } catch { /* nothing connected */ } },
+    } satisfies MaxNode;
+  }
   const shaper = new WaveShaperNode(ctx, { curve: quantizeCurve(state.bits) });
   return {
     signalIns: [shaper, undefined, undefined],
@@ -73,6 +91,37 @@ register('degrade~', (args, { ctx }) => {
       undefined,
       (m) => { const n = firstNum(m); if (n !== undefined) state.ratio = n; },
       (m) => { const n = firstNum(m); if (n !== undefined) { state.bits = n; shaper.curve = quantizeCurve(state.bits); } },
+    ],
+  } satisfies MaxNode;
+});
+
+// ── overdrive~ : soft-clipping distortion ─────────────────────────────────────────
+// inlet 0 = signal, inlet 1 = drive factor (1 = clean, higher = more). A memoryless
+// curve, tanh(drive * x) scaled so full scale stays at full scale: quiet signals get
+// louder and denser as the drive rises while the peaks stay put. Max's own curve is not
+// published, so this is the same family of shape rather than a copy of it.
+function overdriveCurve(drive: number) {
+  const d = Math.max(1, Number.isFinite(drive) ? drive : 1);
+  const norm = Math.tanh(d);
+  const curve = new Float32Array(new ArrayBuffer(CURVE_LEN * 4));
+  for (let i = 0; i < CURVE_LEN; i++) {
+    const x = (i / (CURVE_LEN - 1)) * 2 - 1;
+    // At drive 1 the object is clean, so blend from the identity into the tanh.
+    const shaped = Math.tanh(d * x) / norm;
+    const blend = Math.min(1, d - 1);
+    curve[i] = x + (shaped - x) * blend;
+  }
+  return curve;
+}
+
+register('overdrive~', (args, { ctx }) => {
+  const shaper = new WaveShaperNode(ctx, { curve: overdriveCurve(num(args[0], 1)), oversample: '4x' });
+  return {
+    signalIns: [shaper, undefined],
+    signalOuts: [shaper],
+    controlIns: [
+      undefined,
+      (m) => { const n = firstNum(m); if (n !== undefined) shaper.curve = overdriveCurve(n); },
     ],
   } satisfies MaxNode;
 });
