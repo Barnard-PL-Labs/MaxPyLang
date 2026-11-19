@@ -4,9 +4,22 @@ The front page of the MaxPyLang docs: Max objects grouped by category, each with
 example you can play, edit and run in the browser, in the style of
 [Hydra's reference](https://hydra.ojack.xyz/api/).
 
-It reuses the audio engine and the Python compiler from [`../web`](../web) (MaxPyStudio)
-without changing them, and installs no packages of its own: everything resolves from
-`../web/node_modules`.
+It reuses the audio engine, the Python compiler and the patch canvas from [`../web`](../web)
+(MaxPyStudio) without changing them, and installs no packages of its own: everything resolves
+from `../web/node_modules`.
+
+## The visual patch
+
+Each example shows the patch its code makes, as in
+[maxpy-studio](https://github.com/Barnard-PL-Labs/maxpy-studio), drawn by MaxPyStudio's own
+canvas (`web/src/ui/patcher.ts`, used read-only), so it looks the way it will after
+↗ "open in MaxPyStudio". Drag to pan or move boxes, ⌘/Ctrl + scroll to zoom, and ⤢ to open the
+patch large beside its code. While an example plays, its UI objects are the engine's live
+widgets.
+
+The examples don't call `set_position()`, so maxpylang saves each patch as one long row.
+`layoutForReading()` (`src/patchview.ts`) arranges a copy top to bottom by signal flow for the
+view and for the MaxPyStudio link; the code itself is unchanged.
 
 ## Run it
 
@@ -44,7 +57,8 @@ Rules the build and tests check:
 
 ## Tests
 
-- `npm test` (Node): every listed object and every object an example uses plays in the browser.
+- `npm test` (Node): every listed object and every object an example uses plays in the browser,
+  and each example's patch lays out top to bottom with no overlapping boxes.
 - `npm run test:browser` (Chromium): each example is rendered offline, with the engine's clock
   stepped every 10 ms of audio. It must make sound, not clip, change over time if a `metro`,
   `delay` or `pipe` drives it, and play the expected pitch for the steady tones. (Offline,

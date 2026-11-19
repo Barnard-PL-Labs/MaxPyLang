@@ -4,12 +4,12 @@
 // Route: #objects/<name>/<example>, e.g. #objects/cycle~/1 (Hydra: #functions/noise/0).
 
 import './style.css';
-import { play, stop, playing, onChange } from './player';
+import { play, stop, playing, onChange, builtWidget } from './player';
 import { categories, findEntry, pyArg, type Entry, type Example } from './entries';
 import { compile, lastLine, LoadError, onStatus, pythonLoaded } from './compiler';
 import { mountEditor } from './editor';
 import { mountScope } from './scope';
-import { patchSvg } from './patchsvg';
+import { PatchPane, layoutForReading } from './patchview';
 import { buildPermalink } from '../../web/src/ui/permalink';
 import type { EditorView } from 'codemirror';
 
@@ -75,6 +75,7 @@ search.addEventListener('input', () => renderList(search.value));
 
 let editor: EditorView | null = null;
 let stopScope: (() => void) | null = null;
+let pane: PatchPane | null = null;
 let shown: { entry: Entry; example: Example | null; key: string; code: string; patch: unknown } | null = null;
 
 function usageHtml(e: Entry): string {
@@ -107,6 +108,7 @@ function showPanel(name: string, index: number): void {
 
   editor?.destroy(); editor = null;
   stopScope?.(); stopScope = null;
+  pane?.destroy(); pane = null;
   document.querySelectorAll('.chip.active').forEach((c) => c.classList.remove('active'));
   document.querySelectorAll(`.chip[href="${CSS.escape(route(entry.name))}"]`).forEach((c) => c.classList.add('active'));
 
@@ -123,7 +125,11 @@ function showPanel(name: string, index: number): void {
     ${usageHtml(entry)}
     ${example ? `
       <h3>Example</h3>
-      <canvas class="scope" aria-label="Live waveform and spectrum"></canvas>
+      <div class="visual">
+        <div class="patch-host" aria-label="The example's patch"></div>
+        <canvas class="scope" aria-label="Live waveform and spectrum"></canvas>
+      </div>
+      <p class="patch-note">The patch this code makes, arranged top to bottom for reading. Drag to move it or its boxes; ⌘/Ctrl + scroll to zoom.</p>
       <div class="bar">
         <div class="tabs">${tabs}</div>
         <div class="buttons">
@@ -135,8 +141,7 @@ function showPanel(name: string, index: number): void {
       </div>
       <p class="ex-title"><b>${esc(example.title)}</b> ${esc(example.note)}</p>
       <div class="editor"></div>
-      <p class="status">Edit the code and press ▶ or Ctrl+Enter to run it.</p>
-      <details class="diagram" open><summary>Patch</summary><div class="svg"></div></details>`
+      <p class="status">Edit the code and press ▶ or Ctrl+Enter to run it.</p>`
     : `<p class="none">No example for this object yet.</p>`}
     ${entry.description ? `<h3>About</h3><p class="desc">${esc(entry.description)}</p>` : ''}
     ${portsHtml(entry)}`;
@@ -146,8 +151,13 @@ function showPanel(name: string, index: number): void {
 
   const status = panel.querySelector('.status') as HTMLElement;
   const setStatus = (text: string, kind = '') => { status.textContent = text; status.className = 'status ' + kind; };
-  const svgHost = panel.querySelector('.svg') as HTMLElement;
-  const drawPatch = (p: unknown) => { svgHost.innerHTML = patchSvg(p, entry.color); };
+  // Box ids (obj-1, obj-2…) repeat across patches, so mount the engine's live widgets
+  // only while this example is the one playing.
+  pane = new PatchPane(panel.querySelector('.patch-host') as HTMLElement, {
+    widgetFor: (id) => (playing() === key ? builtWidget(id) : undefined),
+    onExpand: () => openExpanded(entry, key, () => shown?.code ?? example.code, () => shown?.patch ?? example.patch),
+  });
+  const drawPatch = (p: unknown) => pane?.show(p);
   drawPatch(example.patch);
 
   editor = mountEditor(panel.querySelector('.editor') as HTMLElement, example.code, {
@@ -157,7 +167,10 @@ function showPanel(name: string, index: number): void {
   stopScope = mountScope(panel.querySelector('.scope') as HTMLCanvasElement, () => entry.color, () => playing() === key);
 
   const playBtn = panel.querySelector('.play') as HTMLButtonElement;
-  const syncButton = () => { playBtn.textContent = playing() === key ? '■' : '▶'; };
+  const syncButton = () => {
+    playBtn.textContent = playing() === key ? '■' : '▶';
+    pane?.refreshWidgets();
+  };
   syncButton();
 
   async function runOrStop(forceRun = false): Promise<void> {
@@ -183,6 +196,7 @@ function showPanel(name: string, index: number): void {
   playBtn.addEventListener('click', () => void runOrStop());
   panel.querySelector('.reset')!.addEventListener('click', () => {
     editor?.dispatch({ changes: { from: 0, to: editor.state.doc.length, insert: example.code } });
+    if (shown) shown.patch = example.patch;
     drawPatch(example.patch);
     setStatus('Back to the original example.');
   });
@@ -191,7 +205,7 @@ function showPanel(name: string, index: number): void {
     setStatus('Copied.');
   });
   panel.querySelector('.studio')!.addEventListener('click', async () => {
-    const link = await buildPermalink(shown?.patch ?? example.patch, STUDIO);
+    const link = await buildPermalink(layoutForReading(shown?.patch ?? example.patch), STUDIO);
     window.open(link.url, '_blank', 'noopener');
   });
   unsubscribe?.();
@@ -199,6 +213,45 @@ function showPanel(name: string, index: number): void {
 }
 
 let unsubscribe: (() => void) | null = null;
+
+// ---------- expanded: the patch beside its code ----------
+
+let expanded: { el: HTMLElement; pane: PatchPane; off: () => void } | null = null;
+
+function closeExpanded(): void {
+  if (!expanded) return;
+  expanded.off();
+  expanded.pane.destroy();
+  expanded.el.remove();
+  expanded = null;
+}
+
+function openExpanded(entry: Entry, key: string, code: () => string, patch: () => unknown): void {
+  closeExpanded();
+  const el = document.createElement('div');
+  el.className = 'expanded';
+  el.style.setProperty('--c', entry.color);
+  el.setAttribute('role', 'dialog');
+  el.setAttribute('aria-label', `${entry.name}: patch and code`);
+  el.innerHTML = `
+    <header><h2>${esc(entry.name)}</h2>
+      <button class="play" title="Play / stop">${playing() === key ? '■' : '▶'}</button>
+      <button class="close" title="Close (Esc)">✖</button></header>
+    <div class="cols"><div class="big-patch"></div><pre class="code-view"></pre></div>`;
+  document.body.appendChild(el);
+  (el.querySelector('.code-view') as HTMLElement).textContent = code();
+  const bigPane = new PatchPane(el.querySelector('.big-patch') as HTMLElement, {
+    widgetFor: (id) => (playing() === key ? builtWidget(id) : undefined),
+  });
+  bigPane.show(patch());
+  const playBtn = el.querySelector('.play') as HTMLButtonElement;
+  playBtn.addEventListener('click', () => (panel.querySelector('.play') as HTMLButtonElement | null)?.click());
+  const offChange = onChange(() => { playBtn.textContent = playing() === key ? '■' : '▶'; bigPane.refreshWidgets(); });
+  const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeExpanded(); };
+  document.addEventListener('keydown', onKey);
+  el.querySelector('.close')!.addEventListener('click', closeExpanded);
+  expanded = { el, pane: bigPane, off: () => { offChange(); document.removeEventListener('keydown', onKey); } };
+}
 
 // For tests (as web/ exposes window.__patcher): set the editor's text without typing.
 (window as unknown as { __reference: object }).__reference = {
@@ -217,6 +270,8 @@ function onRoute(): void {
     void stop();
     editor?.destroy(); editor = null;
     stopScope?.(); stopScope = null;
+    pane?.destroy(); pane = null;
+    closeExpanded();
     panel.hidden = true;
     document.querySelectorAll('.chip.active').forEach((c) => c.classList.remove('active'));
     return;

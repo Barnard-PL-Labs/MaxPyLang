@@ -72,6 +72,11 @@ export async function stop(): Promise<void> {
 }
 
 export const playing = (): string | null => current;
+
+/** The DOM the engine built for a box (a number box, a slider…), while a patch is built. */
+export function builtWidget(id: string): HTMLElement | undefined {
+  return engine?.built.get(id)?.el;
+}
 export function onChange(f: (playing: string | null) => void): () => void {
   listeners.add(f);
   return () => listeners.delete(f);
