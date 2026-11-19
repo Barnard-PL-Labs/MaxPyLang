@@ -8,7 +8,7 @@ patch = mp.MaxPatch()
 lfo = patch.place(cycle_tilde(5))[0]     # 5 times a second
 depth = patch.place("*~ 8")[0]           # swing ±8 Hz
 center = patch.place("+~ 330")[0]        # around 330 Hz
-osc = patch.place(cycle_tilde)[0]
+osc = patch.place(cycle_tilde(0))[0]     # 0: the frequency comes from the signal
 quiet = patch.place("*~ 0.2")[0]
 out = patch.place(ezdac_tilde)[0]
 

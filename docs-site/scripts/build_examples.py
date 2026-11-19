@@ -47,13 +47,41 @@ OUT = SITE / "src" / "generated"
 STUB_LINE = re.compile(r"^(\w+) = MaxObject\('(.+)'\)$", re.M)
 
 
+def aliases():
+    """maxpylang's alias table: '*~' -> 'times~', 't' -> 'trigger', ... (as reffile.check_aliases)."""
+    return json.loads((ROOT / "maxpylang" / "data" / "OBJ_INFO" / "obj_aliases.json").read_text())
+
+
 def stub_names():
-    """Max object name -> Python name, read from maxpylang/objects/{max,msp,jit}.py."""
+    """Max object name -> Python name, read from maxpylang/objects/{max,msp,jit}.py.
+
+    An alias gets its target's stub: '*~' -> times_tilde, which places times~, the same
+    object as *~.
+    """
     names = {}
     for pkg in ("max", "msp", "jit"):
         for py, max_name in STUB_LINE.findall((ROOT / "maxpylang" / "objects" / f"{pkg}.py").read_text()):
             names.setdefault(max_name, py)
+    for alias, target in aliases().items():
+        if target in names:
+            names.setdefault(alias, names[target])
     return names
+
+
+STUB_DIGEST = re.compile(r'^class _T_\w+\(MaxObject\):\n    """\n(\S+) - (.+)$', re.M)
+
+
+def digests():
+    """One-line summaries for every object, from the stubs' docstrings (maxpylang/objects/*.pyi).
+
+    web/src/generated/objdocs.json has fuller docs, but misses some objects (abs, whose stub
+    is abs_); the page falls back to these.
+    """
+    out = {}
+    for pkg in ("max", "msp", "jit"):
+        for name, digest in STUB_DIGEST.findall((ROOT / "maxpylang" / "objects" / f"{pkg}.pyi").read_text()):
+            out.setdefault(name, digest.strip())
+    return out
 
 
 def known_objects():
@@ -66,6 +94,9 @@ def known_objects():
             args = ast.literal_eval(args)
         required = [a.get("name") for a in args.get("required", []) if isinstance(a, dict)]
         known[path.stem] = {"required": required}
+    for alias, target in aliases().items():
+        if target in known:
+            known.setdefault(alias, {**known[target], "aliasOf": target})
     return known
 
 
@@ -127,12 +158,20 @@ def build_wheel():
 
 def main():
     stubs = stub_names()
-    by_stub = {py: name for name, py in stubs.items()}
+    by_stub = {}
+    for name, py in stubs.items():  # the object's own name, not an alias
+        if name not in aliases():
+            by_stub.setdefault(py, name)
+    # An example folder is named by stub (times_tilde); list it under the name the
+    # reference uses (*~) when that is an alias of the stub's object.
+    listed = {o for c in json.loads((SITE / "content" / "categories.json").read_text())["categories"] for o in c["objects"]}
+    shown_as = {target: alias for alias, target in aliases().items() if alias in listed and target not in listed}
     examples, errors = [], []
 
     for path in sorted(EXAMPLES.glob("*/*.py")):
         stub = path.parent.name
         obj = by_stub.get(stub)
+        obj = shown_as.get(obj, obj)
         rel = path.relative_to(SITE)
         if obj is None:
             errors.append(f"{rel}: folder '{stub}' is not a name in maxpylang.objects")
@@ -172,6 +211,7 @@ def main():
     (OUT / "examples.json").write_text(json.dumps(examples, indent=1))
     (OUT / "stubs.json").write_text(json.dumps(stubs, indent=1, sort_keys=True))
     (OUT / "known.json").write_text(json.dumps(known_objects(), indent=1, sort_keys=True))
+    (OUT / "digests.json").write_text(json.dumps(digests(), indent=1, sort_keys=True))
     if "--no-wheel" not in sys.argv:
         (OUT / "wheel.json").write_text(json.dumps({"file": build_wheel()}))
     print(f"{len(examples)} examples for {len({e['object'] for e in examples})} objects -> {OUT.relative_to(ROOT)}")

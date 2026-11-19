@@ -13,6 +13,7 @@ import categoryFile from '../content/categories.json';
 import examplesFile from './generated/examples.json';
 import stubsFile from './generated/stubs.json';
 import knownFile from './generated/known.json';
+import digestsFile from './generated/digests.json';
 import objdocsFile from '../../web/src/generated/objdocs.json';
 import manifestFile from '../../web/src/generated/manifest.json';
 
@@ -83,8 +84,16 @@ type Manifest = {
 const objdocs = objdocsFile as Record<string, Doc>;
 const manifest = manifestFile as Record<string, Manifest>;
 const stubs = stubsFile as Record<string, string>;
-const known = knownFile as Record<string, { required: string[] }>;
+const known = knownFile as Record<string, { required: string[]; aliasOf?: string }>;
 const examples = examplesFile as Example[];
+const digests = digestsFile as Record<string, string>;
+
+// Objects no generated file describes. live.gain~ is added to the engine by hand
+// (web/scripts/gen-manifest.mjs) and maxpylang has no data for it; this is the digest
+// from Max's reference page (m4l-ref/live.gain~.maxref.xml).
+const EXTRA_DIGESTS: Record<string, string> = {
+  'live.gain~': 'Decibel volume slider and monitor',
+};
 
 function entryFor(info: ObjectInfo | undefined, name: string, category: string, color: string): Entry {
   const doc = objdocs[name] ?? objdocs[manifest[name]?.aliasOf ?? ''] ?? {};
@@ -98,7 +107,7 @@ function entryFor(info: ObjectInfo | undefined, name: string, category: string, 
     known: name in known,
     required: known[name]?.required ?? [],
     stub: stubs[name] ?? null,
-    digest: doc.digest ?? '',
+    digest: doc.digest || digests[name] || digests[known[name]?.aliasOf ?? ''] || EXTRA_DIGESTS[name] || '',
     description: doc.description ?? '',
     args: (man.args ?? []).map((a) => ({ name: a.name, type: a.type.join('/'), optional: a.optional })),
     inlets: (doc.inlets ?? []).map((p, i) => ({ ...p, domain: doc.inletDomains?.[i] ?? 'control' })),
