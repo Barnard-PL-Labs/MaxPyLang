@@ -39,10 +39,10 @@ A `clip~ -1. 1.` before `plugout~` is an optional safety net while you experimen
 mistake from sending very loud audio to Live. Cycling '74's own devices do not use one.
 
 :::{note}
-Live's own UI objects (`live.dial`, `live.slider`, `live.numbox`, `live.gain~`) are not yet in
-maxpylang's object data. Placing one gives an unknown object with no inlets or outlets, so it
-cannot be connected. Use `dial`, `slider` or `number` for now, and swap in the `live.*`
-objects in Max after generating the device. See {doc}`known-issues`.
+Use Live's own interface objects for a device's controls (`live.dial`, `live.slider`,
+`live.numbox`, `live.toggle`, `live.gain~`, …): Live can show, save and automate them. They
+are stubs in `maxpylang.objects`: `from maxpylang.objects import live_dial`. In this site's
+browser player only `live.dial` and `live.gain~` are interactive; the others work in Max.
 :::
 
 ## Instrument

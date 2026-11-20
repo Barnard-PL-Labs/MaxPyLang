@@ -39,14 +39,10 @@ maxpylang logs as it works. Each part can be turned off:
 | the `PatchCheck` report                 | `patch.save(..., check=False)`            |
 | `maxpatch saved to ...`                 | `patch.save(..., verbose=False)`          |
 
-`place()` also prints each object it places, as two lines like `(cycle~ [cycle~ 440],)` and
-`[cycle~ [cycle~ 440]]`, and loading a patch prints one line per object. These are left-over debug
-lines and cannot be turned off yet; ignore them.
-
 ## The four ideas
 
 **A patch.** `mp.MaxPatch()` is an empty patch. `mp.MaxPatch(load_file="x.maxpat")` loads an
-existing one; it also reads Max for Live `.amxd` files. In 0.1.1, loading fails on most
+existing one; it also reads Max for Live `.amxd` files. Until pull request #20 is released, loading fails on most
 patches saved by Max itself; patches written by maxpylang load fine. See {doc}`known-issues`.
 
 **Placing.** `patch.place(...)` adds objects and **always returns a list**, even for one

@@ -63,8 +63,9 @@ maxpylang's object list for Max, MSP and Jitter. Python names follow these rules
 | `in`, `print` | `in_`, `print_` | a Python keyword or built-in name gets `_` after it |
 
 Operators are spelled out: `*~` is `times_tilde`, `+~` is `plus_tilde`. These write `times~`
-and `plus~`, which Max accepts as other names for `*~` and `+~`. Operator stubs carry no type
-information yet, so a string such as `patch.place("*~ 0.5")` is just as good, and easier to read.
+and `plus~`, which Max accepts as other names for `*~` and `+~`. A string such as
+`patch.place("*~ 0.5")` writes `*~` itself and is easier to read, but only stubs are checked
+by a type checker.
 
 **Call a stub to give it arguments and attributes.** Positional arguments become box
 arguments and keywords become `@` attributes:
@@ -76,10 +77,9 @@ cycle_tilde(440)        # cycle~ 440
 metro(500, active=1)    # metro 500 @active 1
 ```
 
-**Call a stub that needs arguments.** Some objects, such as `delay`, `pipe`, `prepend` and
-`noteout`, need arguments. Their bare stubs are unknown objects with no inlets or outlets, and
-placing one gives **no warning**. Call them with arguments: `delay(500)`, `prepend("set")`,
-`noteout("a", 1)`. If an object has no inlets after placing, check `obj.notknown()`.
+**Some stubs have no object data behind them** (`array.*`, `string.*`, `v8`): they are placed
+as unknown objects with no inlets, without a warning. If an object has no inlets after placing,
+check `obj.notknown()`; see {doc}`known-issues`.
 
 **Connect what `place()` returns, never the stub.** A stub is a template; `place()` puts a copy
 in the patch. Connecting the stub itself raises:

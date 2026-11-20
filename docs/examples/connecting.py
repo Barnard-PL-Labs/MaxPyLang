@@ -1,6 +1,6 @@
 """Connecting objects: stubs, tuples, many objects at once, and midpoints."""
 import maxpylang as mp
-from maxpylang.objects import cycle_tilde, ezdac_tilde, gain_tilde, metro, toggle, counter, flonum
+from maxpylang.objects import button, counter, cycle_tilde, ezdac_tilde, flonum, gain_tilde, metro, toggle
 
 patch = mp.MaxPatch(verbose=False)
 
@@ -29,8 +29,9 @@ patch.connect((tick.outs[0], count.ins[0]))
 # num_objs places several copies; each is its own object.
 toggles = patch.place(toggle, num_objs=4, starting_pos=[350, 30], spacing=[40, 0])
 metros = patch.place(metro(500), num_objs=4, starting_pos=[350, 90], spacing=[80, 0])
-for t, m in zip(toggles, metros):
-    patch.connect((t.outs[0], m.ins[0]))
+flashes = patch.place(button, num_objs=4, starting_pos=[350, 150], spacing=[80, 0])
+for t, m, b in zip(toggles, metros, flashes):
+    patch.connect((t.outs[0], m.ins[0]), (m.outs[0], b.ins[0]))  # each button flashes on its metro's tick
 
 # A third element bends the cord through midpoints, as a flat list [x1, y1, x2, y2, ...].
 patch.set_position(200, 160)

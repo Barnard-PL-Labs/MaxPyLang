@@ -49,7 +49,4 @@ This should print `Patcher: new patch created from template file: empty_template
 different Python from the one you are running. Activate the virtual environment, or run
 `python -m pip install maxpylang` with the same `python` you use for your script.
 
-**`SyntaxWarning: invalid escape sequence` on import.** Python 3.12 and newer print a few of
-these from maxpylang's own source, usually only the first time it loads. They are harmless.
-
 **Old Python.** Check with `python3 --version`. MaxPyLang needs 3.9 or newer.

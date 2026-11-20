@@ -7,6 +7,7 @@ Check that every example in docs/examples/ works as the docs say.
 Each example runs in a fresh temporary folder, and must
   - exit without an error,
   - place no unknown objects (no UnknownObjectWarning, no "PatchCheck: unknown objects :" list),
+  - make no cord or patch-shape mistakes (no ConnectionWarning or GraphWarning),
   - save at least one .maxpat or .amxd file.
 
 bad_*.py files are never run. With --types, the other examples must type-check with 0 errors,
@@ -35,6 +36,9 @@ def run(path):
         problems.append(f"exited with {result.returncode}")
     if "UnknownObjectWarning" in result.stderr or UNKNOWN_LIST.search(output):
         problems.append("placed an unknown object")
+    for warning in ("ConnectionWarning", "GraphWarning"):
+        if warning in result.stderr:
+            problems.append(f"raised a {warning}")
     if not saved:
         problems.append("saved no patch")
     return problems, output, saved
