@@ -224,6 +224,10 @@ def main():
     (OUT / "stubs.json").write_text(json.dumps(stubs, indent=1, sort_keys=True))
     (OUT / "known.json").write_text(json.dumps(known_objects(), indent=1, sort_keys=True))
     (OUT / "digests.json").write_text(json.dumps(digests(), indent=1, sort_keys=True))
+    # playlist~ in the browser fetches its sounds from <site>/samples/ (web's drum kit).
+    samples = SITE / "public" / "samples"
+    shutil.rmtree(samples, ignore_errors=True)
+    shutil.copytree(ROOT / "web" / "public" / "samples", samples)
     if "--no-wheel" not in sys.argv:
         (OUT / "wheel.json").write_text(json.dumps({"file": build_wheel()}))
     print(f"{len(examples)} examples for {len({e['object'] for e in examples})} objects -> {OUT.relative_to(ROOT)}")

@@ -26,8 +26,8 @@ describe('examples', () => {
     expect(silent).toEqual([]);
   });
 
-  it('every example belongs to a listed object', () => {
-    const orphans = examples.map((e) => e.object).filter((o) => !findEntry(o) || !listed.includes(o));
+  it('every example belongs to an object with a page', () => {
+    const orphans = examples.map((e) => e.object).filter((o) => !findEntry(o));
     expect(orphans).toEqual([]);
   });
 });
@@ -36,5 +36,15 @@ describe('entries', () => {
   it('every listed entry has a description from Max', () => {
     const missing = categories().flatMap((c) => c.entries).filter((e) => listed.includes(e.name) && !e.digest).map((e) => e.name);
     expect(missing).toEqual([]);
+  });
+});
+
+describe('coverage', () => {
+  it('every listed object has an example, or a reason it has none', async () => {
+    const notes = (await import('../content/notes.json')).default as { noExample: Record<string, string> };
+    const gaps = categories().flatMap((c) => c.entries)
+      .filter((e) => listed.includes(e.name) && e.examples.length === 0 && !notes.noExample[e.name])
+      .map((e) => e.name);
+    expect(gaps).toEqual([]);
   });
 });

@@ -57,6 +57,8 @@ export interface Entry {
   inlets: Port[];
   outlets: Port[];
   examples: Example[];
+  /** Set when the examples are another name's: an alias (/~ is div~, t is trigger). */
+  sameAs: string | null;
 }
 
 export interface Category {
@@ -95,6 +97,22 @@ const EXTRA_DIGESTS: Record<string, string> = {
   'live.gain~': 'Decibel volume slider and monitor',
 };
 
+// maxpylang's alias table, both ways: '/~' -> 'div~', and 'div~' -> ['/~'].
+const aliasOf = (name: string): string | undefined => known[name]?.aliasOf;
+const aliasesOf = (name: string): string[] => Object.keys(known).filter((k) => known[k]?.aliasOf === name);
+const examplesFor = (name: string) => examples.filter((e) => e.object === name).sort((a, b) => a.index - b.index);
+
+/** An object's examples, or else the examples filed under another name for the same object. */
+function sharedExamples(name: string): { examples: Example[]; sameAs: string | null } {
+  const own = examplesFor(name);
+  if (own.length) return { examples: own, sameAs: null };
+  for (const other of [aliasOf(name), ...aliasesOf(name)].filter((n): n is string => !!n)) {
+    const theirs = examplesFor(other);
+    if (theirs.length) return { examples: theirs, sameAs: other };
+  }
+  return { examples: [], sameAs: null };
+}
+
 function entryFor(info: ObjectInfo | undefined, name: string, category: string, color: string): Entry {
   const doc = objdocs[name] ?? objdocs[manifest[name]?.aliasOf ?? ''] ?? {};
   const man = manifest[name] ?? {};
@@ -112,7 +130,7 @@ function entryFor(info: ObjectInfo | undefined, name: string, category: string, 
     args: (man.args ?? []).map((a) => ({ name: a.name, type: a.type.join('/'), optional: a.optional })),
     inlets: (doc.inlets ?? []).map((p, i) => ({ ...p, domain: doc.inletDomains?.[i] ?? 'control' })),
     outlets: (doc.outlets ?? []).map((p, i) => ({ ...p, domain: outletDomains[i] ?? 'control' })),
-    examples: examples.filter((e) => e.object === name).sort((a, b) => a.index - b.index),
+    ...sharedExamples(name),
   };
 }
 
@@ -138,7 +156,7 @@ export function categories(): Category[] {
   out.push({
     name: 'Multichannel',
     color: '#b8b8b8',
-    blurb: 'mc.* versions of the objects above: one box, many channels.',
+    blurb: 'mc.* versions of the objects above: one box, many channels. The examples are written for Max; this browser player plays each mc.* object as one channel, in the left speaker.',
     collapsed: true,
     entries: rest.filter((o) => o.tier === 'B' && o.name.startsWith('mc.')).sort(byName)
       .map((o) => entryFor(o, o.name, 'Multichannel', '#b8b8b8')),

@@ -64,10 +64,13 @@ export function layoutForReading(patch: unknown): unknown {
     }
     if (!changed) break;
   }
-  const width = (b: Box['box']) => {
-    const label = b.maxclass === 'newobj' || b.maxclass === 'message' ? b.text ?? '' : b.maxclass;
-    return Math.max(38, textWidth(label) + 14);
-  };
+  // Text boxes are sized to their text. Interface objects (a 4-button radiogroup, a
+  // kslider, a matrixctrl) keep the size they were saved with, or they'd be clipped.
+  const textBox = (b: Box['box']) => b.maxclass === 'newobj' || b.maxclass === 'message' || b.maxclass === 'comment';
+  const saved = (b: Box['box'], i: 2 | 3) => (!textBox(b) && (b.patching_rect?.[i] ?? 0) > 0 ? b.patching_rect![i] : 0);
+  const width = (b: Box['box']) =>
+    saved(b, 2) || Math.max(38, textWidth(b.maxclass === 'newobj' || b.maxclass === 'message' ? b.text ?? '' : b.maxclass) + 14);
+  const height = (b: Box['box']) => saved(b, 3) || BOX_H;
   const parents = new Map<string, string[]>();
   for (const { patchline: l } of forward) {
     if (row.get(l.source[0])! < row.get(l.destination[0])!) {
@@ -76,6 +79,7 @@ export function layoutForReading(patch: unknown): unknown {
   }
   const left = new Map<string, number>();
   const rows = [...new Set(row.values())].sort((a, b) => a - b);
+  let top = PAD;
   for (const r of rows) {
     // Want each box at the average x of its parents; keep the original order otherwise.
     const inRow = boxes.map((b) => b.box).filter((b) => row.get(b.id) === r);
@@ -87,9 +91,11 @@ export function layoutForReading(patch: unknown): unknown {
     for (const { b, x } of want) {
       const at = Math.max(cursor, x);
       left.set(b.id, at);
-      b.patching_rect = [at, PAD + r * ROW, width(b), BOX_H];
+      b.patching_rect = [at, top, width(b), height(b)];
       cursor = at + width(b) + GAP;
     }
+    // Each row is as tall as its tallest box, plus room for the cords between rows.
+    top += Math.max(BOX_H, ...inRow.map(height)) + (ROW - BOX_H);
   }
   return copy;
 }

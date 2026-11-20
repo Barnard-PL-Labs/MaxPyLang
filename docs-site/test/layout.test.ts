@@ -15,9 +15,15 @@ describe('layoutForReading', () => {
     const rect = new Map(laid.patcher.boxes.map(({ box }) => [box.id, box.patching_rect]));
     for (const r of rect.values()) expect(r.every(Number.isFinite)).toBe(true);
 
-    // Every cord goes down, except the one a feedback loop needs (tapin~/tapout~ echoes).
-    const upward = laid.patcher.lines.filter(({ patchline: l }) => rect.get(l.source[0])![1] >= rect.get(l.destination[0])![1]);
-    expect(upward.length, 'cords going up').toBeLessThanOrEqual(ex.objects.includes('tapin~') ? 1 : 0);
+    // Every cord goes down, except one that closes a feedback loop (its destination can
+    // reach its source through other cords), which has to go back up somewhere.
+    const out = new Map<string, string[]>();
+    for (const { patchline: l } of laid.patcher.lines) out.set(l.source[0], [...(out.get(l.source[0]) ?? []), l.destination[0]]);
+    const reaches = (from: string, to: string, seen = new Set<string>()): boolean =>
+      from === to || (!seen.has(from) && (seen.add(from), (out.get(from) ?? []).some((n) => reaches(n, to, seen))));
+    const badUp = laid.patcher.lines.filter(({ patchline: l }) =>
+      rect.get(l.source[0])![1] >= rect.get(l.destination[0])![1] && !reaches(l.destination[0], l.source[0]));
+    expect(badUp.map(({ patchline: l }) => `${l.source[0]}->${l.destination[0]}`), 'cords going up outside a loop').toEqual([]);
 
     const rs = [...rect.values()];
     for (let i = 0; i < rs.length; i++) {

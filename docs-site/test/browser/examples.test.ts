@@ -19,12 +19,17 @@ import { parseMaxPat } from '../../../web/src/parser/maxpat';
 import { preloadWorklets } from '../../../web/src/runtime/worklet';
 import examples from '../../src/generated/examples.json';
 
+// The real timer, kept before vi.useFakeTimers replaces it: playlist~ fetches and decodes
+// its samples asynchronously, in real time, which an offline render would race past.
+const realSetTimeout = globalThis.setTimeout.bind(globalThis);
+const SAMPLE_WAIT_MS = 1500;
+
 const SR = 44100;
 const SECONDS = 2.5;
 const STEP = 0.01; // seconds of audio per clock step
 const WINDOW = 0.1; // seconds per analysis window
 
-async function render(patch: unknown): Promise<Float32Array> {
+async function render(patch: unknown, waitForSamples = false): Promise<Float32Array> {
   const ctx = new OfflineAudioContext(2, Math.round(SR * SECONDS), SR);
   const engine = new Engine(ctx);
   await preloadWorklets(ctx);
@@ -32,7 +37,10 @@ async function render(patch: unknown): Promise<Float32Array> {
   await engine.start(); // arms the scheduler: timed objects fire on the (fake) clock
   for (let t = STEP; t < SECONDS; t += STEP) {
     const at = Math.round(t * SR / 128) * 128 / SR; // suspend on a render-quantum boundary
-    ctx.suspend(at).then(() => {
+    const first = t === STEP;
+    ctx.suspend(at).then(async () => {
+      // Before the first beat, give sample files real time to arrive and decode.
+      if (first && waitForSamples) await new Promise((r) => realSetTimeout(r, SAMPLE_WAIT_MS));
       vi.advanceTimersByTime(STEP * 1000);
       void ctx.resume();
     });
@@ -49,19 +57,23 @@ async function render(patch: unknown): Promise<Float32Array> {
 /** Per-window RMS and zero-crossing rate (a rough pitch), skipping the first window. */
 function analyse(x: Float32Array) {
   const n = Math.round(WINDOW * SR);
-  const rms: number[] = [], zcr: number[] = [];
+  const rms: number[] = [], zcr: number[] = [], bright: number[] = [];
   let peak = 0;
   for (let w = 1; (w + 1) * n <= x.length; w++) {
-    let sum = 0, cross = 0;
+    let sum = 0, cross = 0, slope = 0;
     for (let i = w * n; i < (w + 1) * n; i++) {
       sum += x[i] * x[i];
+      if (i > w * n) slope += (x[i] - x[i - 1]) ** 2;
       peak = Math.max(peak, Math.abs(x[i]));
       if (i > w * n && (x[i - 1] < 0) !== (x[i] < 0)) cross++;
     }
     rms.push(Math.sqrt(sum / n));
+    // Brightness: how steep the wave is for its level. It rises as a filter opens, even
+    // when pitch and loudness stay the same.
+    bright.push(sum > 1e-9 ? Math.sqrt(slope / sum) : 0);
     zcr.push(cross / (2 * WINDOW)); // ≈ Hz for a simple tone
   }
-  return { rms, zcr, peak };
+  return { rms, zcr, peak, bright };
 }
 
 const TIMED = ['metro', 'delay', 'pipe'];
@@ -86,7 +98,7 @@ describe('every reference example plays', () => {
     it(`${ex.object}/${ex.index}: ${ex.title}`, async () => {
       vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'setTimeout', 'clearTimeout'] });
       if (ex.objects.includes('jit.grab')) return; // needs a camera; build_examples checks it compiles
-      const { rms, zcr, peak } = analyse(await render(ex.patch));
+      const { rms, zcr, peak, bright } = analyse(await render(ex.patch, ex.objects.includes('playlist~')));
 
       const loudest = Math.max(...rms);
       expect(loudest, 'makes sound').toBeGreaterThan(0.005);
@@ -102,8 +114,10 @@ describe('every reference example plays', () => {
         const sounding = zcr.filter((_, i) => rms[i] > 0.01);
         const pitchSpread = Math.max(...sounding) / Math.max(Math.min(...sounding), 1);
         const levelSwing = loudest / Math.max(Math.min(...rms), 1e-4);
-        expect(pitchSpread > 1.08 || levelSwing > 2,
-          `changes over time (pitch spread ${pitchSpread.toFixed(2)}, level swing ${levelSwing.toFixed(1)})`).toBe(true);
+        const lit = bright.filter((_, i) => rms[i] > 0.01);
+        const brightSpread = Math.max(...lit) / Math.max(Math.min(...lit), 1e-6);
+        expect(pitchSpread > 1.08 || levelSwing > 2 || brightSpread > 1.2,
+          `changes over time (pitch spread ${pitchSpread.toFixed(2)}, level swing ${levelSwing.toFixed(1)}, brightness spread ${brightSpread.toFixed(2)})`).toBe(true);
       }
     });
   }
