@@ -17,7 +17,6 @@ import knownFile from './generated/known.json';
 import digestsFile from './generated/digests.json';
 import objdocsFile from '../../web/src/generated/objdocs.json';
 import manifestFile from '../../web/src/generated/manifest.json';
-import notesFile from '../content/notes.json';
 
 export interface Example {
   object: string;
@@ -208,16 +207,9 @@ export function notInBrowser(patch: unknown): string[] {
   return [...missing].sort();
 }
 
-const graphOnlyReasons = (notesFile as { graphOnly?: Record<string, string> }).graphOnly ?? {};
-
-/**
- * Why an example plays nothing in this browser, or null if it plays. An example is
- * graph-only (its patch is shown, nothing plays) when it uses an object the browser can't
- * run, or documents an object listed under graphOnly in content/notes.json.
- */
-export function silentReason(object: string, patch: unknown): string | null {
-  if (graphOnlyReasons[object]) return graphOnlyReasons[object];
+/** Why a patch plays nothing in this browser (it uses an object the browser can't run), or null. */
+export function silentReason(_object: string, patch: unknown): string | null {
   const missing = notInBrowser(patch);
-  if (missing.length) return `This example is for Max: this browser player can't run ${missing.join(', ')}, so it shows the patch maxpylang builds and plays nothing.`;
+  if (missing.length) return `This browser player can't run ${missing.join(', ')}, so nothing plays here. In Max it runs.`;
   return null;
 }
