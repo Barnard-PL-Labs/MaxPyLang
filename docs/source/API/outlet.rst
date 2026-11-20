@@ -1,5 +1,6 @@
+======
 Outlet
-=============
+======
 
-.. autoclass:: maxpy.Outlet
-	:members:
+.. autoclass:: maxpylang.Outlet
+   :members:

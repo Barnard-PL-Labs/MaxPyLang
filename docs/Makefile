@@ -19,7 +19,9 @@ help:
 %: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
+# Copy the built site into docs/ for GitHub Pages. Removes only Sphinx's own output,
+# never docs/app (the MaxPyStudio web app) or docs/source.
 deploy: html
-	rm -rf API _sources _static topics *.html *.js objects.inv searchindex.js genindex.html search.html
+	rm -rf API _sources _static topics guide *.html *.js objects.inv searchindex.js genindex.html search.html llms.txt llms-full.txt
 	mv html/* .
 	rm -rf html

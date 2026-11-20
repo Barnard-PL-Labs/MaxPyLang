@@ -1,11 +1,25 @@
 name: Build and Deploy Documentation
 
+# On a pull request: build the site strictly and stop, so a broken page fails the PR.
+# On main: build, then commit the site into docs/ for GitHub Pages.
 on:
   push:
     branches: [main]
     paths:
       - 'docs/source/**'
-      - 'maxpy/**'
+      - 'docs/examples/**'
+      - 'docs/requirements.txt'
+      - 'docs/Makefile'
+      - 'maxpylang/**'          # API pages are generated from the package's docstrings
+      - '.github/workflows/docs.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/source/**'
+      - 'docs/examples/**'
+      - 'docs/requirements.txt'
+      - 'docs/Makefile'
+      - 'maxpylang/**'
       - '.github/workflows/docs.yml'
   workflow_dispatch:  # Allow manual triggering
 
@@ -14,7 +28,7 @@ permissions:
 
 jobs:
   build-docs:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v4
@@ -30,14 +44,28 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e .
-          pip install sphinx sphinx-rtd-theme
+          pip install -r docs/requirements.txt
 
-      - name: Build documentation
+      # -W turns warnings into errors: a page that fails to import maxpylang,
+      # or a broken link, fails the build instead of publishing an empty page.
+      - name: Build documentation (strict)
+        run: make -C docs html SPHINXOPTS="-W --keep-going"
+
+      - name: Copy the site into docs/
+        if: github.event_name != 'pull_request'
+        run: make -C docs deploy
+
+      # docs/app is the MaxPyStudio web app, built separately from web/. The docs build must never touch it.
+      - name: Check docs/app is untouched
         run: |
-          cd docs
-          make deploy
+          if [ -n "$(git status --porcelain docs/app)" ]; then
+            git status --porcelain docs/app
+            echo "::error::The docs build changed docs/app"
+            exit 1
+          fi
 
       - name: Commit and push if changed
+        if: github.event_name != 'pull_request'
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'

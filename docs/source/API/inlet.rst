@@ -1,4 +1,6 @@
+=====
 Inlet
-===========
+=====
 
-.. autoclass: maxpy.Inlet
+.. autoclass:: maxpylang.Inlet
+   :members:
