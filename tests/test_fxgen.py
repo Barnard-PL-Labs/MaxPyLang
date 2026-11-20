@@ -54,8 +54,8 @@ def test_every_preset_builds_and_checks_clean(preset):
     assert cords["not_checked"] == 0, cords["not_checked_because"]
     assert cords["checked"] == cords["total"] > 0
     assert result["coverage"]["objects"]["not_seen_into"] == []
-    assert result["warnings"] == []
-    assert "no unknown objects" in result["log"]
+    assert result["warnings"] == []  # an unknown object would be an UnknownObjectWarning here
+    assert result["log"] == ""  # the script saves with verbose=False
 
 
 @pytest.mark.parametrize("preset", PRESETS, ids=[p["id"] for p in PRESETS])

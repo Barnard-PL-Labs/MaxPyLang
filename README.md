@@ -60,7 +60,7 @@ pip install pyright
 pyright your_script.py
 ```
 
-Running the script with `python` checks the first mistake too, for every connection, including objects placed by string and the list form: it prints a `ConnectionWarning` at the line that made the bad cord, and `save()` ends with a line counting them. The cord is still saved, so fix every warning.
+Running the script with `python` checks the first mistake too, for every connection, including objects placed by string and the list form: it prints a `ConnectionWarning` at the line that made the bad cord, and `save()` ends with one line counting every problem, e.g. `saved feedback.maxpat (4 objects, 4 cords, 1 problem, see warning above)`. The cord is still saved, so fix every warning.
 
 ## Citation
 

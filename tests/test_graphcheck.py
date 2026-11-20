@@ -295,11 +295,18 @@ def test_a_patch_with_sound_links_prints_no_links_line(tmp_path, capsys):
 
 # ── at save ───────────────────────────────────────────────────────────────────
 
-def test_save_warns_at_the_callers_line_and_prints_the_counts(tmp_path, capsys):
+def test_save_warns_at_the_callers_line_and_counts_the_problem(tmp_path, capsys):
     patch = build("+ 1", "+ 1", "print", cords=[(1, 0, 2, 0), (2, 0, 1, 0), (2, 0, 3, 0)])
     with pytest.warns(GraphWarning, match="hot loop") as caught:
-        patch.save(str(tmp_path / "p"), verbose=False)
+        patch.save(str(tmp_path / "p"))
     assert Path(caught[0].filename).name == "test_graphcheck.py"
+    assert "(3 objects, 3 cords, 1 problem, see warning above)" in capsys.readouterr().out
+
+
+def test_check_prints_the_graph_counts(capsys):
+    patch = build("+ 1", "+ 1", "print", cords=[(1, 0, 2, 0), (2, 0, 1, 0), (2, 0, 3, 0)])
+    with pytest.warns(GraphWarning, match="hot loop"):
+        patch.check("graph")
     assert ("PatchCheck: graph : 1 hot loop, 0 audio feedback loops with no delay, "
             "0 parts of the patch whose output reaches nothing") in capsys.readouterr().out
 

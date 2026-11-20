@@ -47,15 +47,15 @@ class MaxPatch:
     :param reorder: whether or not to reassign object ids after loading in an existing file. See :func:`MaxPatch.reorder`.
     :type reorder: bool, optional; default: True
 
-    :param verbose: for logging output.
-    :type verbose: bool, optional; default: True
+    :param verbose: print each step (template loaded, objects added, cords made).
+    :type verbose: bool, optional; default: False
     """
 
     from .tools.constants import (
         patch_templates_path,
     )  #: Path to the patch templates folder MaxPy/maxpy/data/PATCH_TEMPLATES.
 
-    def __init__(self, template=None, load_file=None, reorder=True, verbose=True):
+    def __init__(self, template=None, load_file=None, reorder=True, verbose=False):
         """
         Constructor method.
         """
@@ -183,7 +183,7 @@ class MaxPatch:
                 c5: _AnyConn, c6: _AnyConn, c7: _AnyConn, c8: _AnyConn, /, *more: _AnyConn,
                 verbose: bool = ...) -> None: ...
 
-    def connect(self, *connections, verbose=True):
+    def connect(self, *connections, verbose=False):
         return _connect(self, *connections, verbose=verbose)
 
     connect.__doc__ = _connect.__doc__
