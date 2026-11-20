@@ -225,9 +225,10 @@ def main():
             errors.append(f"{rel}: {problem}")
         if "dac~" in names:
             errors.append(f"{rel}: uses dac~, which is silent in the browser; use ezdac~")
-        # Every example has an output: speakers (ezdac~, mc.ezdac~, playlist~), or for a
+        # Every example has an output: speakers (ezdac~, mc.ezdac~, playlist~, or plugout~,
+        # a Max for Live device's output, which the browser plays too), or for a
         # video example, a picture (jit.pwindow / jit.window).
-        outputs = {"ezdac~", "mc.ezdac~", "playlist~", "jit.pwindow", "jit.window"}
+        outputs = {"ezdac~", "mc.ezdac~", "playlist~", "plugout~", "jit.pwindow", "jit.window"}
         if not outputs & set(names):
             errors.append(f"{rel}: has no output (ezdac~, or jit.pwindow for video), so nothing happens")
         if not title:

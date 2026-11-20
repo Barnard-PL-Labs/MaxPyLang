@@ -31,7 +31,17 @@
       "blurb": "Where sound leaves the patch. In this browser only ezdac~ reaches the speakers; dac~ is silent here.",
       "objects": [
         "ezdac~",
-        "gain~",
+        "gain~"
+      ]
+    },
+    {
+      "name": "Max for Live",
+      "color": "#e8556b",
+      "blurb": "A Max for Live device's audio input and output, and Live's own controls. Here an audio effect hears a looping guitar clip, as if it sat on a track in Live.",
+      "objects": [
+        "plugin~",
+        "plugout~",
+        "live.dial",
         "live.gain~"
       ]
     },
@@ -100,11 +110,14 @@
     {
       "name": "Dynamics",
       "color": "#8fe07a",
-      "blurb": "Loudness and distortion.",
+      "blurb": "Loudness, saturation and distortion.",
       "objects": [
         "limi~",
         "degrade~",
-        "gate~"
+        "gate~",
+        "overdrive~",
+        "tanh~",
+        "pong~"
       ]
     },
     {
@@ -365,7 +378,6 @@
       "objects": [
         "slider",
         "dial",
-        "live.dial",
         "kslider",
         "nslider",
         "rslider",

@@ -38,8 +38,10 @@ For coding agents, the whole site is also one Markdown file:
    guide/getting-started
    guide/connecting
    guide/max-for-live
+   guide/plugin-generator
    guide/checks
    guide/editor-setup
+   guide/type-system
    guide/agents
    guide/known-issues
 

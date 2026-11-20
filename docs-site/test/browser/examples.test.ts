@@ -18,6 +18,7 @@ import { Engine } from '../../../web/src/engine/engine';
 import { parseMaxPat } from '../../../web/src/parser/maxpat';
 import { preloadWorklets } from '../../../web/src/runtime/worklet';
 import examples from '../../src/generated/examples.json';
+import { loadClip, playTrack } from '../../src/player';
 
 // The real timer, kept before vi.useFakeTimers replaces it: playlist~ fetches and decodes
 // its samples asynchronously, in real time, which an offline render would race past.
@@ -34,6 +35,9 @@ async function render(patch: unknown, waitForSamples = false): Promise<Float32Ar
   const engine = new Engine(ctx);
   await preloadWorklets(ctx);
   engine.build(parseMaxPat(patch));
+  // An audio effect (plugin~) hears a clip played into it, as on the page.
+  const boxes = (patch as { patcher: { boxes: { box: { text?: string } }[] } }).patcher.boxes;
+  if (boxes.some(({ box }) => (box.text ?? '').split(' ')[0] === 'plugin~')) playTrack(ctx, await loadClip(ctx));
   await engine.start(); // arms the scheduler: timed objects fire on the (fake) clock
   for (let t = STEP; t < SECONDS; t += STEP) {
     const at = Math.round(t * SR / 128) * 128 / SR; // suspend on a render-quantum boundary

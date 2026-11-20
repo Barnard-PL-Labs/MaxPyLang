@@ -12,6 +12,7 @@ import '../../web/src/objects'; // registers every object implementation (side e
 import { Engine } from '../../web/src/engine/engine';
 import { preloadWorklets } from '../../web/src/runtime/worklet';
 import { parseMaxPat } from '../../web/src/parser/maxpat';
+import { hostBus } from '../../web/src/runtime/host';
 
 const nativeDestination = Object.getOwnPropertyDescriptor(BaseAudioContext.prototype, 'destination')!.get!;
 
@@ -65,17 +66,58 @@ export function analyser(): AnalyserNode | null {
   return engine ? (engine.ctx as TapAudioContext).analyser : null;
 }
 
+// A Max for Live audio effect hears the track it sits on through plugin~. Here there is no
+// track, so, as the plugin generator does, a clip plays into the host input while an
+// example with plugin~ plays (web/src/runtime/host.ts).
+export const TRACK_CLIP = 'samples/fx/guitar.mp3';
+const clips = new WeakMap<BaseAudioContext, Promise<AudioBuffer>>();
+let track: AudioBufferSourceNode | null = null;
+
+export function loadClip(ctx: BaseAudioContext, url = import.meta.env.BASE_URL + TRACK_CLIP): Promise<AudioBuffer> {
+  let p = clips.get(ctx);
+  if (!p) {
+    p = fetch(url).then((r) => r.arrayBuffer()).then((b) => ctx.decodeAudioData(b));
+    clips.set(ctx, p);
+  }
+  return p;
+}
+
+/** Loop the clip into the host input: what plugin~ outputs. */
+export function playTrack(ctx: BaseAudioContext, buffer: AudioBuffer): AudioBufferSourceNode {
+  const bus = hostBus(ctx);
+  const source = new AudioBufferSourceNode(ctx, { buffer, loop: true });
+  const split = new ChannelSplitterNode(ctx, { numberOfOutputs: 2 });
+  source.connect(split);
+  split.connect(bus.input[0], 0);
+  split.connect(bus.input[1], buffer.numberOfChannels > 1 ? 1 : 0);
+  source.start();
+  return source;
+}
+
+const usesTrack = (patch: unknown): boolean =>
+  ((patch as { patcher?: { boxes?: { box: { text?: string } }[] } }).patcher?.boxes ?? [])
+    .some(({ box }) => (box.text ?? '').split(' ')[0] === 'plugin~');
+
+function stopTrack(): void {
+  try { track?.stop(); } catch { /* already stopped */ }
+  track?.disconnect();
+  track = null;
+}
+
 /** Play a patch (maxpat JSON) under a key; whatever was playing stops first. */
 export async function play(key: string, patch: unknown): Promise<void> {
   const eng = await audio();
   await eng.stop();
+  stopTrack();
   eng.build(parseMaxPat(patch));
+  if (usesTrack(patch)) track = playTrack(eng.ctx, await loadClip(eng.ctx));
   await eng.start();
   current = key;
   listeners.forEach((f) => f(current));
 }
 
 export async function stop(): Promise<void> {
+  stopTrack();
   if (!engine) return;
   await engine.stop();
   engine.clear();

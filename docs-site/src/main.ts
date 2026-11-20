@@ -33,6 +33,7 @@ app.innerHTML = `
       <a href="${BASE}guide/getting-started.html">Guide</a>
       <a href="${BASE}API/API.html">API</a>
       <a href="${BASE}app/">MaxPyStudio</a>
+      <a href="${BASE}app/interactive-plugin.html" title="Build a Max for Live effect in the browser">Plugin generator</a>
       <a href="${BASE}llms-full.txt" title="These docs as one Markdown file, for coding agents">llms-full.txt</a>
       <a href="https://github.com/Barnard-PL-Labs/MaxPyLang">GitHub</a>
     </nav>
