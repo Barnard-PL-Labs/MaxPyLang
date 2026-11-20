@@ -7,6 +7,7 @@ import './style.css';
 import { play, stop, playing, onChange, builtWidget, engineForTests, setVolume, getVolume } from './player';
 import { categories, findEntry, pyArg, type Entry, type Example } from './entries';
 import { compile, lastLine, LoadError, onStatus, pythonLoaded } from './compiler';
+import { takeWarnings, wrapForChecks } from './checks';
 import { mountEditor } from './editor';
 import { mountScope } from './scope';
 import { PatchPane, layoutForReading } from './patchview';
@@ -82,6 +83,18 @@ let stopScope: (() => void) | null = null;
 let pane: PatchPane | null = null;
 let shown: { entry: Entry; example: Example | null; key: string; code: string; patch: unknown } | null = null;
 
+// The reader's edits, per example, kept while they browse (and across a reload of this tab):
+// the code, and the patch and warnings from the last time that code ran.
+interface Edit { code: string; ran?: { code: string; patch: unknown; warnings: string[] } }
+const EDITS_KEY = 'reference-edits';
+const edits = new Map<string, Edit>();
+try {
+  for (const [k, v] of Object.entries(JSON.parse(sessionStorage.getItem(EDITS_KEY) ?? '{}') as Record<string, string>)) edits.set(k, { code: v });
+} catch { /* storage blocked: edits last until the page closes */ }
+function saveEdits(): void {
+  try { sessionStorage.setItem(EDITS_KEY, JSON.stringify(Object.fromEntries([...edits].map(([k, e]) => [k, e.code])))); } catch { /* ignore */ }
+}
+
 function usageHtml(e: Entry): string {
   const args = e.args.map((a) => {
     const n = esc(pyArg(a.name));
@@ -110,7 +123,9 @@ function showPanel(name: string, index: number): void {
   if (!entry) { panel.hidden = true; return; }
   const example = entry.examples[index] ?? entry.examples[0] ?? null;
   const key = example ? `${entry.name}/${example.index}` : entry.name;
-  shown = { entry, example, key, code: example?.code ?? '', patch: example?.patch ?? null };
+  const kept = edits.get(key);
+  const keptRun = kept?.ran && kept.ran.code === kept.code ? kept.ran : undefined;
+  shown = { entry, example, key, code: kept?.code ?? example?.code ?? '', patch: keptRun?.patch ?? example?.patch ?? null };
 
   editor?.destroy(); editor = null;
   stopScope?.(); stopScope = null;
@@ -118,8 +133,10 @@ function showPanel(name: string, index: number): void {
   document.querySelectorAll('.chip.active').forEach((c) => c.classList.remove('active'));
   document.querySelectorAll(`.chip[href="${CSS.escape(route(entry.name))}"]`).forEach((c) => c.classList.add('active'));
 
-  const tabs = entry.examples.map((x) =>
-    `<a class="tab${x === example ? ' on' : ''}" href="${route(entry.name, x.index)}" title="${esc(x.title)}">${x.index}</a>`).join('');
+  const tabs = entry.examples.map((x) => {
+    const edited = edits.has(`${entry.name}/${x.index}`);
+    return `<a class="tab${x === example ? ' on' : ''}${edited ? ' edited' : ''}" href="${route(entry.name, x.index)}" title="${esc(x.title)}${edited ? ' (edited)' : ''}">${x.index}</a>`;
+  }).join('');
 
   panel.hidden = false;
   panel.style.setProperty('--c', entry.color);
@@ -148,7 +165,8 @@ function showPanel(name: string, index: number): void {
       </div>
       <p class="ex-title"><b>${esc(example.title)}</b> ${esc(example.note)}</p>
       <div class="editor"></div>
-      <p class="status">Edit the code and press ▶ or Ctrl+Enter (⌘+Enter) to run it.</p>`
+      <p class="status">Edit the code and press ▶ or Ctrl+Enter (⌘+Enter) to run it.</p>
+      <ul class="warnings" hidden></ul>`
     : `<p class="none">${esc(notes.noExample[entry.name] ?? 'No example for this object yet.')}</p>`}
     ${entry.description ? `<h3>About</h3><p class="desc">${esc(entry.description)}</p>` : ''}
     ${portsHtml(entry)}`;
@@ -158,18 +176,46 @@ function showPanel(name: string, index: number): void {
 
   const status = panel.querySelector('.status') as HTMLElement;
   const setStatus = (text: string, kind = '') => { status.textContent = text; status.className = 'status ' + kind; };
+  const warnList = panel.querySelector('.warnings') as HTMLUListElement;
+  const showWarnings = (found: string[]) => {
+    warnList.hidden = found.length === 0;
+    warnList.innerHTML = found.map((w) => {
+      const [kind, ...rest] = w.split(': ');
+      return `<li><b>${esc(kind)}</b> ${esc(rest.join(': '))}</li>`;
+    }).join('');
+  };
+  const markTab = () => {
+    const tab = panel.querySelector(`.tab[href="${CSS.escape(route(entry.name, example.index))}"]`);
+    tab?.classList.toggle('edited', edits.has(key));
+  };
   // Box ids (obj-1, obj-2…) repeat across patches, so mount the engine's live widgets
   // only while this example is the one playing.
   pane = new PatchPane(panel.querySelector('.patch-host') as HTMLElement, {
     widgetFor: (id) => (playing() === key ? builtWidget(id) : undefined),
     onExpand: () => openExpanded(entry, key, () => shown?.code ?? example.code, () => shown?.patch ?? example.patch),
   });
-  const drawPatch = (p: unknown) => pane?.show(p);
-  drawPatch(example.patch);
+  const drawPatch = (p: unknown) => {
+    pane?.show(p);
+    if (expanded?.key === key) expanded.showPatch(p);
+  };
+  drawPatch(shown.patch);
+  if (kept) {
+    setStatus(keptRun ? 'Your edited code, as you left it. ↺ goes back to the original.'
+      : 'Your edited code, as you left it (not run yet). ↺ goes back to the original.');
+    showWarnings(keptRun?.warnings ?? []);
+  }
 
-  editor = mountEditor(panel.querySelector('.editor') as HTMLElement, example.code, {
+  editor = mountEditor(panel.querySelector('.editor') as HTMLElement, shown.code, {
     onRun: () => void runOrStop(true),
-    onChange: (text) => { if (shown) shown.code = text; },
+    onChange: (text) => {
+      if (!shown) return;
+      shown.code = text;
+      if (text === example.code) edits.delete(key);
+      else edits.set(key, { ...edits.get(key), code: text });
+      saveEdits();
+      markTab();
+      if (expanded?.key === key) expanded.showCode(text);
+    },
   });
   stopScope = mountScope(panel.querySelector('.scope') as HTMLCanvasElement, () => entry.color, () => playing() === key);
 
@@ -193,15 +239,29 @@ function showPanel(name: string, index: number): void {
     const edited = shown.code !== example!.code;
     try {
       let patch = example!.patch;
+      let found: string[] = [];
       if (edited) {
-        setStatus(pythonLoaded() ? 'Running your code…' : 'Loading Python in the browser (a few seconds, first time only)…');
-        patch = await compile(shown.code);
+        const code = shown.code;
+        const last = edits.get(key)?.ran;
+        if (last && last.code === code) {
+          ({ patch, warnings: found } = last); // ran this exact code before: no need to compile again
+        } else {
+          setStatus(pythonLoaded() ? 'Running your code…' : 'Loading Python in the browser (a few seconds, first time only)…');
+          patch = await compile(wrapForChecks(code));
+          found = takeWarnings(patch);
+          const e = edits.get(key);
+          if (e) e.ran = { code, patch, warnings: found };
+        }
         drawPatch(patch);
       }
+      showWarnings(found);
       shown.patch = patch;
       await play(key, patch);
-      setStatus(edited ? 'Playing your edited code.' : 'Playing. Edit the code and press ▶ or Ctrl+Enter (⌘+Enter) to run it.', 'ok');
+      setStatus(!edited ? 'Playing. Edit the code and press ▶ or Ctrl+Enter (⌘+Enter) to run it.'
+        : found.length ? `Playing your edited code. maxpylang's checks found ${found.length === 1 ? 'a problem' : `${found.length} problems`}:`
+        : "Playing your edited code. maxpylang's checks found no problems.", found.length ? 'warn-status' : 'ok');
     } catch (err) {
+      showWarnings([]);
       if (err instanceof LoadError) console.warn('Python failed to start:', err.detail);
       setStatus(err instanceof LoadError ? err.message : lastLine(String((err as Error).message ?? err)), 'error');
     }
@@ -210,8 +270,12 @@ function showPanel(name: string, index: number): void {
   playBtn.addEventListener('click', () => void runOrStop());
   panel.querySelector('.reset')!.addEventListener('click', () => {
     editor?.dispatch({ changes: { from: 0, to: editor.state.doc.length, insert: example.code } });
+    edits.delete(key);
+    saveEdits();
+    markTab();
     if (shown) shown.patch = example.patch;
     drawPatch(example.patch);
+    showWarnings([]);
     setStatus('Back to the original example.');
   });
   panel.querySelector('.copy')!.addEventListener('click', async () => {
@@ -230,7 +294,10 @@ let unsubscribe: (() => void) | null = null;
 
 // ---------- expanded: the patch beside its code ----------
 
-let expanded: { el: HTMLElement; pane: PatchPane; off: () => void } | null = null;
+let expanded: {
+  el: HTMLElement; pane: PatchPane; key: string; off: () => void;
+  showPatch(p: unknown): void; showCode(text: string): void;
+} | null = null;
 
 function closeExpanded(): void {
   if (!expanded) return;
@@ -264,7 +331,14 @@ function openExpanded(entry: Entry, key: string, code: () => string, patch: () =
   const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeExpanded(); };
   document.addEventListener('keydown', onKey);
   el.querySelector('.close')!.addEventListener('click', closeExpanded);
-  expanded = { el, pane: bigPane, off: () => { offChange(); document.removeEventListener('keydown', onKey); } };
+  const codeView = el.querySelector('.code-view') as HTMLElement;
+  expanded = {
+    el, pane: bigPane, key,
+    off: () => { offChange(); document.removeEventListener('keydown', onKey); },
+    // The panel calls these on every run and every edit, so this view always matches it.
+    showPatch: (p) => bigPane.show(p),
+    showCode: (text) => { codeView.textContent = text; },
+  };
 }
 
 // For tests (as web/ exposes window.__patcher): set the editor's text without typing.

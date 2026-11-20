@@ -88,6 +88,11 @@ a { color: var(--link); }
 .status { margin: 8px 0 0; font-size: 14px; min-height: 1.4em; }
 .status.error { color: #a1001a; font-family: var(--mono); font-size: 13px; }
 .status.ok { color: #1c5d2b; }
+.status.warn-status { color: #7a4a00; }
+.warnings { margin: 6px 0 0; padding: 8px 10px 8px 26px; background: #fff3c4; font-size: 13px; line-height: 1.4; }
+.warnings li + li { margin-top: 4px; }
+.warnings b { font-family: var(--mono); font-weight: 600; }
+.tab.edited::after { content: "•"; margin-left: 3px; color: #b5482a; }
 .desc { font-size: 14px; line-height: 1.45; }
 .none { color: var(--muted); }
 .ports { border-collapse: collapse; font-size: 13px; margin-top: 8px; width: 100%; }
