@@ -1,7 +1,7 @@
 // AudioWorklet host.
 //
 // Custom-DSP MSP objects (biquad~, +=~, rampsmooth~, deltaclip~, allpass~, degrade~,
-// onepole~, svf~, overdrive~, tanh~, pong~, comb~, pow~, phasor~, wave~, play~) need
+// onepole~, svf~, overdrive~, tanh~, pong~, comb~, pow~, phasor~, wave~, play~, record~) need
 // per-sample stateful math that no stock Web Audio node can express. They run inside
 // AudioWorkletProcessors whose source is the INLINE string below — a worklet module
 // runs in its own global scope and cannot import our TypeScript, so the processors
@@ -28,6 +28,7 @@ export const PROCESSORS = {
   pow: 'mpl-pow',
   phasor: 'mpl-phasor',
   bufread: 'mpl-bufread',
+  record: 'mpl-record',
 } as const;
 
 // The worklet module source. One class per DSP object; each mirrors the matching
@@ -529,6 +530,97 @@ class BufReadProcessor extends AudioWorkletProcessor {
   }
 }
 registerProcessor('${PROCESSORS.bufread}', BufReadProcessor);
+
+// record~ : writes its inputs (one mono input per channel) into a buffer~, as in Max.
+// The worklet keeps only the write position; the samples it captures go back to the
+// main thread on the port as {at, channels} runs, which writes them into the buffer.
+// Port messages in:
+//   {len}            the buffer's length in samples (and {sr}, its sample rate)
+//   {rec: 0|1}       non-zero starts recording (at the start point unless append is on), 0 stops
+//   {start, end}     record start and end points in ms; an end of 0 (or <= start) is the buffer's end
+//   {loop: 0|1}      at the end point, go on at the start point instead of stopping
+//   {append: 0|1}    a new start continues from where recording last stopped
+// Port messages out: {at, channels} (captured samples), {stopped: true, reachedEnd}.
+// Output 0 is the sync signal: 0 at the start point rising to 1 at the end point while
+// recording, and 0 when not recording.
+class RecordProcessor extends AudioWorkletProcessor {
+  constructor(opts) {
+    super();
+    const o = (opts && opts.processorOptions) || {};
+    this.nch = Math.max(1, o.channels || 1);
+    this.len = Math.max(1, o.len || 1);
+    this.sr = o.sr || sampleRate;
+    this.startMs = 0; this.endMs = 0;
+    this.loop = !!o.loop; this.append = !!o.append;
+    this.rec = false; this.pos = 0;
+    this.cap = 4096;
+    this.buf = []; for (let c = 0; c < this.nch; c++) this.buf.push(new Float32Array(this.cap));
+    this.at = 0; this.n = 0;
+    this.port.onmessage = (e) => {
+      const d = e.data || {};
+      if (typeof d.len === 'number') { this.len = Math.max(1, d.len); if (d.sr) this.sr = d.sr; }
+      if (typeof d.start === 'number') this.startMs = d.start;
+      if (typeof d.end === 'number') this.endMs = d.end;
+      if (typeof d.loop === 'number') this.loop = d.loop !== 0;
+      if (typeof d.append === 'number') this.append = d.append !== 0;
+      if (typeof d.rec === 'number') {
+        if (d.rec !== 0) {
+          const [s, en] = this.bounds();
+          if (!this.append || !(this.pos >= s && this.pos < en)) this.pos = s;
+          this.rec = true;
+        } else if (this.rec) {
+          this.rec = false;
+          this.flush();
+          this.port.postMessage({ stopped: true, reachedEnd: false });
+        }
+      }
+    };
+  }
+  bounds() {
+    const k = this.sr / 1000;
+    const s = Math.min(this.len - 1, Math.max(0, Math.round(this.startMs * k)));
+    let en = Math.round(this.endMs * k);
+    if (!(en > s) || en > this.len) en = this.len;
+    return [s, en];
+  }
+  flush() {
+    if (!this.n) return;
+    const channels = this.buf.map((b) => b.slice(0, this.n));
+    this.port.postMessage({ at: this.at, channels });
+    this.n = 0;
+  }
+  process(inputs, outputs) {
+    const sync = outputs[0] && outputs[0][0];
+    const frames = sync ? sync.length : 128;
+    if (!this.rec) { if (sync) sync.fill(0); return true; }
+    const [s, en] = this.bounds();
+    if (this.pos < s || this.pos >= en) this.pos = s;
+    for (let i = 0; i < frames; i++) {
+      if (!this.rec) { if (sync) sync[i] = 0; continue; }
+      if (this.n && (this.pos !== this.at + this.n || this.n === this.cap)) this.flush();
+      if (!this.n) this.at = this.pos;
+      for (let c = 0; c < this.nch; c++) {
+        const inp = inputs[c];
+        this.buf[c][this.n] = inp && inp.length ? inp[0][i] : 0;
+      }
+      this.n++;
+      if (sync) sync[i] = (this.pos - s) / (en - s);
+      this.pos++;
+      if (this.pos >= en) {
+        if (this.loop) this.pos = s;
+        else {
+          this.rec = false;
+          this.flush();
+          this.port.postMessage({ stopped: true, reachedEnd: true });
+        }
+      }
+    }
+    if (this.n >= 2048) this.flush();
+    if (outputs[0]) for (let ch = 1; ch < outputs[0].length; ch++) outputs[0][ch].set(sync);
+    return true;
+  }
+}
+registerProcessor('${PROCESSORS.record}', RecordProcessor);
 `;
 
 // Contexts whose worklet module has been successfully loaded.
