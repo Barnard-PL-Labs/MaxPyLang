@@ -77,27 +77,28 @@ describe('accum', () => {
 });
 
 describe('histo', () => {
-  it('increments a bin and outputs value then count', () => {
+  it('counts a number: number out the left outlet, count out the right (as in Max)', () => {
     const { capture, send } = build('histo');
-    const count = capture(0);
-    const value = capture(1);
+    const value = capture(0);
+    const count = capture(1);
     send([5]); send([5]); send([9]);
     expect(value.map((m) => m[0])).toEqual([5, 5, 9]);
     expect(count.map((m) => m[0])).toEqual([1, 2, 1]);
   });
 
-  it('bang dumps all bins ascending; clear resets', () => {
+  it('bang reports the last number and its count; clear resets', () => {
     const { capture, send } = build('histo');
     send([9]); send([5]); send([5]);
-    const count = capture(0);
-    const value = capture(1);
+    const value = capture(0);
+    const count = capture(1);
     send(bang);
-    expect(value.map((m) => m[0])).toEqual([5, 9]);
-    expect(count.map((m) => m[0])).toEqual([2, 1]);
-    send(['clear'], 1);
+    expect(value.map((m) => m[0])).toEqual([5]);
+    expect(count.map((m) => m[0])).toEqual([2]);
+    send(['clear']);
     value.length = 0; count.length = 0;
     send(bang);
-    expect(value.length).toBe(0);
+    expect(value.map((m) => m[0])).toEqual([0]);
+    expect(count.map((m) => m[0])).toEqual([0]);
   });
 });
 
@@ -153,48 +154,50 @@ describe('peak / trough', () => {
 });
 
 describe('offer', () => {
-  it('stores from a [addr value] list and recalls by address', () => {
+  it('stores [x y] pairs silently and outputs y once when x is recalled (as in Max)', () => {
     const { capture, send } = build('offer');
     const out = capture(0);
-    send([3, 42]);   // store 42 at 3, output 42
-    send([7, 99]);   // store 99 at 7, output 99
-    send([3]);       // recall 42
-    send([5]);       // no value stored -> 0
-    expect(out.map((m) => m[0])).toEqual([42, 99, 42, 0]);
+    send([3, 42]);   // store 3 -> 42, no output
+    send([7, 99]);   // store 7 -> 99, no output
+    send([3]);       // recall 42, pair deleted
+    send([3]);       // gone: nothing
+    send([5]);       // never stored: nothing
+    expect(out.map((m) => m[0])).toEqual([42]);
   });
 
-  it('right inlet primes a value stored at the next address', () => {
+  it('right inlet primes a y stored with the next x', () => {
     const { capture, send } = build('offer');
     const out = capture(0);
-    send([8], 1);    // pending value 8
-    send([2]);       // store 8 at 2, output 8
+    send([8], 1);    // pending y 8
+    send([2]);       // store 2 -> 8, no output
     send([2]);       // recall 8
-    expect(out.map((m) => m[0])).toEqual([8, 8]);
+    expect(out.map((m) => m[0])).toEqual([8]);
   });
 });
 
 describe('bondo', () => {
-  it('left inlet triggers synchronised output of all stored values (no delay)', () => {
+  it('input to any inlet sends all stored values (no delay, as in Max)', () => {
     const { capture, send } = build('bondo');
     const left = capture(0);
     const right = capture(1);
-    send([20], 1);   // store into right, no trigger
-    expect(right.length).toBe(0);
-    send([10], 0);   // trigger
-    expect(left.map((m) => m[0])).toEqual([10]);
+    send([20], 1);   // right inlet triggers too; left has nothing yet -> 0
+    expect(left.map((m) => m[0])).toEqual([0]);
     expect(right.map((m) => m[0])).toEqual([20]);
+    send([10], 0);
+    expect(left.map((m) => m[0])).toEqual([0, 10]);
+    expect(right.map((m) => m[0])).toEqual([20, 20]);
   });
 
-  it('delays synchronised output via the scheduler', () => {
+  it('delays synchronised output from a message via the scheduler', () => {
     vi.useFakeTimers();
     const { capture, send } = build('bondo', 2, 100);
     const left = capture(0);
+    const right = capture(1);
     scheduler.start();
-    send([5], 1);
-    send(bang, 0); // trigger with 100ms delay
-    expect(left.length).toBe(0);
+    send([5], 1); // trigger with 100ms delay
+    expect(right.length).toBe(0);
     vi.advanceTimersByTime(100);
-    expect(left.length).toBe(1);
-    expect(left[0][0]).toBe('bang');
+    expect(right.map((m) => m[0])).toEqual([5]);
+    expect(left.map((m) => m[0])).toEqual([0]);
   });
 });

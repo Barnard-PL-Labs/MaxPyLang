@@ -5,12 +5,9 @@ import { register, type MaxNode, type VideoFrame } from '../../engine/registry';
 import { makeOutlets } from '../../runtime/outlets';
 import { hasDOM, makeCanvas } from './_shared';
 
-// jit.3m : per-frame brightness statistics of the incoming matrix.
-//   outlet 0 = mean   outlet 1 = min   outlet 2 = max   (all normalised 0..1)
-// Point jit.grab at it and outlet 0 tracks how bright the scene is — cover the
-// camera and it drops, so it plays like a light-controlled theremin.
-// (Real jit.3m reports per-plane min/mean/max; we emit normalised luma, which is
-// what a single-number control mapping actually wants.)
+// jit.3m : as in Max, the minimum, mean and maximum of each plane of the incoming
+// matrix, as lists of one value per plane (A R G B, 0..255 for a char matrix):
+//   outlet 0 = min   outlet 1 = mean   outlet 2 = max
 register('jit.3m', () => {
   const o = makeOutlets();
   // A tiny analysis canvas keeps getImageData cheap at frame rate.
@@ -22,19 +19,22 @@ register('jit.3m', () => {
     try {
       cx.drawImage(frame.source, 0, 0, canvas.width, canvas.height);
       const { data } = cx.getImageData(0, 0, canvas.width, canvas.height);
-      let sum = 0;
-      let min = 1;
-      let max = 0;
+      // Planes in Jitter's order: alpha, red, green, blue. Canvas data is R G B A.
+      const order = [3, 0, 1, 2];
+      const min = [255, 255, 255, 255], max = [0, 0, 0, 0], sum = [0, 0, 0, 0];
       const n = data.length / 4;
       for (let i = 0; i < data.length; i += 4) {
-        const luma = (0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]) / 255;
-        sum += luma;
-        if (luma < min) min = luma;
-        if (luma > max) max = luma;
+        for (let p = 0; p < 4; p++) {
+          const x = data[i + order[p]];
+          if (x < min[p]) min[p] = x;
+          if (x > max[p]) max[p] = x;
+          sum[p] += x;
+        }
       }
-      o.emit(0, [sum / n]);
-      o.emit(1, [min]);
-      o.emit(2, [max]);
+      // Right to left, as Max outputs.
+      o.emit(2, max);
+      o.emit(1, sum.map((t) => t / n));
+      o.emit(0, min);
     } catch {
       // drawImage can throw before the camera has delivered a frame — skip it.
     }

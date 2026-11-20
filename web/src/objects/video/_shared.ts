@@ -41,6 +41,37 @@ export function videoSkeleton(numInlets: number): Pick<MaxNode, 'signalIns' | 's
   return { signalIns: [], signalOuts: [], controlIns, onControlOut: o.onControlOut };
 }
 
+/** A box attribute (@name value…) as numbers, from the parsed attributes or the args. */
+export function attrNums(args: ArgValue[], node: { attrs?: Record<string, string[]> } | undefined, key: string): number[] | undefined {
+  const fromAttrs = node?.attrs?.[key];
+  const raw = fromAttrs ?? (() => {
+    const at = args.indexOf('@' + key);
+    if (at < 0) return undefined;
+    const out: string[] = [];
+    for (let i = at + 1; i < args.length && !String(args[i]).startsWith('@'); i++) out.push(String(args[i]));
+    return out;
+  })();
+  if (!raw) return undefined;
+  const vals = raw.map(Number).filter((n) => Number.isFinite(n));
+  return vals.length ? vals : undefined;
+}
+
+/**
+ * A jit.matrix's size, read as Max reads its arguments: [name] planecount type dim…
+ * ("jit.matrix 4 char 320 240"), or @dim w h. The numbers after the type are the size.
+ */
+export function matrixDims(args: ArgValue[], node: { attrs?: Record<string, string[]> } | undefined, defW: number, defH: number): { w: number; h: number } {
+  const dim = attrNums(args, node, 'dim');
+  if (dim) return { w: Math.max(1, Math.round(dim[0])), h: Math.max(1, Math.round(dim[1] ?? 1)) };
+  const types = ['char', 'long', 'float32', 'float64'];
+  const t = args.findIndex((a) => typeof a === 'string' && types.includes(a));
+  if (t >= 0) {
+    const after = args.slice(t + 1).filter((a): a is number => typeof a === 'number');
+    return { w: Math.max(1, Math.round(num(after[0], defW))), h: Math.max(1, Math.round(num(after[1], 1))) };
+  }
+  return dimsFromArgs(args, defW, defH);
+}
+
 /** Parse two leading numeric args as a width/height, with defaults. */
 export function dimsFromArgs(args: ArgValue[], defW: number, defH: number): { w: number; h: number } {
   const nums = args.filter((a): a is number => typeof a === 'number' && Number.isFinite(a));

@@ -322,44 +322,60 @@ register('onebang', (args) => {
 });
 
 // ── router ────────────────────────────────────────────────────────────────────
-// `router <ins> <outs>` : a matrix patchbay. The admin (leftmost) inlet takes
-// "<in> <out> [state]" messages to connect (state nonzero / default) or disconnect
-// (state 0, or out 0 clears the inlet). A message into data inlet k is copied to
-// every outlet currently connected to it. ins+1 inlets, outs outlets.
+// `router <ins> <outs>` : a message patchbay, per Max's reference. The leftmost inlet
+// only takes the matrix messages; the data inlets after it and the outlets are both
+// numbered from 0, as Max numbers them (inlet "0" is the box's second inlet):
+//   <in> <out> <state>   a list: connect (state nonzero) or disconnect (state 0)
+//   connect <in> <out> / disconnect <in> <out>
+//   patch <in> <out>     connect, and disconnect every other inlet from that outlet
+//   clear                disconnect everything
+//   dump                 "<in> <out> 1" out the right (dumpout) outlet per connection
+//   print                the connections to the console
+// Anything into data inlet k goes out every outlet connected to it. ins+1 inlets,
+// outs+1 outlets (the last is dumpout).
 register('router', (args) => {
   const o = makeOutlets();
   const ins = Math.max(1, Math.trunc(num(args[0], 1)));
   const outs = Math.max(1, Math.trunc(num(args[1], 1)));
-  const conns = new Map<number, Set<number>>(); // data-inlet(1..ins) -> set of outlet(1..outs)
+  const conns = new Map<number, Set<number>>(); // data inlet (0..ins-1) -> outlets (0..outs-1)
+  const valid = (i: number, j: number) => i >= 0 && i < ins && j >= 0 && j < outs;
+  const connect = (i: number, j: number) => {
+    if (!valid(i, j)) return;
+    const set = conns.get(i) ?? new Set<number>();
+    set.add(j);
+    conns.set(i, set);
+  };
+  const disconnect = (i: number, j: number) => { if (valid(i, j)) conns.get(i)?.delete(j); };
+  const pairs = (): [number, number][] =>
+    [...conns.keys()].sort((x, y) => x - y).flatMap((i) => [...conns.get(i)!].sort((x, y) => x - y).map((j) => [i, j] as [number, number]));
   const controlIns: (((m: Msg) => void) | undefined)[] = [
     // admin inlet
     (m) => {
-      const a = m[0];
-      const b = m[1];
-      if (typeof a !== 'number' || typeof b !== 'number') return;
-      const inIdx = Math.trunc(a);
-      const outIdx = Math.trunc(b);
-      const state = m.length >= 3 ? firstNum([m[2]]) ?? 1 : 1;
-      if (inIdx < 1 || inIdx > ins) return;
-      if (outIdx === 0 || state === 0) {
-        // clear this inlet's connection to outIdx (or all if outIdx 0)
-        const set = conns.get(inIdx);
-        if (set) {
-          if (outIdx === 0) set.clear();
-          else set.delete(outIdx);
-        }
-        return;
+      const head = m[0];
+      const n = m.slice(typeof head === 'string' ? 1 : 0).map((a) => (typeof a === 'number' ? Math.trunc(a) : NaN));
+      switch (head) {
+        case 'connect': if (n.length >= 2) connect(n[0], n[1]); return;
+        case 'disconnect': if (n.length >= 2) disconnect(n[0], n[1]); return;
+        case 'patch':
+          if (n.length >= 2 && valid(n[0], n[1])) {
+            for (const set of conns.values()) set.delete(n[1]);
+            connect(n[0], n[1]);
+          }
+          return;
+        case 'clear': conns.clear(); return;
+        case 'dump': for (const [i, j] of pairs()) o.emit(outs, [i, j, 1]); return;
+        case 'print': console.log(`router: ${pairs().map(([i, j]) => `${i} ${j}`).join(', ') || 'no connections'}`); return;
       }
-      if (outIdx < 1 || outIdx > outs) return;
-      const set = conns.get(inIdx) ?? new Set<number>();
-      set.add(outIdx);
-      conns.set(inIdx, set);
+      if (typeof head !== 'number' || n.length < 2) return;
+      const state = n.length >= 3 ? n[2] : 1;
+      if (state) connect(n[0], n[1]);
+      else disconnect(n[0], n[1]);
     },
   ];
-  for (let k = 1; k <= ins; k++) {
-    controlIns[k] = (m) => {
+  for (let k = 0; k < ins; k++) {
+    controlIns[k + 1] = (m) => {
       const set = conns.get(k);
-      if (set) for (const out of set) o.emit(out - 1, m);
+      if (set) for (const out of [...set].sort((x, y) => y - x)) o.emit(out, m); // right to left
     };
   }
   return { signalIns: [], signalOuts: [], controlIns, onControlOut: o.onControlOut } satisfies MaxNode;

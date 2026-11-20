@@ -1,7 +1,7 @@
 // AudioWorklet host.
 //
 // Custom-DSP MSP objects (biquad~, +=~, rampsmooth~, deltaclip~, allpass~, degrade~,
-// onepole~, svf~, overdrive~, tanh~, pong~, comb~) need
+// onepole~, svf~, overdrive~, tanh~, pong~, comb~, pow~, phasor~, wave~, play~, record~) need
 // per-sample stateful math that no stock Web Audio node can express. They run inside
 // AudioWorkletProcessors whose source is the INLINE string below — a worklet module
 // runs in its own global scope and cannot import our TypeScript, so the processors
@@ -25,6 +25,10 @@ export const PROCESSORS = {
   svf: 'mpl-svf',
   shaper: 'mpl-shaper',
   comb: 'mpl-comb',
+  pow: 'mpl-pow',
+  phasor: 'mpl-phasor',
+  bufread: 'mpl-bufread',
+  record: 'mpl-record',
 } as const;
 
 // The worklet module source. One class per DSP object; each mirrors the matching
@@ -394,6 +398,229 @@ class CombProcessor extends AudioWorkletProcessor {
   }
 }
 registerProcessor('${PROCESSORS.comb}', CombProcessor);
+
+// pow~ : y = base ^ exponent, as in Max: the exponent is the left inlet (a signal, or a
+// number), the base is the right inlet or the argument. Every sample, at any size: a
+// WaveShaper can only map inputs between -1 and 1. A result that isn't a number (a
+// negative base to a fractional power) is 0, so it can't poison what follows.
+class PowProcessor extends AudioWorkletProcessor {
+  static get parameterDescriptors() {
+    return [
+      { name: 'base', defaultValue: 0, automationRate: 'a-rate' },
+      { name: 'exponent', defaultValue: 0, automationRate: 'k-rate' },
+    ];
+  }
+  process(inputs, outputs, params) {
+    const inp = inputs[0], out = outputs[0];
+    const e0 = params.exponent[0];
+    for (let ch = 0; ch < out.length; ch++) {
+      const x = inp && inp.length ? (inp[ch] || inp[0]) : null, y = out[ch];
+      for (let i = 0; i < y.length; i++) {
+        const v = Math.pow(pv(params.base, i), e0 + (x ? x[i] : 0));
+        y[i] = Number.isFinite(v) ? v : 0;
+      }
+    }
+    return true;
+  }
+}
+registerProcessor('${PROCESSORS.pow}', PowProcessor);
+
+// phasor~ : a ramp from 0 up to 1 (never reaching it), frequency times a second,
+// starting at 0, as in Max. A negative frequency ramps down. A message {phase} on the
+// port sets the phase, as a number into Max's right inlet does.
+class PhasorProcessor extends AudioWorkletProcessor {
+  static get parameterDescriptors() {
+    return [{ name: 'frequency', defaultValue: 0, automationRate: 'a-rate' }];
+  }
+  constructor() {
+    super();
+    this.phase = 0;
+    this.port.onmessage = (e) => {
+      const p = e.data && e.data.phase;
+      if (typeof p === 'number' && Number.isFinite(p)) this.phase = p - Math.floor(p);
+    };
+  }
+  process(inputs, outputs, params) {
+    const out = outputs[0];
+    const y = out[0];
+    if (!y) return true;
+    let ph = this.phase;
+    for (let i = 0; i < y.length; i++) {
+      y[i] = ph;
+      ph += pv(params.frequency, i) / sampleRate;
+      ph -= Math.floor(ph);
+    }
+    this.phase = ph;
+    for (let ch = 1; ch < out.length; ch++) out[ch].set(y);
+    return true;
+  }
+}
+registerProcessor('${PROCESSORS.phasor}', PhasorProcessor);
+
+// wave~ and play~ : read a buffer~ at the position the input signal gives, between
+// samples linearly. The buffer's samples arrive on the port as {channels, sr}, again
+// whenever the buffer~ loads a new file.
+//   mode 'wave': the input is a phase from 0 to 1 across the region from start to end
+//                (ms); an end of 0 or less than start means the end of the buffer.
+//   mode 'play': the input is a position in ms. Outside the buffer it is silent.
+//   mode '2d':   2d.wave~. The region from start to end is split into 'rows' equal rows;
+//                input 0 (X, 0..1) is the position within a row and input 1 (Y, 0..1)
+//                picks the row, blending the two rows it falls between.
+class BufReadProcessor extends AudioWorkletProcessor {
+  static get parameterDescriptors() {
+    return [
+      { name: 'start', defaultValue: 0, automationRate: 'k-rate' },
+      { name: 'end', defaultValue: 0, automationRate: 'k-rate' },
+      { name: 'rows', defaultValue: 1, automationRate: 'k-rate' },
+    ];
+  }
+  constructor(opts) {
+    super();
+    this.mode = (opts && opts.processorOptions && opts.processorOptions.mode) || 'wave';
+    this.data = null;
+    this.sr = sampleRate;
+    this.port.onmessage = (e) => {
+      if (e.data && Array.isArray(e.data.channels)) { this.data = e.data.channels; this.sr = e.data.sr || sampleRate; }
+    };
+  }
+  process(inputs, outputs, params) {
+    const out = outputs[0], inp = inputs[0];
+    const data = this.data;
+    const x = inp && inp.length ? inp[0] : null;
+    for (let ch = 0; ch < out.length; ch++) {
+      const y = out[ch];
+      const d = data && data.length ? data[ch % data.length] : null;
+      if (!d || d.length < 2) { y.fill(0); continue; }
+      const len = d.length, k = this.sr / 1000;
+      const s0 = Math.max(0, params.start[0] * k);
+      let e0 = params.end[0] * k;
+      if (!(e0 > s0)) e0 = len - 1;
+      for (let i = 0; i < y.length; i++) {
+        const v = x ? x[i] : 0;
+        let pos;
+        if (this.mode === '2d') {
+          const rows = Math.max(1, Math.round(params.rows[0]));
+          const rowLen = (e0 - s0) / rows;
+          const yIn = inputs[1] && inputs[1].length ? inputs[1][0][i] : 0;
+          const px = v < 0 ? 0 : v > 1 ? 1 : v;
+          const r = (yIn < 0 ? 0 : yIn > 1 ? 1 : yIn) * (rows - 1);
+          const r0 = Math.floor(r), r1 = Math.min(rows - 1, r0 + 1), rf = r - r0;
+          const read = (p) => {
+            const q = p > len - 1 ? len - 1 : p, j = Math.floor(q), f = q - j;
+            return j + 1 < len ? d[j] + f * (d[j + 1] - d[j]) : d[j];
+          };
+          const a = read(s0 + r0 * rowLen + px * rowLen);
+          const b = read(s0 + r1 * rowLen + px * rowLen);
+          y[i] = a + rf * (b - a);
+          continue;
+        }
+        if (this.mode === 'play') {
+          pos = v * k;
+          if (pos < 0 || pos > len - 1) { y[i] = 0; continue; }
+        } else {
+          const ph = v < 0 ? 0 : v > 1 ? 1 : v;
+          pos = s0 + ph * (e0 - s0);
+          if (pos > len - 1) pos = len - 1;
+        }
+        const j = Math.floor(pos), f = pos - j;
+        y[i] = j + 1 < len ? d[j] + f * (d[j + 1] - d[j]) : d[j];
+      }
+    }
+    return true;
+  }
+}
+registerProcessor('${PROCESSORS.bufread}', BufReadProcessor);
+
+// record~ : writes its inputs (one mono input per channel) into a buffer~, as in Max.
+// The worklet keeps only the write position; the samples it captures go back to the
+// main thread on the port as {at, channels} runs, which writes them into the buffer.
+// Port messages in:
+//   {len}            the buffer's length in samples (and {sr}, its sample rate)
+//   {rec: 0|1}       non-zero starts recording (at the start point unless append is on), 0 stops
+//   {start, end}     record start and end points in ms; an end of 0 (or <= start) is the buffer's end
+//   {loop: 0|1}      at the end point, go on at the start point instead of stopping
+//   {append: 0|1}    a new start continues from where recording last stopped
+// Port messages out: {at, channels} (captured samples), {stopped: true, reachedEnd}.
+// Output 0 is the sync signal: 0 at the start point rising to 1 at the end point while
+// recording, and 0 when not recording.
+class RecordProcessor extends AudioWorkletProcessor {
+  constructor(opts) {
+    super();
+    const o = (opts && opts.processorOptions) || {};
+    this.nch = Math.max(1, o.channels || 1);
+    this.len = Math.max(1, o.len || 1);
+    this.sr = o.sr || sampleRate;
+    this.startMs = 0; this.endMs = 0;
+    this.loop = !!o.loop; this.append = !!o.append;
+    this.rec = false; this.pos = 0;
+    this.cap = 4096;
+    this.buf = []; for (let c = 0; c < this.nch; c++) this.buf.push(new Float32Array(this.cap));
+    this.at = 0; this.n = 0;
+    this.port.onmessage = (e) => {
+      const d = e.data || {};
+      if (typeof d.len === 'number') { this.len = Math.max(1, d.len); if (d.sr) this.sr = d.sr; }
+      if (typeof d.start === 'number') this.startMs = d.start;
+      if (typeof d.end === 'number') this.endMs = d.end;
+      if (typeof d.loop === 'number') this.loop = d.loop !== 0;
+      if (typeof d.append === 'number') this.append = d.append !== 0;
+      if (typeof d.rec === 'number') {
+        if (d.rec !== 0) {
+          const [s, en] = this.bounds();
+          if (!this.append || !(this.pos >= s && this.pos < en)) this.pos = s;
+          this.rec = true;
+        } else if (this.rec) {
+          this.rec = false;
+          this.flush();
+          this.port.postMessage({ stopped: true, reachedEnd: false });
+        }
+      }
+    };
+  }
+  bounds() {
+    const k = this.sr / 1000;
+    const s = Math.min(this.len - 1, Math.max(0, Math.round(this.startMs * k)));
+    let en = Math.round(this.endMs * k);
+    if (!(en > s) || en > this.len) en = this.len;
+    return [s, en];
+  }
+  flush() {
+    if (!this.n) return;
+    const channels = this.buf.map((b) => b.slice(0, this.n));
+    this.port.postMessage({ at: this.at, channels });
+    this.n = 0;
+  }
+  process(inputs, outputs) {
+    const sync = outputs[0] && outputs[0][0];
+    const frames = sync ? sync.length : 128;
+    if (!this.rec) { if (sync) sync.fill(0); return true; }
+    const [s, en] = this.bounds();
+    if (this.pos < s || this.pos >= en) this.pos = s;
+    for (let i = 0; i < frames; i++) {
+      if (!this.rec) { if (sync) sync[i] = 0; continue; }
+      if (this.n && (this.pos !== this.at + this.n || this.n === this.cap)) this.flush();
+      if (!this.n) this.at = this.pos;
+      for (let c = 0; c < this.nch; c++) {
+        const inp = inputs[c];
+        this.buf[c][this.n] = inp && inp.length ? inp[0][i] : 0;
+      }
+      this.n++;
+      if (sync) sync[i] = (this.pos - s) / (en - s);
+      this.pos++;
+      if (this.pos >= en) {
+        if (this.loop) this.pos = s;
+        else {
+          this.rec = false;
+          this.flush();
+          this.port.postMessage({ stopped: true, reachedEnd: true });
+        }
+      }
+    }
+    if (this.n >= 2048) this.flush();
+    if (outputs[0]) for (let ch = 1; ch < outputs[0].length; ch++) outputs[0][ch].set(sync);
+    return true;
+  }
+}
+registerProcessor('${PROCESSORS.record}', RecordProcessor);
 `;
 
 // Contexts whose worklet module has been successfully loaded.
