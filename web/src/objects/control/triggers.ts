@@ -95,20 +95,32 @@ register('active', () => {
 
 // ── Clocks ────────────────────────────────────────────────────────────────────
 
-// date : on a bang, report the current wall-clock date across three outlets.
-// Faithful to Max's right-to-left firing, the outlets emit high-to-low:
-//   outlet 2 = year, outlet 1 = month (1-12), outlet 0 = day-of-month.
+// date : report the current date, time, or tick count (Max reference,
+// date.maxref.xml). 1 inlet, 3 outlets; it answers three messages:
+//   `date`  -> outlet 0 : month day year   (month 1-12)
+//   `time`  -> outlet 1 : hour minute second (24-hour clock)
+//   `ticks` -> outlet 2 : 1/60ths of a second since startup
+// Anything else (including bang) is ignored, as in Max.
+const startupMs = (): number =>
+  typeof performance !== 'undefined' && typeof performance.now === 'function'
+    ? performance.now()
+    : Date.now();
 register('date', () => {
   const o = makeOutlets();
   return {
     signalIns: [],
     signalOuts: [],
     controlIns: [(m) => {
-      if (!(isBang(m) || firstNum(m) !== undefined)) return;
-      const d = new Date();
-      o.emit(2, [d.getFullYear()]);
-      o.emit(1, [d.getMonth() + 1]);
-      o.emit(0, [d.getDate()]);
+      const sel = m[0];
+      if (sel === 'date') {
+        const d = new Date();
+        o.emit(0, [d.getMonth() + 1, d.getDate(), d.getFullYear()]);
+      } else if (sel === 'time') {
+        const d = new Date();
+        o.emit(1, [d.getHours(), d.getMinutes(), d.getSeconds()]);
+      } else if (sel === 'ticks') {
+        o.emit(2, [Math.floor((startupMs() * 60) / 1000)]);
+      }
     }],
     onControlOut: o.onControlOut,
   } satisfies MaxNode;
