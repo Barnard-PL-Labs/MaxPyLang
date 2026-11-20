@@ -25,22 +25,27 @@ register('line~', (args, { ctx }) => {
 
   const clearDone = () => { cancelDone?.(); cancelDone = undefined; };
 
+  // A message is one or more target-time pairs, run one after another, as in Max:
+  // "0 0 1500 1500" jumps to 0, then ramps to 1500 over 1.5 s. A lone number jumps.
   const ramp = (m: Msg) => {
     const vals = nums(m);
     if (vals.length === 0) return;
-    const target = vals[0];
-    const timeMs = vals.length > 1 ? vals[1] : 0;
     clearDone();
     const now = ctx.currentTime;
     src.offset.cancelScheduledValues(now);
-    if (timeMs <= 0) {
-      src.offset.setValueAtTime(target, now);
-      o.emit(1, BANG); // instantaneous jump reports done immediately
-    } else {
-      src.offset.setValueAtTime(src.offset.value, now);
-      src.offset.linearRampToValueAtTime(target, now + timeMs / 1000);
-      cancelDone = scheduler.afterMs(timeMs, () => { cancelDone = undefined; o.emit(1, BANG); });
+    src.offset.setValueAtTime(src.offset.value, now);
+    let at = now;
+    let totalMs = 0;
+    for (let i = 0; i < vals.length; i += 2) {
+      const target = vals[i];
+      const timeMs = Math.max(0, vals[i + 1] ?? 0);
+      if (timeMs === 0) src.offset.setValueAtTime(target, at);
+      else src.offset.linearRampToValueAtTime(target, at + timeMs / 1000);
+      at += timeMs / 1000;
+      totalMs += timeMs;
     }
+    if (totalMs <= 0) o.emit(1, BANG); // instantaneous jump reports done immediately
+    else cancelDone = scheduler.afterMs(totalMs, () => { cancelDone = undefined; o.emit(1, BANG); });
   };
 
   return {
