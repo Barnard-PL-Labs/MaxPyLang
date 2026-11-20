@@ -8,6 +8,7 @@ on:
     paths:
       - 'docs/source/**'
       - 'docs/examples/**'
+      - 'docs/run_examples.py'
       - 'docs/requirements.txt'
       - 'docs/Makefile'
       - 'maxpylang/**'          # API pages are generated from the package's docstrings
@@ -17,6 +18,7 @@ on:
     paths:
       - 'docs/source/**'
       - 'docs/examples/**'
+      - 'docs/run_examples.py'
       - 'docs/requirements.txt'
       - 'docs/Makefile'
       - 'maxpylang/**'
@@ -43,8 +45,15 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e .
+          pip install "setuptools>=77.0.0" wheel
+          # compat mode: the default editable install uses an import hook that type checkers cannot follow
+          pip install -e ".[dev]" --config-settings editable_mode=compat
           pip install -r docs/requirements.txt
+
+      # Every example the pages show must run, save a patch with no unknown objects,
+      # and pass mypy and pyright; bad_*.py must be flagged on its "# error" lines.
+      - name: Check the examples
+        run: python docs/run_examples.py --types
 
       # -W turns warnings into errors: a page that fails to import maxpylang,
       # or a broken link, fails the build instead of publishing an empty page.

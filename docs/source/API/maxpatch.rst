@@ -10,7 +10,8 @@ Creating a patch
    **Notes:**
 
    - If ``load_file`` is given, ``template`` is ignored. With neither, you get an empty patch.
-   - ``load_file`` reads ``.maxpat`` and Max for Live ``.amxd`` files.
+   - ``load_file`` reads ``.maxpat`` and Max for Live ``.amxd`` files. Until pull request #20 is released, it fails on most
+     patches saved by Max, and on frozen devices; see :doc:`../guide/known-issues`.
    - To load abstractions or ``js`` objects, the :doc:`linked files<../topics/linked_files>` must be in the current directory.
    - To load a patch with :doc:`external package objects<../topics/ext_packages>`, import those packages first.
    - :doc:`Unknown objects<../topics/unknown_objs>` keep their patch cords when loaded, but cannot be edited.

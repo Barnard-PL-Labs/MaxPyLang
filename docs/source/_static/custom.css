@@ -1,0 +1,5 @@
+/* The Read the Docs theme keeps table cells on one line; let prose tables wrap. */
+.wy-table-responsive table td,
+.wy-table-responsive table th {
+  white-space: normal;
+}

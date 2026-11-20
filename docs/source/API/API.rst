@@ -11,7 +11,8 @@ from the top level, ``import maxpylang as mp``, except the rate classes, which l
 - :class:`~maxpylang.Inlet`, :class:`~maxpylang.Outlet`: an object's inlets and outlets.
 - :func:`~maxpylang.save_amxd`, :func:`~maxpylang.load_amxd`, :data:`~maxpylang.DEVICE_TYPES`: Max for Live files.
 - :mod:`maxpylang.rates`: what a patch cord carries, for type checkers.
-- :class:`~maxpylang.exceptions.UnknownObjectWarning` and :func:`~maxpylang.import_objs`.
+- :class:`~maxpylang.exceptions.UnknownObjectWarning`, :class:`~maxpylang.ConnectionWarning`,
+  :class:`~maxpylang.GraphWarning` and :func:`~maxpylang.import_objs`.
 
 .. toctree::
    :maxdepth: 1

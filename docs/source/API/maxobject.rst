@@ -5,7 +5,7 @@ MaxObject
 .. autoclass:: maxpylang.MaxObject
 
    Create one from in-box text, ``mp.MaxObject("cycle~ 440")``, or use a ready-made stub from
-   ``maxpylang.objects``, such as ``cycle_tilde``.
+   ``maxpylang.objects``, such as ``cycle_tilde`` (see :doc:`../guide/connecting`).
 
    .. automethod:: __init__
 
