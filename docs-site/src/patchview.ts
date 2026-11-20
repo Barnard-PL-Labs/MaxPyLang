@@ -109,7 +109,7 @@ export interface PatchPaneOptions {
    * Size the view to the patch, between these heights (px), instead of filling the host:
    * a three-box patch then gets a short view, not a tall empty one.
    */
-  fitHeight?: { min: number; max: number };
+  fitHeight?: { min: number; max: number; maxLive?: number };
 }
 
 /** Room under the patch for the zoom buttons, which sit over the bottom right corner. */
@@ -121,6 +121,7 @@ export class PatchPane {
   private readonly canvas: HTMLElement;
   private view: PatcherView | null = null;
   private doc: PatchDoc | null = null;
+  private ids: string[] = [];
   private touched = false; // after the reader pans or zooms, stop re-fitting on resize
   private readonly resize: ResizeObserver;
 
@@ -156,6 +157,7 @@ export class PatchPane {
   show(patch: unknown): void {
     this.view?.destroy();
     const laidOut = layoutForReading(patch);
+    this.ids = (laidOut as Patch).patcher.boxes.map((b) => b.box.id);
     this.sizeTo(laidOut);
     this.doc = PatchDoc.fromIR(parseMaxPat(laidOut));
     this.view = new PatcherView(this.canvas, { doc: this.doc, widgetFor: this.opts.widgetFor });
@@ -180,9 +182,31 @@ export class PatchPane {
     this.host.style.height = `${Math.round(height)}px`;
   }
 
-  /** Re-mount the engine's widgets, after the patch starts or stops playing. */
+  /**
+   * Re-mount the engine's widgets, after the patch starts or stops playing. A widget can
+   * be much bigger than its box (jit.window's picture), so the view is sized again to
+   * the boxes as drawn now, and the whole patch re-fitted into it.
+   */
   refreshWidgets(): void {
-    this.view?.refreshWidgets();
+    const view = this.view;
+    if (!view) return;
+    view.refreshWidgets();
+    const range = this.opts.fitHeight;
+    if (range) {
+      let top = Infinity, bottom = -Infinity, live = false;
+      for (const id of this.ids) {
+        const g = view.boxGeom(id);
+        if (!g) continue;
+        top = Math.min(top, g.y);
+        bottom = Math.max(bottom, g.y + g.h);
+        if (this.opts.widgetFor?.(id)) live = true;
+      }
+      const max = live ? (range.maxLive ?? range.max) : range.max;
+      const content = Number.isFinite(top) ? bottom - top : 0;
+      this.host.style.height = `${Math.round(Math.min(max, Math.max(range.min, content + 2 * PAD + TOOLS_H)))}px`;
+    }
+    this.touched = false;
+    requestAnimationFrame(() => this.view?.fit(PAD));
   }
 
   destroy(): void {

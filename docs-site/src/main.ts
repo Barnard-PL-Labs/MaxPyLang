@@ -192,7 +192,7 @@ function showPanel(name: string, index: number): void {
   // Box ids (obj-1, obj-2…) repeat across patches, so mount the engine's live widgets
   // only while this example is the one playing.
   pane = new PatchPane(panel.querySelector('.patch-host') as HTMLElement, {
-    fitHeight: { min: 120, max: 340 },
+    fitHeight: { min: 120, max: 340, maxLive: 560 },
     widgetFor: (id) => (playing() === key ? builtWidget(id) : undefined),
     onExpand: () => openExpanded(entry, key, () => shown?.code ?? example.code, () => shown?.patch ?? example.patch),
   });
