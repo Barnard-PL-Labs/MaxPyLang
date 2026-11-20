@@ -174,6 +174,55 @@ async function bytesFor(source: SampleSource): Promise<ArrayBuffer> {
   return res.arrayBuffer();
 }
 
+// ── Clips for buffer~ ────────────────────────────────────────────────────────
+//
+// A buffer~ usually names a longer recording than a drum hit, often one of the files that
+// ship with Max (drumLoop.aif, jongly.aif…). When nothing above supplies the file, a
+// buffer~ falls back to the clip of public/samples/fx its name obviously asks for, the way
+// a playlist~ clip falls back to a kit sample. (playlist~ keeps to the kit: its menu
+// lists kit samples and dropped files only.)
+
+export type ClipId = 'drums' | 'guitar' | 'piano' | 'vocals';
+
+const CLIPS: readonly { id: ClipId; pattern: RegExp }[] = [
+  { id: 'drums', pattern: /drum|beat|loop/i },
+  { id: 'guitar', pattern: /guitar|jongly/i },
+  { id: 'piano', pattern: /piano/i },
+  { id: 'vocals', pattern: /vocal|voice|sing|anton/i },
+];
+
+/** What a buffer~'s file name loads: a sample as for playlist~, else a matching clip. */
+export type BufferSource = SampleSource | { kind: 'clip'; id: ClipId };
+
+export function resolveBufferFile(fileName: string): BufferSource | undefined {
+  const sample = resolveSample(fileName);
+  if (sample) return sample;
+  if (choices[keyOf(fileName)] === 'none') return undefined;
+  const base = fileName.replace(/\.[a-z0-9]+$/i, '');
+  const clip = CLIPS.find((c) => c.pattern.test(base));
+  return clip ? { kind: 'clip', id: clip.id } : undefined;
+}
+
+/** Decode a buffer~ source, cached per context like loadSample. */
+export function loadBufferSource(ctx: BaseAudioContext, source: BufferSource): Promise<AudioBuffer> {
+  if (source.kind !== 'clip') return loadSample(ctx, source);
+  const id = `clip:${source.id}`;
+  let cache = decoded.get(ctx);
+  if (!cache) decoded.set(ctx, (cache = new Map()));
+  let pending = cache.get(id);
+  if (!pending) {
+    pending = fetch(`${import.meta.env.BASE_URL}samples/fx/${source.id}.mp3`)
+      .then((res) => {
+        if (!res.ok) throw new Error(`built-in ${source.id} clip: HTTP ${res.status}`);
+        return res.arrayBuffer();
+      })
+      .then((bytes) => ctx.decodeAudioData(bytes));
+    pending.catch(() => cache!.delete(id));
+    cache.set(id, pending);
+  }
+  return pending;
+}
+
 /** For tests: forget every dropped file and every choice. */
 export function resetSamples(): void {
   userFiles.clear();

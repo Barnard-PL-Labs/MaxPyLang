@@ -1,0 +1,7 @@
+# Built by scripts/build_examples.py
+src/generated/
+public/py/
+node_modules
+public/samples/
+.vite/
+max-check/

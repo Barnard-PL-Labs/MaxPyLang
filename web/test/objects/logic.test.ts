@@ -170,12 +170,12 @@ describe('logic batch: onebang', () => {
 });
 
 describe('logic batch: router', () => {
-  it('copies a data inlet to its connected outlets', () => {
+  it('copies a data inlet to its connected outlets (Max numbers both from 0)', () => {
     const { events, send } = build('router', 2, 2);
-    send([1, 2], 0); // connect data inlet 1 -> outlet 2
-    send([42], 1); // inlet 1 data -> outlet 2 (index 1)
-    send([99], 2); // inlet 2 unconnected -> nothing
-    send([1, 2, 0], 0); // disconnect
+    send([0, 1, 1], 0); // connect data inlet 0 (box inlet 1) -> outlet 1
+    send([42], 1); // data inlet 0 -> outlet 1
+    send([99], 2); // data inlet 1 unconnected -> nothing
+    send([0, 1, 0], 0); // disconnect
     send([42], 1);
     expect(events).toEqual([{ outlet: 1, m: [42] }]);
   });

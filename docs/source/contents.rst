@@ -1,6 +1,11 @@
-=========
-MaxPyLang
-=========
+===============
+MaxPyLang guide
+===============
+
+.. tip::
+
+   Looking for a Max object? The `object reference <index.html>`_ lists them by category,
+   each with a maxpylang example you can play and edit in the browser.
 
 MaxPyLang is a Python package for making Max (MaxMSP) patches with code. You write a Python
 script that places objects and connects them, and it saves a ``.maxpat`` file you open in Max,
@@ -33,8 +38,10 @@ For coding agents, the whole site is also one Markdown file:
    guide/getting-started
    guide/connecting
    guide/max-for-live
+   guide/plugin-generator
    guide/checks
    guide/editor-setup
+   guide/type-system
    guide/agents
    guide/known-issues
 

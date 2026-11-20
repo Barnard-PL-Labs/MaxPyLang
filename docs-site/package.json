@@ -1,0 +1,14 @@
+{
+  "name": "maxpylang-docs-site",
+  "private": true,
+  "type": "module",
+  "description": "The interactive object reference at the root of the MaxPyLang docs site. Reuses the engine in ../web without changing it.",
+  "scripts": {
+    "dev": "node ../web/node_modules/vite/bin/vite.js",
+    "build": "node ../web/node_modules/typescript/bin/tsc -p . && node -e \"require('fs').rmSync('../docs/reference-assets',{recursive:true,force:true})\" && node ../web/node_modules/vite/bin/vite.js build",
+    "test": "node ../web/node_modules/vitest/vitest.mjs run",
+    "test:browser": "node ../web/node_modules/vitest/vitest.mjs run --config vitest.browser.config.mjs",
+    "examples": "python scripts/build_examples.py",
+    "guides": "sphinx-build -q -b html ../docs/source ../docs/html -d ../docs/html/.doctrees"
+  }
+}

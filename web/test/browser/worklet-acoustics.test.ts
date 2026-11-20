@@ -9,6 +9,8 @@
 
 import { describe, expect, it, beforeAll } from 'vitest';
 import '../../src/objects/audio/worklet-dsp'; // self-registers biquad~, +=~, etc.
+import '../../src/objects/audio/sigmath'; // pow~
+import '../../src/objects/audio'; // phasor~
 import { getFactory } from '../../src/engine/registry';
 import { preloadWorklets, workletsReady } from '../../src/runtime/worklet';
 import { lowpassCoeffs } from '../../src/dsp/kernels';
@@ -35,6 +37,50 @@ describe('worklet acoustics (real Chromium OfflineAudioContext)', () => {
     const probe = new OfflineAudioContext(1, 128, SR);
     await preloadWorklets(probe);
     expect(workletsReady(probe)).toBe(true);
+  });
+
+  // Max: pow~ raises the base (right inlet, or the argument) to the exponent (left inlet).
+  async function renderPow(arg: number, exponentSignal: number, msgs: [number, number][] = []) {
+    const ctx = new OfflineAudioContext(1, 256, SR);
+    await preloadWorklets(ctx);
+    const node = getFactory('pow~')!([arg], { ctx });
+    for (const [value, inlet] of msgs) node.controlIns?.[inlet]?.([value]);
+    const src = new ConstantSourceNode(ctx, { offset: exponentSignal });
+    src.connect(node.signalIns[0] as AudioNode);
+    (node.signalOuts[0] as AudioNode).connect(ctx.destination);
+    src.start();
+    return (await ctx.startRendering()).getChannelData(0);
+  }
+
+  it('pow~ 2 raises the base 2 to the exponent signal (2^3 = 8), past the -1..1 range', async () => {
+    const y = await renderPow(2, 3);
+    expect(y[200]).toBeCloseTo(8, 4);
+  });
+
+  it('pow~ : a number in the right inlet sets the base (10^2 = 100)', async () => {
+    const y = await renderPow(2, 2, [[10, 1]]);
+    expect(y[200]).toBeCloseTo(100, 3);
+  });
+
+  it('pow~ : a negative base to a fractional power gives 0, not NaN', async () => {
+    const y = await renderPow(-2, 0.5);
+    expect(y[200]).toBe(0);
+  });
+
+  it('phasor~ 0.5 ramps from 0 to 1 over two seconds, starting at 0, as in Max', async () => {
+    const ctx = new OfflineAudioContext(1, Math.round(2.5 * SR), SR);
+    await preloadWorklets(ctx);
+    const node = getFactory('phasor~')!([0.5], { ctx });
+    (node.signalOuts[0] as AudioNode).connect(ctx.destination);
+    const y = (await ctx.startRendering()).getChannelData(0);
+    expect(y[0]).toBeCloseTo(0, 4);
+    expect(y[Math.round(1.0 * SR)]).toBeCloseTo(0.5, 3);
+    expect(y[Math.round(1.99 * SR)]).toBeCloseTo(0.995, 3);
+    expect(y[Math.round(2.1 * SR)]).toBeCloseTo(0.05, 3);   // wrapped at 2 s
+    let lo = Infinity, hi = -Infinity;
+    for (const v of y) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+    expect(lo).toBeGreaterThanOrEqual(0);
+    expect(hi).toBeLessThan(1);
   });
 
   it('+=~ integrates a constant into a rising ramp', async () => {

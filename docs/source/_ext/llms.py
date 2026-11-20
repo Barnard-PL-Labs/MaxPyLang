@@ -11,8 +11,13 @@ here from the code instead.
 """
 
 import inspect
+import json
 import re
 from pathlib import Path
+
+# The object reference (docs-site/) writes its compiled examples here; build it first
+# (python docs-site/scripts/build_examples.py) for llms-full.txt to include them.
+SITE = Path(__file__).resolve().parents[3] / "docs-site"
 
 # Pages written in .rst that llms-full.txt leaves out on purpose.
 SKIP = {
@@ -156,6 +161,39 @@ def api_reference():
     return "\n".join(out).strip() + "\n"
 
 
+# -- object reference ---------------------------------------------------------
+
+def object_reference():
+    """Every object in the reference that has examples, in category order, with its code."""
+    generated = SITE / "src" / "generated"
+    if not (generated / "examples.json").exists():
+        return ""
+    examples = json.loads((generated / "examples.json").read_text())
+    digests = json.loads((generated / "digests.json").read_text())
+    stubs = json.loads((generated / "stubs.json").read_text())
+    categories = json.loads((SITE / "content" / "categories.json").read_text())["categories"]
+    by_object = {}
+    for ex in examples:
+        by_object.setdefault(ex["object"], []).append(ex)
+
+    out = ["# Object reference", "",
+           "Max objects with a maxpylang example each. Every example runs as written, saves a "
+           "patch, and plays in the browser player. In examples, a signal-driven inlet gets an "
+           "explicit 0 (cycle_tilde(0), \"*~ 0.\"): Max ignores an argument when a signal is "
+           "connected, and the browser player adds them."]
+    for cat in categories:
+        names = [n for n in cat["objects"] if n in by_object]
+        if not names:
+            continue
+        out += ["", f"## {cat['name']}", "", cat["blurb"]]
+        for name in names:
+            stub = stubs.get(name)
+            out += ["", f"### `{name}`" + (f" (`{stub}`)" if stub else ""), "", digests.get(name, "")]
+            for ex in sorted(by_object[name], key=lambda e: e["index"]):
+                out += ["", f"**{ex['title']}.** {ex['note']}", "", "```python", ex["code"].rstrip(), "```"]
+    return "\n".join(out).strip() + "\n"
+
+
 # -- writing ----------------------------------------------------------------
 
 def write_files(app, exception):
@@ -164,7 +202,9 @@ def write_files(app, exception):
     env = app.env
     base = (app.config.html_baseurl or "").rstrip("/") + "/"
     titles = {doc: env.titles[doc].astext() for doc in env.titles}
-    index_lines = [f"# {app.config.project}", "", f"> {SUMMARY}", "", NOTES, "", "## Docs", ""]
+    index_lines = [f"# {app.config.project}", "", f"> {SUMMARY}", "", NOTES, "", "## Docs", "",
+                   f"- [Object reference]({base}): Max objects by category, each with a maxpylang "
+                   "example you can play and edit in the browser."]
     full = [f"# {app.config.project} {app.config.release}", "", f"> {SUMMARY}", "", NOTES,
             "", f"Source: {base}", ""]
 
@@ -182,6 +222,9 @@ def write_files(app, exception):
     index_lines += ["", "## Optional", "",
                     f"- [llms-full.txt]({base}llms-full.txt): all of the above, with the API "
                     "reference, as one Markdown file."]
+    reference = object_reference()
+    if reference:
+        full += ["", "---", "", reference]
     full += ["", "---", "", api_reference()]
 
     out = Path(app.outdir)

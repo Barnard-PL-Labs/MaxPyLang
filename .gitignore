@@ -23,3 +23,6 @@ tasks/
 
 # Claude Code local state (worktrees, etc.)
 .claude/
+
+# Guides built for the reference's dev server (npm --prefix docs-site run guides)
+docs/html/

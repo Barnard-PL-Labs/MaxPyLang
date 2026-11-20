@@ -1,0 +1,139 @@
+// Every example must make sound, without clipping. Examples driven by a clock (metro,
+// delay, pipe) must also change over time: the pitch moves or the level swings, which
+// shows the clock runs instead of leaving one stuck tone.
+//
+// How: each example renders OFFLINE (OfflineAudioContext), so the test needs no sound
+// card and gives the same answer on every machine. The engine's clock (metro, delay…)
+// runs on setInterval/setTimeout, which offline rendering would race past, so the timers
+// are faked and advanced in step with the audio: every 10 ms of audio, rendering pauses
+// (ctx.suspend), the fake clock moves 10 ms (metros fire, setting values at that moment
+// in the audio), and rendering resumes.
+//
+// A real-time check is not possible here: in a headless browser the audio clock stalls
+// (currentTime stays near 0), so a live AnalyserNode keeps returning its first buffer.
+
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import '../../../web/src/objects';
+import { Engine } from '../../../web/src/engine/engine';
+import { parseMaxPat } from '../../../web/src/parser/maxpat';
+import { preloadWorklets } from '../../../web/src/runtime/worklet';
+import examples from '../../src/generated/examples.json';
+import { loadClip, playTrack } from '../../src/player';
+
+// The real timer, kept before vi.useFakeTimers replaces it: playlist~ fetches and decodes
+// its samples asynchronously, in real time, which an offline render would race past.
+const realSetTimeout = globalThis.setTimeout.bind(globalThis);
+const SAMPLE_WAIT_MS = 1500;
+
+const SR = 44100;
+const SECONDS = 2.5;
+const STEP = 0.01; // seconds of audio per clock step
+const WINDOW = 0.1; // seconds per analysis window
+
+async function render(patch: unknown, waitForSamples = false): Promise<Float32Array> {
+  const ctx = new OfflineAudioContext(2, Math.round(SR * SECONDS), SR);
+  const engine = new Engine(ctx);
+  await preloadWorklets(ctx);
+  engine.build(parseMaxPat(patch));
+  // An audio effect (plugin~) hears a clip played into it, as on the page.
+  const boxes = (patch as { patcher: { boxes: { box: { text?: string } }[] } }).patcher.boxes;
+  if (boxes.some(({ box }) => (box.text ?? '').split(' ')[0] === 'plugin~')) playTrack(ctx, await loadClip(ctx));
+  await engine.start(); // arms the scheduler: timed objects fire on the (fake) clock
+  for (let t = STEP; t < SECONDS; t += STEP) {
+    const at = Math.round(t * SR / 128) * 128 / SR; // suspend on a render-quantum boundary
+    const first = t === STEP;
+    ctx.suspend(at).then(async () => {
+      // Before the first beat, give sample files real time to arrive and decode.
+      if (first && waitForSamples) await new Promise((r) => realSetTimeout(r, SAMPLE_WAIT_MS));
+      vi.advanceTimersByTime(STEP * 1000);
+      void ctx.resume();
+    });
+  }
+  try {
+    const buffer = await ctx.startRendering();
+    return buffer.getChannelData(0).slice();
+  } finally {
+    await engine.stop();
+    engine.clear();
+  }
+}
+
+/** Per-window RMS and zero-crossing rate (a rough pitch), skipping the first window. */
+function analyse(x: Float32Array) {
+  const n = Math.round(WINDOW * SR);
+  const rms: number[] = [], zcr: number[] = [], bright: number[] = [];
+  let peak = 0;
+  for (let w = 1; (w + 1) * n <= x.length; w++) {
+    let sum = 0, cross = 0, slope = 0;
+    for (let i = w * n; i < (w + 1) * n; i++) {
+      sum += x[i] * x[i];
+      if (i > w * n) slope += (x[i] - x[i - 1]) ** 2;
+      peak = Math.max(peak, Math.abs(x[i]));
+      if (i > w * n && (x[i - 1] < 0) !== (x[i] < 0)) cross++;
+    }
+    rms.push(Math.sqrt(sum / n));
+    // Brightness: how steep the wave is for its level. It rises as a filter opens, even
+    // when pitch and loudness stay the same.
+    bright.push(sum > 1e-9 ? Math.sqrt(slope / sum) : 0);
+    zcr.push(cross / (2 * WINDOW)); // ≈ Hz for a simple tone
+  }
+  return { rms, zcr, peak, bright };
+}
+
+const TIMED = ['metro', 'delay', 'pipe'];
+
+// Steady sine examples and the pitch they must play (Hz, from the zero-crossing rate).
+// This catches an inlet that ADDS a signal to its argument instead of replacing it, as
+// Max does: cycle~ with no argument starts at 440 Hz in the browser engine, so a
+// signal-driven cycle~ without an explicit 0 plays 440 Hz too high.
+const PITCH: Record<string, number> = {
+  'cycle~/0': 440,
+  'cycle~/1': 330,
+  'sig~/0': 262,
+  'loadbang/0': 392,
+  'send~/0': 294,
+  '*~/0': 330,
+};
+
+// Random examples (random, drunk, urn, decide…) draw from Math.random. A fixed sequence
+// makes every run render the same patch the same way, so a test can't pass or fail by luck.
+function seeded(seed: number) {
+  return () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+beforeEach(() => { vi.spyOn(Math, 'random').mockImplementation(seeded(1)); });
+afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
+
+describe('every reference example plays', () => {
+  for (const ex of examples as { object: string; index: number; title: string; objects: string[]; patch: unknown }[]) {
+    it(`${ex.object}/${ex.index}: ${ex.title}`, async () => {
+      vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'setTimeout', 'clearTimeout', 'Date'] });
+      if (ex.objects.includes('jit.grab')) return; // needs a camera; build_examples checks it compiles
+      const { rms, zcr, peak, bright } = analyse(await render(ex.patch, ex.objects.includes('playlist~') || ex.objects.includes('buffer~')));
+
+      const loudest = Math.max(...rms);
+      expect(loudest, 'makes sound').toBeGreaterThan(0.005);
+      expect(peak, 'does not clip').toBeLessThanOrEqual(1);
+
+      const want = PITCH[`${ex.object}/${ex.index}`];
+      if (want) {
+        const heard = zcr.reduce((a, b) => a + b, 0) / zcr.length;
+        expect(Math.abs(heard - want) / want, `plays ${want} Hz (heard ${heard.toFixed(0)} Hz)`).toBeLessThan(0.05);
+      }
+
+      if (ex.objects.some((o) => TIMED.includes(o))) {
+        const sounding = zcr.filter((_, i) => rms[i] > 0.01);
+        const pitchSpread = Math.max(...sounding) / Math.max(Math.min(...sounding), 1);
+        const levelSwing = loudest / Math.max(Math.min(...rms), 1e-4);
+        const lit = bright.filter((_, i) => rms[i] > 0.01);
+        const brightSpread = Math.max(...lit) / Math.max(Math.min(...lit), 1e-6);
+        expect(pitchSpread > 1.08 || levelSwing > 2 || brightSpread > 1.2,
+          `changes over time (pitch spread ${pitchSpread.toFixed(2)}, level swing ${levelSwing.toFixed(1)}, brightness spread ${brightSpread.toFixed(2)})`).toBe(true);
+      }
+    });
+  }
+});

@@ -1,0 +1,38 @@
+{
+ "_comment": "Notes shown on an object's panel. 'noExample': why there is no example (shown instead of 'No example yet'). 'note': a caveat shown with the example. Each reason was found while writing the examples; see the PR for evidence.",
+ "noExample": {
+  "past": "maxpylang requires two arguments for past, which changes what it does in Max, so no example would be correct in both.",
+  "mc.playlist~": "maxpylang can't store mc.playlist~'s clips in the patch yet.",
+  "mc.pow~": "The browser player swaps pow~'s base and exponent, so no example would sound the same here as in Max.",
+  "mc.line": "maxpylang gives mc.line a different number of outlets from Max, and the browser player treats it as plain line.",
+  "patcher": "maxpylang places p (patcher) as an empty subpatcher with no inlets or outlets, and can't put objects inside it, so nothing can be connected to it. Build an abstraction instead: see the inlet and outlet examples.",
+  "bpatcher": "maxpylang places bpatcher with no inlets or outlets, even when it names a patch file, so nothing can be connected to it. Use an abstraction instead: see the inlet and outlet examples.",
+  "js": "maxpylang writes a js box as js 1 1 file.js, with the inlet and outlet counts before the file name, and Max may not find the script in a box like that (see known issues). An example here would teach a box that may not load.",
+  "mc.gen~": "maxpylang places mc.gen~ without the gen patch inside it, so what it does depends on code you write in Max. Open it in Max to write that code.",
+  "p": "maxpylang places p (patcher) as an empty subpatcher with no inlets or outlets, and can't put objects inside it, so nothing can be connected to it. Build an abstraction instead: see the inlet and outlet examples.",
+  "cpuclock": "cpuclock reports the time, in milliseconds, when banged. On its own it makes no sound, and to time events, timer is simpler (see timer).",
+  "closebang": "closebang sends a bang when the patch closes, so there is nothing to see or hear while it plays. Connect it to whatever should happen on closing.",
+  "freebang": "freebang sends a bang when its box is deleted or the patch closes, so there is nothing to see or hear while it plays.",
+  "hint": "hint is a box of text shown on the patch; it doesn't send or change anything.",
+  "bgcolor": "bgcolor sets a patch's background colour (in old patches; today's Max sets it in the patch's settings). It doesn't send or change anything.",
+  "combine": "combine joins numbers and words into one word (a symbol), such as a file name. On its own it makes no sound; an example would only show text.",
+  "inlet": "An inlet or outlet object is a port on a subpatcher or an abstraction. This browser player runs neither kind that maxpylang can make: it can't run abstractions yet, and maxpylang places p (patcher) empty. So no example would run here. It works in Max.",
+  "outlet": "An inlet or outlet object is a port on a subpatcher or an abstraction. This browser player runs neither kind that maxpylang can make: it can't run abstractions yet, and maxpylang places p (patcher) empty. So no example would run here. It works in Max.",
+  "active": "This browser player has no patch window to come to the front, so active never sends anything here. It works in Max."
+ },
+ "note": {
+  "notein": "In Max this reads your MIDI keyboard. This browser player doesn't read MIDI devices yet, so here you hear the default sound.",
+  "ctlin": "In Max this reads your MIDI controller. This browser player doesn't read MIDI devices yet, so here you hear the default sound.",
+  "bendin": "In Max this reads your pitch-bend wheel. This browser player doesn't read MIDI devices yet, so here you hear the default sound.",
+  "pgmin": "In Max this reads program changes from your MIDI device. This browser player doesn't read MIDI devices yet, so here you hear the default sound.",
+  "key": "Click the page outside the code first: typing in the code editor plays notes too.",
+  "keyup": "Click the page outside the code first: typing in the code editor plays notes too.",
+  "jit.grab": "Uses your camera: your browser will ask first.",
+  "jit.matrix": "Uses your camera. The browser player reads jit.matrix's size differently from Max, so the picture may look different here.",
+  "jit.window": "Uses your camera: your browser will ask first.",
+  "jit.pwindow": "Uses your camera: your browser will ask first.",
+  "jit.brcosa": "Uses your camera. The browser player ignores @brightness, @contrast and @saturation, so here the picture is unchanged; in Max it turns black and white.",
+  "jit.scalebias": "Uses your camera. The browser player ignores @scale and @bias, so here the picture is unchanged; in Max it fades to grey.",
+  "jit.3m": "Uses your camera. Written for the browser player, whose jit.3m sends one brightness value per outlet; Max sends a list per plane, in a different order."
+ }
+}

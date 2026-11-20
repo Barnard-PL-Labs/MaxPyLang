@@ -1,6 +1,9 @@
 name: Build and Deploy Documentation
 
-# On a pull request: build the site strictly and stop, so a broken page fails the PR.
+# The site has two parts, published together from docs/:
+#   index.html + reference-assets/  the object reference (docs-site/, a Vite app reusing web/)
+#   contents.html, guide/, API/ ... the guides (Sphinx, docs/source/)
+# On a pull request: build both strictly, run every check, and stop.
 # On main: build, then commit the site into docs/ for GitHub Pages.
 on:
   push:
@@ -11,7 +14,10 @@ on:
       - 'docs/run_examples.py'
       - 'docs/requirements.txt'
       - 'docs/Makefile'
-      - 'maxpylang/**'          # API pages are generated from the package's docstrings
+      - 'docs-site/**'
+      - 'maxpylang/**'          # API pages and examples depend on the package
+      - 'web/src/**'            # the reference plays examples with web's engine
+      - 'web/package-lock.json'
       - '.github/workflows/docs.yml'
   pull_request:
     branches: [main]
@@ -21,7 +27,10 @@ on:
       - 'docs/run_examples.py'
       - 'docs/requirements.txt'
       - 'docs/Makefile'
+      - 'docs-site/**'
       - 'maxpylang/**'
+      - 'web/src/**'
+      - 'web/package-lock.json'
       - '.github/workflows/docs.yml'
   workflow_dispatch:  # Allow manual triggering
 
@@ -42,6 +51,13 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -49,20 +65,48 @@ jobs:
           # compat mode: the default editable install uses an import hook that type checkers cannot follow
           pip install -e ".[dev]" --config-settings editable_mode=compat
           pip install -r docs/requirements.txt
+          # docs-site installs nothing of its own: it shares web's packages, so one copy of each
+          npm ci --prefix web
+          ln -s ../web/node_modules docs-site/node_modules
+          (cd web && npx playwright install --with-deps chromium-headless-shell)
 
-      # Every example the pages show must run, save a patch with no unknown objects,
+      # Every example the guide pages show must run, save a patch with no unknown objects,
       # and pass mypy and pyright; bad_*.py must be flagged on its "# error" lines.
-      - name: Check the examples
+      - name: Check the guide examples
         run: python docs/run_examples.py --types
+
+      # Compile every reference example with real maxpylang (fails on unknown objects,
+      # dac~, or no output) and build the wheel the browser runs edited code with.
+      - name: Compile the reference examples
+        run: python docs-site/scripts/build_examples.py
+
+      - name: Type-check the reference examples
+        run: |
+          mkdir -p /tmp/ref-examples
+          for f in docs-site/content/examples/*/*.py; do cp "$f" "/tmp/ref-examples/$(echo "${f#docs-site/content/examples/}" | tr / _)"; done
+          (cd /tmp/ref-examples && python -m mypy --follow-imports=silent . && pyright .)
+
+      # Content checks (Node), then every example rendered in Chromium: makes sound,
+      # does not clip, changes over time when a clock drives it, plays the right pitch.
+      - name: Test the reference
+        run: |
+          npm --prefix docs-site test
+          npm --prefix docs-site run test:browser
 
       # -W turns warnings into errors: a page that fails to import maxpylang,
       # or a broken link, fails the build instead of publishing an empty page.
-      - name: Build documentation (strict)
+      - name: Build the guides (strict)
         run: make -C docs html SPHINXOPTS="-W --keep-going"
 
-      - name: Copy the site into docs/
-        if: github.event_name != 'pull_request'
-        run: make -C docs deploy
+      # Guides first, reference last: the reference writes docs/index.html. A pull request
+      # builds the whole site too (to check it), but only main commits it.
+      - name: Assemble the site in docs/
+        run: |
+          make -C docs deploy
+          npm --prefix docs-site run build
+
+      - name: Check every link
+        run: python docs-site/scripts/check_links.py docs
 
       # docs/app is the MaxPyStudio web app, built separately from web/. The docs build must never touch it.
       - name: Check docs/app is untouched

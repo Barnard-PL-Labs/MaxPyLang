@@ -36,6 +36,10 @@ extensions = [
 ]
 
 source_suffix = {".rst": "restructuredtext", ".md": "markdown"}
+# The site's front page (index.html) is the interactive object reference, built from
+# docs-site/. The guides' table of contents is contents.html.
+root_doc = "contents"
+
 templates_path = ["_templates"]
 exclude_patterns = []
 

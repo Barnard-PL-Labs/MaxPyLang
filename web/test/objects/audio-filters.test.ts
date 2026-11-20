@@ -73,7 +73,8 @@ describe('audio filter objects', () => {
   });
 
   it('teeth~ has 6 inlets, 1 signal outlet, and lands its gain args', () => {
-    const node = build('teeth~', 100, 200, 0.5, 0.3, 0.4);
+    // Max's args: max delay (ms), feedforward ms, feedback ms, then the three gains.
+    const node = build('teeth~', 100, 20, 30, 0.5, 0.3, 0.4);
     expect(node.signalIns.length).toBe(6);
     expect(node.signalOuts[0]).toBeTruthy();
     expect(val(node.signalIns[3])).toBe(0.5); // overall gain

@@ -168,6 +168,27 @@ describe('control objects', () => {
     expect(out.length).toBe(3); // no ticks after ■
     expect(out.every((m) => m[0] === 'bang')).toBe(true);
   });
+
+  it('metro bangs at once when the transport starts it, then every interval, as in Max', () => {
+    vi.useFakeTimers();
+    const { node, out } = build('metro', 100);
+    scheduler.start();
+    node.start?.(); // what Engine.start() does after the scheduler
+    expect(out.length).toBe(1); // at time 0, not after 100 ms
+    vi.advanceTimersByTime(250);
+    expect(out.length).toBe(3); // 0, 100, 200
+    scheduler.stop();
+  });
+
+  it('metro switched on while the transport runs bangs at once', () => {
+    vi.useFakeTimers();
+    const { send, out } = build('metro', 100);
+    send([0]); // off
+    scheduler.start();
+    send([1]); // on
+    expect(out.length).toBe(1);
+    scheduler.stop();
+  });
 });
 
 describe('arpeggiator patch wiring', () => {

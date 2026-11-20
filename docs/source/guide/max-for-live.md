@@ -4,6 +4,11 @@ description: "Save .amxd devices with device_type; Live's I/O objects; instrumen
 
 # Max for Live
 
+:::{tip}
+To try this without installing anything, the {doc}`plugin-generator` builds a Max for Live
+audio effect in your browser and downloads the `.amxd`.
+:::
+
 A Max for Live device is a patch in a `.amxd` file that runs inside Ableton Live. Build it like
 any patch, then save it with a `device_type`:
 

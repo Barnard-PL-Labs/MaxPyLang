@@ -1,33 +1,46 @@
-// Control-domain DICT objects (BATCH "dict"): a named in-memory key→value store
-// and the message⇄dict helpers around it.
+// Control-domain DICT objects: Max's named dictionaries and the dict.* family around
+// them, modelled on Max's own reference pages (dict*.maxref.xml) and help patchers.
 //
-// Same contract as control/index.ts (the reference pattern):
-//   const o = makeOutlets();
-//   return { signalIns: [], signalOuts: [], controlIns: [ (m) => { … o.emit(0, msg) } ],
-//            onControlOut: o.onControlOut, dispose?() };
+// ── Max's model ───────────────────────────────────────────────────────────────
+// A dictionary is a named, global key→value store. Objects never pass a dictionary's
+// content along a cord: they send the two-atom message `dictionary <name>`, and the
+// receiver looks the name up. Two `dict foo` boxes therefore share one dictionary, and
+// a dictionary without a name gets a generated one (`u` + digits, as in Max).
 //
-// This module is self-registering (importing it runs the register(...) calls) and
-// touches only NEW code — no shared file is edited.
+// Here a dictionary is a Map<string, Msg>: a key → a value message (Atom[]), so a value
+// can be one atom `[5]`, a list `[1, 2, 'foo', 3]`, or a nested dictionary, stored —
+// exactly as Max stores one set from a cord — as the reference `['dictionary', name]`.
+// Keys may name a path into nested dictionaries with Max's `a::b::c` syntax.
 //
-// ── Modelling ─────────────────────────────────────────────────────────────────
-// A dictionary is a Map<string, Msg>: a key (symbol) → a value message (Atom[], so a
-// value can be a scalar `[5]` or a list `[1,2,3]`). Dictionaries live in a
-// module-local store keyed by name, exactly like Max passes dicts by reference: an
-// object does not carry the dict inline, it emits a REFERENCE message
-// `['dictionary', <name>]`. Downstream dict objects resolve that name back to the
-// live Map. This in-memory reference is what makes pack→unpack / serialize round
-// trips work WITHOUT a JSON string bridge (dict.serialize/deserialize add the real
-// JSON bridge on top, which JS's JSON.stringify/parse make trivial and complete).
+// Max's "dictionary syntax" (`cow: moo lion : roar 5 times`) is what dict.pack,
+// dict.unpack, dict.join and dict.route take as arguments, and what dict.serialize
+// writes / dict.deserialize reads: a key is a symbol ending in a colon (or followed by a
+// lone `:` atom, or `key:value` in one atom), and the atoms after it are its value.
+//
+// Not modelled: files (read/write/import/export answer with a failure notification, as
+// Max does when a file cannot be opened), coll push/pull, the editor window, array[i]
+// indexing, @legacy, and dict.serialize's @compress.
 
 import { register, type MaxNode } from '../../engine/registry';
+import type { IRNode } from '../../ir/types';
 import { makeOutlets } from '../../runtime/outlets';
-import { BANG, isBang, type Atom, type Msg } from '../../runtime/atoms';
+import { isBang, type Atom, type Msg } from '../../runtime/atoms';
 
 type DictData = Map<string, Msg>;
 
-/** The shared, module-local named-dictionary store. */
+/** The shared, module-local named-dictionary store (Max's global dictionary registry). */
 const store = new Map<string, DictData>();
-let anon = 0; // counter for auto-generated (anonymous / private) dict names
+/** Sub-dictionaries a dictionary made for itself (`set a::b 1`, setparse, JSON); cloned deeply. */
+const owned = new Set<string>();
+let anon = 0;
+
+/** A fresh unique name, in Max's style (`u` followed by nine digits). */
+function newName(): string {
+  let n: string;
+  do n = `u${100000000 + ((anon++ * 7919) % 900000000)}`;
+  while (store.has(n));
+  return n;
+}
 
 function ensure(name: string): DictData {
   let d = store.get(name);
@@ -36,318 +49,590 @@ function ensure(name: string): DictData {
 }
 
 const DICT = 'dictionary';
-/** Build a reference message pointing at a named dict. */
 const ref = (name: string): Msg => [DICT, name];
-/** If `m` is a `['dictionary', name]` reference, return the name. */
+/** If `m` is a `dictionary <name>` message, return the name. */
 function refName(m: Msg): string | undefined {
-  return m[0] === DICT && typeof m[1] === 'string' ? m[1] : undefined;
+  return m.length === 2 && m[0] === DICT && typeof m[1] === 'string' ? m[1] : undefined;
 }
-/** Resolve a reference message to its live dict (undefined if not a ref / unknown). */
-function resolve(m: Msg): DictData | undefined {
-  const n = refName(m);
+/** The dictionary a value refers to, if the value is a reference to a known one. */
+function subDict(v: Msg | undefined): DictData | undefined {
+  const n = v && refName(v);
   return n === undefined ? undefined : store.get(n);
 }
+/** A sub-dictionary owned by its parent, registered in the store. */
+function newOwned(): [string, DictData] {
+  const n = newName();
+  owned.add(n);
+  return [n, ensure(n)];
+}
 
-// ── dict [name] [filename] : the named store (2 inlets, 4 outlets) ────────────
+// ── arguments and attributes ──────────────────────────────────────────────────
+
+/** A text token as Max would type it: a number if it reads as one. */
+function typed(t: Atom): Atom {
+  if (typeof t !== 'string' || t.trim() === '') return t;
+  const n = Number(t);
+  return Number.isFinite(n) ? n : t;
+}
+
+/**
+ * A box's positional args and its `@attr value…` attributes. The engine hands
+ * factories args with attributes already split off (node.attrs); a factory called
+ * directly (tests) may still see `@name` tokens in its args, so both are read.
+ */
+function argsAndAttrs(args: readonly Atom[], node?: IRNode): { args: Atom[]; attrs: Record<string, Atom[]> } {
+  const attrs: Record<string, Atom[]> = {};
+  for (const [k, vals] of Object.entries(node?.attrs ?? {})) attrs[k] = vals.map(typed);
+  const pos: Atom[] = [];
+  let cur: Atom[] | undefined;
+  for (const a of args) {
+    if (typeof a === 'string' && a.length > 1 && a[0] === '@') attrs[a.slice(1)] = cur = [];
+    else (cur ?? pos).push(a);
+  }
+  return { args: pos, attrs };
+}
+
+/** Index of a lone `:` inside a symbol (not part of a `::` path separator), or -1. */
+function loneColon(s: string): number {
+  for (let i = 0; i < s.length; i++) {
+    if (s[i] !== ':') continue;
+    if (s[i + 1] === ':') { i++; continue; }
+    return i;
+  }
+  return -1;
+}
+
+type Tok = { key: string } | { val: Atom };
+
+function tokenize(atoms: readonly Atom[]): Tok[] {
+  const toks: Tok[] = [];
+  for (const a of atoms) {
+    if (typeof a !== 'string') { toks.push({ val: a }); continue; }
+    if (a === ':') {
+      const prev = toks[toks.length - 1];
+      if (prev && 'val' in prev) toks[toks.length - 1] = { key: String(prev.val) };
+      continue;
+    }
+    const i = loneColon(a);
+    if (i > 0) {
+      toks.push({ key: a.slice(0, i) });
+      if (i < a.length - 1) toks.push({ val: typed(a.slice(i + 1)) });
+      continue;
+    }
+    toks.push({ val: a });
+  }
+  return toks;
+}
+
+/** Parsed dictionary syntax: atoms before the first key, then ordered key → value. */
+interface Syntax { leading: Atom[]; entries: [string, Msg][] }
+
+/**
+ * Parse Max dictionary syntax. `{ … }` after a key makes a nested dictionary (created
+ * in the store and owned by whichever dictionary the entries land in).
+ */
+function parseSyntax(atoms: readonly Atom[]): Syntax {
+  const toks = tokenize(atoms);
+  let i = 0;
+  const leading: Atom[] = [];
+  while (i < toks.length && 'val' in toks[i]) leading.push((toks[i++] as { val: Atom }).val);
+  const parseEntries = (inBraces: boolean): [string, Msg][] => {
+    const entries: [string, Msg][] = [];
+    while (i < toks.length) {
+      const t = toks[i++];
+      if ('val' in t) {
+        if (inBraces && t.val === '}') return entries;
+        continue; // a value with no key: nothing to attach it to
+      }
+      const value: Atom[] = [];
+      while (i < toks.length && 'val' in toks[i]) {
+        const v = (toks[i] as { val: Atom }).val;
+        if (v === '}' && inBraces) break;
+        i++;
+        if (v === '{') {
+          const [sub, sd] = newOwned();
+          for (const [k, vv] of parseEntries(true)) sd.set(k, vv);
+          value.push(DICT, sub);
+        } else value.push(v);
+      }
+      entries.push([t.key, value]);
+    }
+    return entries;
+  };
+  return { leading, entries: parseEntries(false) };
+}
+
+// ── hierarchical keys (`a::b::c`) ─────────────────────────────────────────────
+
+/** The dictionary holding the last segment of `path`, creating levels if asked. */
+function locate(d: DictData, path: string, create: boolean): { at: DictData; key: string } | undefined {
+  const segs = path.split('::');
+  let at = d;
+  for (let s = 0; s < segs.length - 1; s++) {
+    let next = subDict(at.get(segs[s]));
+    if (!next) {
+      if (!create) return undefined;
+      const [sub, sd] = newOwned();
+      at.set(segs[s], ref(sub));
+      next = sd;
+    }
+    at = next;
+  }
+  return { at, key: segs[segs.length - 1] };
+}
+function getPath(d: DictData, path: string): Msg | undefined {
+  const l = locate(d, path, false);
+  return l?.at.get(l.key);
+}
+function setPath(d: DictData, path: string, v: Msg): void {
+  const l = locate(d, path, true)!;
+  l.at.set(l.key, v);
+}
+
+/** Copy `src` into `dst` (cleared first); sub-dictionaries a dict made itself are copied too. */
+function cloneInto(src: DictData, dst: DictData, depth = 0): void {
+  if (src === dst) return;
+  const entries = [...src];
+  dst.clear();
+  for (const [k, v] of entries) {
+    const n = refName(v);
+    if (n !== undefined && owned.has(n) && depth < 32) {
+      const [sub, sd] = newOwned();
+      cloneInto(store.get(n) ?? new Map(), sd, depth + 1);
+      dst.set(k, ref(sub));
+    } else dst.set(k, [...v]);
+  }
+}
+
+function sameMsg(a: Msg, b: Msg): boolean {
+  return a.length === b.length && a.every((x, i) => x === b[i]);
+}
+
+function typeOf(v: Msg): string {
+  if (subDict(v)) return 'dictionary';
+  if (v.length !== 1) return 'array';
+  const a = v[0];
+  if (typeof a === 'string') return 'string';
+  return Number.isInteger(a) ? 'int' : 'float';
+}
+
+// ── JSON ↔ dictionary ─────────────────────────────────────────────────────────
+
+type Json = Atom | Json[] | { [k: string]: Json };
+
+function toJson(d: DictData, depth = 0): { [k: string]: Json } {
+  const obj: { [k: string]: Json } = {};
+  for (const [k, v] of d) {
+    const sub = subDict(v);
+    if (sub && depth < 32) obj[k] = toJson(sub, depth + 1);
+    else obj[k] = v.length === 1 ? v[0] : [...v];
+  }
+  return obj;
+}
+
+function fromJsonValue(val: unknown): Msg {
+  if (typeof val === 'number' || typeof val === 'string') return [val];
+  if (typeof val === 'boolean') return [val ? 1 : 0];
+  if (Array.isArray(val)) return val.flatMap(fromJsonValue);
+  if (val !== null && typeof val === 'object') {
+    const [sub, sd] = newOwned();
+    for (const [k, v] of Object.entries(val)) sd.set(k, fromJsonValue(v));
+    return ref(sub);
+  }
+  return [];
+}
+
+/**
+ * Content given as atoms — a JSON text in one symbol, or dictionary syntax (optionally
+ * wrapped in `{ }`) — as entries. Undefined when it parses as neither.
+ */
+function parseContent(atoms: readonly Atom[]): [string, Msg][] | undefined {
+  const text = atoms.length === 1 && typeof atoms[0] === 'string' ? atoms[0].trim() : undefined;
+  if (text !== undefined && text.startsWith('{') && text.length > 1) {
+    let obj: unknown;
+    try { obj = JSON.parse(text); } catch { return undefined; }
+    if (obj === null || typeof obj !== 'object' || Array.isArray(obj)) return undefined;
+    return Object.entries(obj).map(([k, v]) => [k, fromJsonValue(v)]);
+  }
+  let body = atoms;
+  if (body[0] === '{' && body[body.length - 1] === '}') body = body.slice(1, -1);
+  const { entries } = parseSyntax(body);
+  return entries.length || body.length === 0 ? entries : undefined;
+}
+
+/** Dictionary syntax for a dictionary's content, as dict.serialize's default mode sends it. */
+function toSyntax(d: DictData, depth = 0): Atom[] {
+  const out: Atom[] = [];
+  for (const [k, v] of d) {
+    out.push(k, ':');
+    const sub = subDict(v);
+    if (sub && depth < 32) out.push('{', ...toSyntax(sub, depth + 1), '}');
+    else out.push(...v);
+  }
+  return out;
+}
+
+const fileOps = new Set(['read', 'readany', 'readagain', 'import', 'write', 'writeagain', 'export']);
+
+// ── dict [name] [filename] : 2 inlets, 5 outlets ──────────────────────────────
 //
-// Inlet 0 accepts the standard message selectors below; inlet 1 exists for arity.
-//   set/replace <key> <value…>   store (silent)
-//   append <key> <value…>        append to a key's value list (silent)
-//   get <key>                    → outlet 0: the stored value ([] if missing)
-//   delete/remove <key>          remove a key (silent)
-//   clear                        empty the dict (silent)
-//   getkeys                      → outlet 0: the list of keys
-//   getsize                      → outlet 0: [entry count]
-//   dump                         → outlet 0: one `key value…` per entry, then outlet 3: bang
-//   bang                         → outlet 1: the `dictionary <name>` reference (pass it on)
-// Outlets: 0 = data, 1 = dict reference, 2 = (arity only), 3 = dumpout bang.
-// `filename` (arg 1) is accepted but ignored — there is no file I/O in the browser.
-register('dict', (args) => {
+// Outlets, per the reference: 0 `dictionary <name>` (bang, or a dictionary at the left
+// inlet), 1 `<key> <value…>` for get / getsize / gettype, 2 the key list for getkeys and
+// 0/1 for contains, 3 every dictionary name for getnames, 4 file notifications.
+// A `dictionary <x>` message clones x into this dictionary: at the left inlet it is
+// then sent on, at the right inlet it is not.
+register('dict', (rawArgs, b) => {
   const o = makeOutlets();
-  const name = args[0] !== undefined ? String(args[0]) : `_dict_${anon++}`;
+  const { args, attrs } = argsAndAttrs(rawArgs, b?.node);
+  const name = String(attrs.name?.[0] ?? args[0] ?? newName());
   ensure(name);
+
+  const cloneFrom = (m: Msg): boolean => {
+    const n = refName(m);
+    if (n === undefined) return false;
+    cloneInto(store.get(n) ?? new Map(), ensure(name));
+    return true;
+  };
+
   return {
     signalIns: [],
     signalOuts: [],
     controlIns: [
       (m) => {
         const d = ensure(name);
-        if (isBang(m)) { o.emit(1, ref(name)); return; }
-        const sel = typeof m[0] === 'string' ? m[0] : undefined;
-        if (sel === undefined) return;
+        if (isBang(m)) { o.emit(0, ref(name)); return; }
+        if (cloneFrom(m)) { o.emit(0, ref(name)); return; }
+        const sel = m[0];
+        if (typeof sel !== 'string') return;
+        const key = m[1] !== undefined ? String(m[1]) : undefined;
         switch (sel) {
           case 'set':
-          case 'replace': {
-            if (m[1] !== undefined) d.set(String(m[1]), m.slice(2));
+          case 'replace':
+            if (key !== undefined) setPath(d, key, m.slice(2));
             break;
-          }
-          case 'append': {
-            if (m[1] !== undefined) {
-              const k = String(m[1]);
-              d.set(k, [...(d.get(k) ?? []), ...m.slice(2)]);
-            }
+          case 'append':
+            if (key !== undefined) setPath(d, key, [...(getPath(d, key) ?? []), ...m.slice(2)]);
             break;
-          }
-          case 'get':
-            if (m[1] !== undefined) o.emit(0, d.get(String(m[1])) ?? []);
-            break;
-          case 'delete':
           case 'remove':
-            if (m[1] !== undefined) d.delete(String(m[1]));
+            if (key !== undefined) { const l = locate(d, key, false); l?.at.delete(l.key); }
             break;
           case 'clear':
             d.clear();
             break;
-          case 'getkeys':
-            o.emit(0, [...d.keys()]);
+          case 'get':
+            if (key !== undefined) { const v = getPath(d, key); if (v) o.emit(1, [key, ...v]); }
             break;
           case 'getsize':
-            o.emit(0, [d.size]);
+            if (key !== undefined) { const v = getPath(d, key); if (v) o.emit(1, [key, subDict(v) ? 1 : v.length]); }
             break;
-          case 'dump':
-            for (const [k, v] of d) o.emit(0, [k, ...v]);
-            o.emit(3, BANG);
+          case 'gettype':
+            if (key !== undefined) { const v = getPath(d, key); if (v) o.emit(1, [key, typeOf(v)]); }
             break;
+          case 'getkeys': {
+            const keys = [...d.keys()];
+            if (m[1] !== undefined && m[1] !== 0) keys.sort(); // optional arg: alphabetical
+            if (keys.length) o.emit(2, keys);
+            break;
+          }
+          case 'contains':
+            if (key !== undefined) o.emit(2, [getPath(d, key) ? 1 : 0]);
+            break;
+          case 'getnames':
+            o.emit(3, [...store.keys()].filter((n) => !owned.has(n)));
+            break;
+          case 'parse': {
+            const entries = parseContent(m.slice(1));
+            if (entries) { d.clear(); for (const [k, v] of entries) d.set(k, v); }
+            break;
+          }
+          case 'setparse':
+            if (key !== undefined) {
+              const entries = parseContent(m.slice(2));
+              if (entries) {
+                const [sub, sd] = newOwned();
+                for (const [k, v] of entries) sd.set(k, v);
+                setPath(d, key, ref(sub));
+              }
+            }
+            break;
+          default:
+            // No file system in the browser: report the failure the way Max does.
+            if (fileOps.has(sel)) o.emit(4, [sel, ...m.slice(1, 2), 0]);
         }
       },
-      () => {}, // inlet 1 (arity only)
+      (m) => { cloneFrom(m); },
     ],
     onControlOut: o.onControlOut,
   } satisfies MaxNode;
 });
 
-// ── dict.pack [keys…] : assemble a dict from `key value` messages (1 in, 1 out) ─
+// ── dict.pack [name] [key: default…] : one inlet per key, plus the unmatched inlet ─
 //
-// Creation args predeclare keys (default value 0). A `<key> <value…>` message sets a
-// key; a bang outputs the assembled `dictionary <name>` reference. Each instance owns
-// one private dict, reused across bangs (an accumulator, as in Max).
-register('dict.pack', (args) => {
+// Arguments are dictionary syntax (`dict.pack freq: 440 amp: 0.2`), or @keys; @name
+// (or a first argument that is not a key) names the dictionary. Whatever arrives at a
+// key's inlet becomes that key's value (a `dictionary x` message stores the reference).
+// Like pack, only the left inlet triggers output unless @triggers lists others (-1 =
+// every inlet); a bang at any inlet sends. The rightmost inlet takes `key value…` (or a
+// dictionary to merge in) for keys without an inlet. Output: `dictionary <name>`.
+register('dict.pack', (rawArgs, b) => {
   const o = makeOutlets();
-  const name = `_pack_${anon++}`;
+  const { args, attrs } = argsAndAttrs(rawArgs, b?.node);
+  const syn = parseSyntax(args);
+  const given = attrs.name?.[0] ?? (typeof syn.leading[0] === 'string' ? syn.leading[0] : undefined);
+  const name = given !== undefined ? String(given) : newName();
+  const keys = attrs.keys ? attrs.keys.map(String) : syn.entries.map(([k]) => k);
+  const defaults = new Map(syn.entries);
   const d = ensure(name);
-  for (const a of args) d.set(String(a), [0]);
-  return {
-    signalIns: [],
-    signalOuts: [],
-    controlIns: [
-      (m) => {
-        if (isBang(m)) { o.emit(0, ref(name)); return; }
-        const key = m[0];
-        if (typeof key === 'string' && key !== 'bang') d.set(key, m.slice(1));
-      },
-    ],
-    onControlOut: o.onControlOut,
-    dispose: () => store.delete(name),
-  } satisfies MaxNode;
-});
+  for (const k of keys) {
+    const v = defaults.get(k);
+    setPath(d, k, v && v.length ? [...v] : [0]);
+  }
+  const trig = (attrs.triggers ?? [0]).map(Number);
+  const all = trig.includes(-1);
+  const send = () => { ensure(name); o.emit(0, ref(name)); };
 
-// ── dict.unpack [keys…] : a dict reference → `key value…` messages (1 in, 1 out) ─
-//
-// On a `dictionary <name>` reference, emit one `key value…` message per key on outlet
-// 0. Creation args restrict/order the keys emitted; with no args, every entry is
-// emitted (in insertion order). The clean inverse of dict.pack.
-register('dict.unpack', (args) => {
-  const o = makeOutlets();
-  const keys = args.map(String);
-  return {
-    signalIns: [],
-    signalOuts: [],
-    controlIns: [
-      (m) => {
-        const d = resolve(m);
-        if (!d) return;
-        const iterKeys = keys.length ? keys : [...d.keys()];
-        for (const k of iterKeys) if (d.has(k)) o.emit(0, [k, ...(d.get(k) ?? [])]);
-      },
-    ],
-    onControlOut: o.onControlOut,
-  } satisfies MaxNode;
-});
-
-// ── dict.iter : iterate a dict, emitting each entry (1 in, 1 out) ──────────────
-//
-// A `dictionary <name>` reference is iterated immediately (one `key value…` per entry
-// on outlet 0) and remembered, so a subsequent bang re-iterates the last dict.
-register('dict.iter', () => {
-  const o = makeOutlets();
-  let last: string | undefined;
-  return {
-    signalIns: [],
-    signalOuts: [],
-    controlIns: [
-      (m) => {
-        let d: DictData | undefined;
-        if (isBang(m)) d = last !== undefined ? store.get(last) : undefined;
-        else {
-          const n = refName(m);
-          if (n !== undefined) { last = n; d = store.get(n); }
-        }
-        if (!d) return;
-        for (const [k, v] of d) o.emit(0, [k, ...v]);
-      },
-    ],
-    onControlOut: o.onControlOut,
-  } satisfies MaxNode;
-});
-
-// ── dict.join : merge two dicts (2 in, 1 out) ─────────────────────────────────
-//
-// Inlet 1 stores the "overlay" dict reference; a reference (or bang) at inlet 0
-// triggers a merge — inlet-0 dict as the base, inlet-1 keys overlaid on top — and
-// emits the merged `dictionary <name>` reference on outlet 0. One private result dict
-// per instance, refilled each merge.
-register('dict.join', () => {
-  const o = makeOutlets();
-  const name = `_join_${anon++}`;
-  let baseRef: Msg | undefined;
-  let joinRef: Msg | undefined;
-  const fire = () => {
-    const out = ensure(name);
-    out.clear();
-    for (const src of [baseRef, joinRef]) {
-      const d = src && resolve(src);
-      if (d) for (const [k, v] of d) out.set(k, v);
-    }
-    o.emit(0, ref(name));
+  const keyInlet = (k: string, i: number) => (m: Msg) => {
+    if (isBang(m)) { send(); return; }
+    setPath(ensure(name), k, [...m]);
+    if (all || trig.includes(i)) send();
   };
+  const unmatched = (m: Msg) => {
+    if (isBang(m)) { send(); return; }
+    const n = refName(m);
+    if (n !== undefined) {
+      for (const [k, v] of store.get(n) ?? []) ensure(name).set(k, [...v]);
+      return;
+    }
+    if (typeof m[0] === 'string') setPath(ensure(name), m[0], m.slice(1));
+  };
+
+  return {
+    signalIns: [],
+    signalOuts: [],
+    controlIns: [...keys.map(keyInlet), unmatched],
+    onControlOut: o.onControlOut,
+    dispose: () => { if (given === undefined) store.delete(name); },
+  } satisfies MaxNode;
+});
+
+// ── dict.unpack [name] [key:…] : one outlet per key, plus the unmatched outlet ──
+//
+// On `dictionary <x>`, each listed key that x holds sends its value (just the value,
+// no key) from its own outlet; the rightmost outlet sends a dictionary of x's other
+// keys. Right to left, as unpack does. A bang re-reads the last dictionary (initially
+// the one named by the first argument).
+register('dict.unpack', (rawArgs, b) => {
+  const o = makeOutlets();
+  const { args, attrs } = argsAndAttrs(rawArgs, b?.node);
+  const syn = parseSyntax(args);
+  const keys = attrs.keys ? attrs.keys.map(String) : syn.entries.map(([k]) => k);
+  let last: string | undefined = typeof syn.leading[0] === 'string' ? syn.leading[0] : undefined;
+  const restName = newName();
+
+  const fire = () => {
+    const d = last !== undefined ? store.get(last) : undefined;
+    if (!d) return;
+    const rest = ensure(restName);
+    rest.clear();
+    const top = new Set(keys.map((k) => k.split('::')[0]));
+    for (const [k, v] of d) if (!top.has(k)) rest.set(k, [...v]);
+    if (rest.size) o.emit(keys.length, ref(restName));
+    for (let i = keys.length - 1; i >= 0; i--) {
+      const v = getPath(d, keys[i]);
+      if (v) o.emit(i, v.length ? v : ['bang']);
+    }
+  };
+
   return {
     signalIns: [],
     signalOuts: [],
     controlIns: [
       (m) => {
         if (isBang(m)) { fire(); return; }
-        if (refName(m) !== undefined) { baseRef = m; fire(); }
+        const n = refName(m);
+        if (n !== undefined) { last = n; fire(); }
       },
-      (m) => { if (refName(m) !== undefined) joinRef = m; },
     ],
     onControlOut: o.onControlOut,
-    dispose: () => store.delete(name),
+    dispose: () => store.delete(restName),
   } satisfies MaxNode;
 });
 
-// ── dict.strip [keys…] : remove keys from a dict (1 in, 2 out) ─────────────────
+// ── dict.iter : `dictionary <x>` → one `key value…` list per entry (1 in, 1 out) ─
+register('dict.iter', () => {
+  const o = makeOutlets();
+  return {
+    signalIns: [],
+    signalOuts: [],
+    controlIns: [
+      (m) => {
+        const n = refName(m);
+        const d = n !== undefined ? store.get(n) : undefined;
+        if (d) for (const [k, v] of [...d]) o.emit(0, [k, ...v]);
+      },
+    ],
+    onControlOut: o.onControlOut,
+  } satisfies MaxNode;
+});
+
+// ── dict.join [key: value…] : merge two dictionaries (2 in, 1 out) ───────────────
 //
-// On a `dictionary <name>` reference, emit a `dictionary <name2>` reference with the
-// named keys removed on outlet 0, then a dumpout bang on outlet 1. With no key args,
-// nothing is stripped (a straight copy). Private result dict reused per instance.
-register('dict.strip', (args) => {
+// The right inlet's dictionary (initially the one the arguments describe) is joined
+// onto each dictionary arriving at the left inlet; on a shared key the right one wins.
+// The result is a new dictionary, sent as `dictionary <name>`; bang resends it.
+register('dict.join', (rawArgs, b) => {
   const o = makeOutlets();
-  const name = `_strip_${anon++}`;
-  const strip = new Set(args.map(String));
+  const { args } = argsAndAttrs(rawArgs, b?.node);
+  const outName = newName();
+  const initName = newName();
+  const init = ensure(initName);
+  for (const [k, v] of parseSyntax(args).entries) init.set(k, v);
+  let right = initName;
+  let made = false;
   return {
     signalIns: [],
     signalOuts: [],
     controlIns: [
       (m) => {
-        const d = resolve(m);
-        if (!d) return;
-        const out = ensure(name);
-        out.clear();
-        for (const [k, v] of d) if (!strip.has(k)) out.set(k, v);
-        o.emit(0, ref(name));
-        o.emit(1, BANG);
+        if (isBang(m)) { if (made) o.emit(0, ref(outName)); return; }
+        const n = refName(m);
+        if (n === undefined) return;
+        const out = ensure(outName);
+        cloneInto(store.get(n) ?? new Map(), out);
+        for (const [k, v] of store.get(right) ?? []) out.set(k, [...v]);
+        made = true;
+        o.emit(0, ref(outName));
       },
+      (m) => { const n = refName(m); if (n !== undefined) right = n; },
     ],
     onControlOut: o.onControlOut,
-    dispose: () => store.delete(name),
+    dispose: () => { store.delete(outName); store.delete(initName); },
   } satisfies MaxNode;
 });
 
-// ── dict.route [keys…] : split a dict by key membership (2 in, 2 out) ──────────
+// ── dict.strip [keys…] : remove keys from a dictionary (1 in, 2 out) ─────────────
 //
-// On a `dictionary <name>` reference, entries whose key is in the routing set go to a
-// "matched" dict (outlet 0); the remaining entries go to a "rest" dict (outlet 1).
-// Both are emitted as references. Inlet 1 replaces the routing keys from a message's
-// symbol atoms. Two private result dicts per instance, refilled each route.
-register('dict.route', (args) => {
+// Removes the keys from the incoming dictionary itself (no copy, as in Max), sending
+// each removed `key value…` from outlet 1, then the same `dictionary <x>` from outlet 0.
+register('dict.strip', (rawArgs, b) => {
   const o = makeOutlets();
-  const matchedName = `_routeM_${anon++}`;
-  const restName = `_routeR_${anon++}`;
-  let keys = new Set(args.map(String));
+  const { args, attrs } = argsAndAttrs(rawArgs, b?.node);
+  const keys = (attrs.keys ?? args)
+    .map((k) => { const s = String(k); return s.endsWith(':') && !s.endsWith('::') ? s.slice(0, -1) : s; })
+    .filter((k) => k !== '');
   return {
     signalIns: [],
     signalOuts: [],
     controlIns: [
       (m) => {
-        const d = resolve(m);
+        const n = refName(m);
+        const d = n !== undefined ? store.get(n) : undefined;
+        if (!d || n === undefined) return;
+        for (const k of keys) {
+          const l = locate(d, k, false);
+          const v = l?.at.get(l.key);
+          if (l && v) { l.at.delete(l.key); o.emit(1, [k, ...v]); }
+        }
+        o.emit(0, ref(n));
+      },
+    ],
+    onControlOut: o.onControlOut,
+  } satisfies MaxNode;
+});
+
+// ── dict.route [key: value…] : pass a dictionary left if it matches (2 in, 2 out) ─
+//
+// The reference dictionary comes from the arguments or the right inlet. A dictionary at
+// the left inlet that holds every reference key with an equal value (a reference key
+// with no value only has to exist) goes out the left outlet; otherwise the right. The
+// incoming `dictionary <x>` message itself is passed on.
+function matches(d: DictData, spec: DictData, depth = 0): boolean {
+  for (const [k, want] of spec) {
+    const have = d.get(k);
+    if (!have) return false;
+    if (!want.length) continue;
+    const hs = subDict(have), ws = subDict(want);
+    if (hs && ws && depth < 32) { if (!matches(hs, ws, depth + 1)) return false; continue; }
+    if (!sameMsg(have, want)) return false;
+  }
+  return true;
+}
+register('dict.route', (rawArgs, b) => {
+  const o = makeOutlets();
+  const { args } = argsAndAttrs(rawArgs, b?.node);
+  const initName = newName();
+  const init = ensure(initName);
+  for (const [k, v] of parseSyntax(args).entries) init.set(k, v);
+  let spec = initName;
+  return {
+    signalIns: [],
+    signalOuts: [],
+    controlIns: [
+      (m) => {
+        const n = refName(m);
+        const d = n !== undefined ? store.get(n) : undefined;
+        if (!d || n === undefined) return;
+        o.emit(matches(d, store.get(spec) ?? new Map()) ? 0 : 1, ref(n));
+      },
+      (m) => { const n = refName(m); if (n !== undefined) spec = n; },
+    ],
+    onControlOut: o.onControlOut,
+    dispose: () => store.delete(initName),
+  } satisfies MaxNode;
+});
+
+// ── dict.serialize : a dictionary as text (1 in, 1 out) ─────────────────────────
+//
+// Default @mode dictionary: the content as dictionary-syntax atoms
+// (`freq : 440 pt : 1 2 3`). @mode json: one symbol holding the JSON text.
+// @compress (Max's base64 codec) is not implemented and is ignored.
+register('dict.serialize', (rawArgs, b) => {
+  const o = makeOutlets();
+  const { attrs } = argsAndAttrs(rawArgs, b?.node);
+  const json = String(attrs.mode?.[0] ?? 'dictionary') === 'json';
+  return {
+    signalIns: [],
+    signalOuts: [],
+    controlIns: [
+      (m) => {
+        const n = refName(m);
+        const d = n !== undefined ? store.get(n) : undefined;
         if (!d) return;
-        const matched = ensure(matchedName);
-        matched.clear();
-        const rest = ensure(restName);
-        rest.clear();
-        for (const [k, v] of d) (keys.has(k) ? matched : rest).set(k, v);
-        o.emit(0, ref(matchedName));
-        o.emit(1, ref(restName));
-      },
-      (m) => {
-        const ks = m.filter((a) => typeof a === 'string' && a !== 'bang').map(String);
-        if (ks.length) keys = new Set(ks);
-      },
-    ],
-    onControlOut: o.onControlOut,
-    dispose: () => { store.delete(matchedName); store.delete(restName); },
-  } satisfies MaxNode;
-});
-
-// ── JSON bridge: dict.serialize / dict.deserialize ────────────────────────────
-
-/** dict → plain object: a 1-atom value collapses to a scalar, otherwise an array. */
-function dictToObj(d: DictData): Record<string, Atom | Atom[]> {
-  const obj: Record<string, Atom | Atom[]> = {};
-  for (const [k, v] of d) obj[k] = v.length === 1 ? v[0] : [...v];
-  return obj;
-}
-/** plain JSON value → value message (inverse of the collapse above). */
-function valToMsg(val: unknown): Msg {
-  if (Array.isArray(val)) return val.filter((x): x is Atom => typeof x === 'number' || typeof x === 'string');
-  if (typeof val === 'number' || typeof val === 'string') return [val];
-  if (typeof val === 'boolean') return [val ? 1 : 0];
-  return [];
-}
-
-// dict.serialize : a dict reference → its JSON text as a single symbol atom (1 in, 1 out).
-register('dict.serialize', () => {
-  const o = makeOutlets();
-  return {
-    signalIns: [],
-    signalOuts: [],
-    controlIns: [
-      (m) => {
-        const d = resolve(m);
-        if (d) o.emit(0, [JSON.stringify(dictToObj(d))]);
+        o.emit(0, json ? [JSON.stringify(toJson(d))] : toSyntax(d));
       },
     ],
     onControlOut: o.onControlOut,
   } satisfies MaxNode;
 });
 
-// dict.deserialize [name] : a JSON-text symbol atom → a `dictionary <name>` reference
-// (1 in, 1 out). Invalid JSON or a non-object is ignored.
-register('dict.deserialize', (args) => {
+// ── dict.deserialize [name] : text → a dictionary (1 in, 1 out) ─────────────────
+//
+// Any message: dictionary syntax (`freq: 440 amp: 0.2`, straight from a message box),
+// or one symbol of JSON. The content replaces the named (or generated) dictionary,
+// which is sent as `dictionary <name>`. Input that is neither is ignored.
+register('dict.deserialize', (rawArgs, b) => {
   const o = makeOutlets();
-  const name = args[0] !== undefined ? String(args[0]) : `_deser_${anon++}`;
+  const { args, attrs } = argsAndAttrs(rawArgs, b?.node);
+  const given = attrs.name?.[0] ?? args[0];
+  const name = given !== undefined ? String(given) : newName();
   return {
     signalIns: [],
     signalOuts: [],
     controlIns: [
       (m) => {
-        const raw = typeof m[0] === 'string' ? m[0] : undefined;
-        if (raw === undefined) return;
-        let obj: unknown;
-        try { obj = JSON.parse(raw); } catch { return; }
-        if (obj === null || typeof obj !== 'object' || Array.isArray(obj)) return;
+        if (isBang(m)) return;
+        const entries = parseContent(m);
+        if (!entries || !entries.length) return;
         const d = ensure(name);
         d.clear();
-        for (const [k, val] of Object.entries(obj as Record<string, unknown>)) d.set(k, valToMsg(val));
+        for (const [k, v] of entries) d.set(k, v);
         o.emit(0, ref(name));
       },
     ],
     onControlOut: o.onControlOut,
-    dispose: () => { if (name.startsWith('_deser_')) store.delete(name); },
+    dispose: () => { if (given === undefined) store.delete(name); },
   } satisfies MaxNode;
 });
 
-// SKIPPED (recorded in the batch report): dict.slice and dict.group. Their real Max
-// semantics (a positional partition index for slice; multi-dictionary aggregation for
-// group) are not specifiable as a faithful golden test without a concrete schema, so
-// they remain Tier-A stubs rather than being faked.
+// Not implemented here: dict.slice, dict.group, dict.compare, dict.print, dict.view and
+// dict.codebox stay Tier-A stubs.

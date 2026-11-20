@@ -1,0 +1,38 @@
+"""A bag of notes
+bag keeps every number it receives, and a bang sends them all out. At the start of each bar the bag empties its four notes into zl.queue, which plays one per beat.
+"""
+import maxpylang as mp
+from maxpylang.objects import bag, counter, cycle_tilde, ezdac_tilde, iter_, loadbang, metro, mtof, select, trigger, zl_queue
+
+patch = mp.MaxPatch()
+start = patch.place(loadbang)[0]
+chord = patch.place("message 62 65 69 72")[0]
+each = patch.place(iter_)[0]             # bag takes one number at a time
+notes = patch.place(bag)[0]
+clock = patch.place(metro(250, active=1))[0]
+beat = patch.place(counter(0, 3))[0]
+order = patch.place(trigger("b", "i"))[0]
+bar = patch.place(select(0))[0]
+fifo = patch.place(zl_queue)[0]
+hz = patch.place(mtof)[0]
+osc = patch.place(cycle_tilde)[0]
+quiet = patch.place("*~ 0.2")[0]
+out = patch.place(ezdac_tilde)[0]
+
+patch.connect(
+    (start.outs[0], chord.ins[0]),
+    (chord.outs[0], each.ins[0]),
+    (each.outs[0], notes.ins[0]),
+    (clock.outs[0], beat.ins[0]),
+    (beat.outs[0], order.ins[0]),
+    (order.outs[1], bar.ins[0]),
+    (bar.outs[0], notes.ins[0]),       # beat 0: bang empties the bag into the queue
+    (notes.outs[0], fifo.ins[0]),
+    (order.outs[0], fifo.ins[0]),      # every beat: play the next one
+    (fifo.outs[0], hz.ins[0]),
+    (hz.outs[0], osc.ins[0]),
+    (osc.outs[0], quiet.ins[0]),
+    (quiet.outs[0], out.ins[0]),
+    (quiet.outs[0], out.ins[1]),
+)
+patch.save("bag")
