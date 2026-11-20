@@ -103,8 +103,7 @@ def check(self, *flags, device_type=None):
         print()
 
     if 'graph' in flags:
-        problems = find_problems(*from_patch(self), max_for_live=device_type is not None)
-        problems += link_problems(self.get_json()["patcher"])
+        problems = _graph_problems(self, device_type)
         warn_problems(problems)
         found = collections.Counter(problem.kind for problem in problems)
         def count(n, one, many):
@@ -129,10 +128,10 @@ def count_problems(patch, device_type=None):
     Each problem counted here has already been reported as it happened, so save() can point
     back at it: an unknown object when it was made (UnknownObjectWarning), a js object with no
     file when it was made, a cord sending audio into an inlet that takes none at connect()
-    (ConnectionWarning). Problems in the shape of the patch are found now, and raise one
-    GraphWarning each here.
+    (ConnectionWarning). Problems in the shape of the patch and in its links are found now,
+    and raise one GraphWarning each here.
     """
-    graph = find_problems(*from_patch(patch), max_for_live=device_type is not None)
+    graph = _graph_problems(patch, device_type)
     warn_problems(graph)
     _, js_unlinked = patch.get_js_objs()
     return len(patch.get_unknowns()) + len(js_unlinked) + coverage(patch)["problem"] + len(graph)
@@ -147,6 +146,15 @@ def count_unchecked(patch):
     nodes, _ = from_patch(patch)
     unknown = patch.get_unknowns()
     return sum(1 for box_id, node in nodes.items() if node.opaque and box_id not in unknown)
+
+
+def _graph_problems(patch, device_type=None):
+    """
+    Problems in the shape of the patch and in its links. check() and save() both call this,
+    so a check added here reaches both.
+    """
+    problems = find_problems(*from_patch(patch), max_for_live=device_type is not None)
+    return problems + link_problems(patch.get_json()["patcher"])
 
 
 def _print_some(heading, items, limit=5):

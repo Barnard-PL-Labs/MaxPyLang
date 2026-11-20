@@ -319,7 +319,7 @@ def test_a_tap_link_into_the_wrong_object_says_what_a_tap_link_is():
     assert "tap link" in str(warning.message) and "tapout~" in str(warning.message)
 
 
-def test_the_save_summary_counts_a_misused_tap_link_as_a_tap_link_not_as_audio(tmp_path, capsys):
+def test_check_counts_a_misused_tap_link_as_a_tap_link_not_as_audio(capsys):
     patch = mp.MaxPatch(verbose=False)
     osc, tapin, gain, number = (patch.place(text, verbose=False)[0]
                                 for text in ("cycle~ 440", "tapin~ 1000", "*~ 0.5", "flonum"))
@@ -327,7 +327,7 @@ def test_the_save_summary_counts_a_misused_tap_link_as_a_tap_link_not_as_audio(t
         warnings.simplefilter("ignore")
         patch.connect([osc.outs[0], tapin.ins[0]], [tapin.outs[0], gain.ins[0]],
                       [gain.outs[0], number.ins[0]], verbose=False)
-        patch.save(str(tmp_path / "p"), verbose=False)
+        patch.check()
     assert ("3 cords, 1 sending audio into an inlet that takes none, "
             "1 sending a tap link to something that is not a tapout~, 0 not checked") in capsys.readouterr().out
 
