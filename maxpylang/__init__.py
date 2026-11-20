@@ -16,11 +16,11 @@ Core API
 
 **MaxPatch**::
 
-    patch = mp.MaxPatch(template=None, load_file=None, reorder=True, verbose=True)
+    patch = mp.MaxPatch(template=None, load_file=None, reorder=True, verbose=False)
 
     patch.place(*objs, num_objs=1, spacing_type="grid", spacing=[80,80],
                 starting_pos=None, verbose=False) -> list[MaxObject]
-    patch.connect(*connections, verbose=True)
+    patch.connect(*connections, verbose=False)
     patch.save(filename="default.maxpat", device_type=None, verbose=True, check=True)
     patch.set_position(new_x, new_y)
 
@@ -137,7 +137,9 @@ Key Rules
 - ``place()`` **always returns a list** — use ``[0]`` for single objects.
 - Object names are **case-sensitive** and must match Max names exactly.
 - Coordinates are floats. Inlet/outlet indices are **0-based**.
-- ``save()`` auto-appends ``.maxpat``. ``verbose=False`` suppresses console output.
+- ``save()`` auto-appends ``.maxpat`` and prints one line, e.g.
+  ``saved hello_world.maxpat (2 objects, 1 cord, no problems found)``.
+  ``verbose=False`` makes it print nothing; problems are still warnings.
 - **Typos raise UnknownObjectWarning** — if you see this warning, fix the object name
   immediately. The object will have 0 inlets/outlets and won't work.
   Use ``obj.notknown()`` to check programmatically.

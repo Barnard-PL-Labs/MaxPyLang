@@ -281,25 +281,39 @@ def test_names_inside_a_saved_subpatcher_count():
 def test_save_warns_about_links_and_counts_them(tmp_path, capsys):
     patch = build("receive~ wett", "tapout~ 250", "ezdac~", cords=[(1, 0, 3, 0), (2, 0, 3, 1)])
     with pytest.warns(GraphWarning) as caught:
-        patch.save(str(tmp_path / "p"), verbose=False)
+        patch.save(str(tmp_path / "p"))
     messages = " ".join(str(w.message) for w in caught)
     assert "nothing in this patch sends to 'wett'" in messages and "no tapin~" in messages
+    assert "(3 objects, 2 cords, 2 problems, see warnings above)" in capsys.readouterr().out
+
+
+def test_check_prints_the_links_counts(capsys):
+    patch = build("receive~ wett", "tapout~ 250", "ezdac~", cords=[(1, 0, 3, 0), (2, 0, 3, 1)])
+    with pytest.warns(GraphWarning):
+        patch.check("graph")
     assert "PatchCheck: links : 1 tapout~ with no tapin~, 1 name with nothing on the other end" in capsys.readouterr().out
 
 
-def test_a_patch_with_sound_links_prints_no_links_line(tmp_path, capsys):
+def test_a_patch_with_sound_links_prints_no_links_line(capsys):
     patch = build("cycle~ 440", "send~ wet", "receive~ wet", "ezdac~", cords=[(1, 0, 2, 0), (3, 0, 4, 0)])
-    patch.save(str(tmp_path / "p"), verbose=False)
+    patch.check("graph")
     assert "PatchCheck: links" not in capsys.readouterr().out
 
 
 # ── at save ───────────────────────────────────────────────────────────────────
 
-def test_save_warns_at_the_callers_line_and_prints_the_counts(tmp_path, capsys):
+def test_save_warns_at_the_callers_line_and_counts_the_problem(tmp_path, capsys):
     patch = build("+ 1", "+ 1", "print", cords=[(1, 0, 2, 0), (2, 0, 1, 0), (2, 0, 3, 0)])
     with pytest.warns(GraphWarning, match="hot loop") as caught:
-        patch.save(str(tmp_path / "p"), verbose=False)
+        patch.save(str(tmp_path / "p"))
     assert Path(caught[0].filename).name == "test_graphcheck.py"
+    assert "(3 objects, 3 cords, 1 problem, see warning above)" in capsys.readouterr().out
+
+
+def test_check_prints_the_graph_counts(capsys):
+    patch = build("+ 1", "+ 1", "print", cords=[(1, 0, 2, 0), (2, 0, 1, 0), (2, 0, 3, 0)])
+    with pytest.warns(GraphWarning, match="hot loop"):
+        patch.check("graph")
     assert ("PatchCheck: graph : 1 hot loop, 0 audio feedback loops with no delay, "
             "0 parts of the patch whose output reaches nothing") in capsys.readouterr().out
 

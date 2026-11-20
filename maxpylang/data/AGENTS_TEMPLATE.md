@@ -43,14 +43,26 @@ It catches, before anything runs:
 
 A type checker only sees objects placed from `maxpylang.objects` and connections written as
 tuples. Running the script checks audio into a message-only inlet for every connection,
-whatever its form: each one raises a `ConnectionWarning` at the line that made it, and
-`save()` ends with a `PatchCheck: cords` line counting them. The cord is still saved, so fix
-every warning before using the patch.
+whatever its form: each one raises a `ConnectionWarning` at the line that made it. The cord
+is still saved, so fix every warning before using the patch.
+
+A script prints nothing while it builds the patch. Problems are warnings, printed (to stderr)
+when they happen, at the line that caused them. `save()` then prints one line counting them:
+
+```
+saved hello_world.maxpat (2 objects, 1 cord, no problems found)
+saved feedback.maxpat (4 objects, 4 cords, 1 problem, see warning above)
+```
+
+Anything other than `no problems found` means there is a warning to fix. When output is
+piped, the warnings can appear before lines printed earlier, so read the whole output, not
+only its end. For the full per-check report, call `patch.check()`.
 
 A check says nothing about what it does not know. When some of the patch could not be judged,
-`save()` lists it: `not checked:` names the unknown objects and abstractions behind cords the
-cord check skipped, and `not seen into:` names the objects the whole-patch check treats as
-able to do anything (subpatchers, abstractions, `js`, unknown objects). No warning on those
+the `save()` line ends with how many objects were not checked, e.g. `1 object not checked`, and
+`patch.check()` names them: `not checked:` names the unknown objects and abstractions behind
+cords the cord check skipped, and `not seen into:` names the objects the whole-patch check
+treats as able to do anything (subpatchers, abstractions, `js`, unknown objects). No warning on those
 parts does not mean they work. `patch.get_coverage()` returns the same numbers as a dict, and
 also names the known objects whose cords were skipped because maxpylang has no type data for
 them.
@@ -60,7 +72,7 @@ them.
 ### MaxPatch
 
 ```python
-patch = mp.MaxPatch(template=None, load_file=None, reorder=True, verbose=True)
+patch = mp.MaxPatch(template=None, load_file=None, reorder=True, verbose=False)
 ```
 
 - `template` — path to a `.maxpat` template file
@@ -75,7 +87,7 @@ patch.place(*objs, num_objs=1, spacing_type="grid", spacing=[80,80],
 Places objects in the patch. Always returns a **list** — use `[0]` for a single object.
 
 ```python
-patch.connect(*connections, verbose=True)
+patch.connect(*connections, verbose=False)
 ```
 Each connection is an `(outlet, inlet)` tuple: `patch.connect((obj1.outs[0], obj2.ins[0]))`.
 
@@ -250,10 +262,10 @@ synth = mp.MaxObject("my_synth")
 - Object names are **case-sensitive** and must match Max names exactly
 - Coordinates are floats
 - `save()` auto-appends `.maxpat`
-- `verbose=False` suppresses console output
+- `save()` prints one summary line; `save(verbose=False)` prints nothing. `verbose=True` on `MaxPatch()`, `place()` or `connect()` prints each step. Warnings print either way
 - Inlet/outlet indices are **0-based**
 - **Typos raise `UnknownObjectWarning`** — if you see this warning, fix the object name immediately. The object will have 0 inlets/outlets and won't work. Use `obj.notknown()` to check programmatically.
-- **Audio into a message-only inlet raises `ConnectionWarning`**, e.g. `cycle~` straight into a `flonum` or `metro`. Max keeps such a cord but it does not work. Fix every one, usually by putting `snapshot~` (audio to numbers) or `jit.catch~` (audio to Jitter) in between. `save()` ends with a `PatchCheck: cords` line counting them.
+- **Audio into a message-only inlet raises `ConnectionWarning`**, e.g. `cycle~` straight into a `flonum` or `metro`. Max keeps such a cord but it does not work. Fix every one, usually by putting `snapshot~` (audio to numbers) or `jit.catch~` (audio to Jitter) in between. The `save()` line counts them among its problems.
 - **`save()` raises a `GraphWarning` for problems in the shape of the patch**: a hot loop (a message cycle through hot inlets, which loops without end), audio feedback with no delay (put `tapin~`/`tapout~` in the loop), and objects whose output never reaches an output, display or side effect. Fix every hot loop and feedback loop. A dead output is usually a missing connection, so check each one and connect it or remove the object; leave it only if the object is meant to work with nothing after it.
 - **A `tapin~` outlet carries a tap link, not audio.** It goes to a `tapout~` and nowhere else; take the delayed audio from the `tapout~`. Connecting it to anything else raises `ConnectionWarning`, and a `tapout~` with no `tapin~` raises `GraphWarning` at save.
 - **Names must have both ends in the patch.** `save()` raises a `GraphWarning` for a `receive` or `receive~` whose name nothing sends to, and for a `groove~`, `play~`, `index~`, `wave~`... whose `buffer~` does not exist. Max accepts these silently and the object outputs nothing, so the cause is almost always a typo: make the two names match exactly.

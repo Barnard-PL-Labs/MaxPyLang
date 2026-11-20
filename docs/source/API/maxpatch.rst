@@ -20,7 +20,8 @@ Instantiation
 			Creating an empty patch:
 
 			>>> empty_patch = maxpy.MaxPatch()
-			Patcher: new patch created from template file: empty_template.json
+
+			A patch prints nothing while it is built. Pass ``verbose=True`` to see each step:
 
 			Loading in a patch containing a button connected to a counter:
 

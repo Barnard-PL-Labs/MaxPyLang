@@ -128,7 +128,7 @@ def test_loading_a_patch_warns_about_its_cords(tmp_path):
         mp.MaxPatch(load_file=str(tmp_path / "bad.maxpat"), verbose=False)
 
 
-def test_save_reports_coverage(tmp_path, capsys):
+def test_check_reports_coverage(capsys):
     patch = mp.MaxPatch(verbose=False)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -138,7 +138,7 @@ def test_save_reports_coverage(tmp_path, capsys):
                       verbose=False)
 
     assert coverage(patch) == {"ok": 1, "problem": 1, "unknown": 1}
-    patch.save(str(tmp_path / "p"), verbose=False)
+    patch.check("cords")
     assert ("PatchCheck: cords : 3 cords, 1 sending audio into an inlet that takes none, "
             "1 not checked (no type data)") in capsys.readouterr().out
 
@@ -176,33 +176,33 @@ def test_get_coverage_counts_cords_and_objects_the_checks_could_not_judge():
                                                                "my_synth (obj-5)"]}
 
 
-def test_save_lists_what_was_not_checked(tmp_path, capsys):
+def test_check_lists_what_was_not_checked(capsys):
     patch = mixed_patch()
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        patch.save(str(tmp_path / "p"), verbose=False)
+        patch.check()
     out = capsys.readouterr().out
     assert "not checked: 3 on my_synth (obj-5) (abstraction)" in out
     assert "not seen into: p (obj-3), notarealobject (obj-4), my_synth (obj-5)" in out
 
 
-def test_save_adds_no_line_when_everything_was_checked(tmp_path, capsys):
+def test_check_adds_no_line_when_everything_was_checked(capsys):
     patch = mp.MaxPatch(verbose=False)
     osc, dac = (patch.place(text, verbose=False)[0] for text in ("cycle~ 440", "ezdac~"))
     patch.connect([osc.outs[0], dac.ins[0]], verbose=False)
-    patch.save(str(tmp_path / "p"), verbose=False)
+    patch.check()
     out = capsys.readouterr().out
     assert "not checked:" not in out and "not seen into:" not in out
 
 
-def test_save_does_not_name_a_known_object_with_no_type_data(tmp_path, capsys):
+def test_check_does_not_name_a_known_object_with_no_type_data(capsys):
     """limi~ is a real object whose inlets are not recorded as taking audio or not: the user
-    cannot act on that, so save() only counts the cord. get_coverage() still names it."""
+    cannot act on that, so check() only counts the cord. get_coverage() still names it."""
     patch = mp.MaxPatch(verbose=False)
     osc, limiter = (patch.place(text, verbose=False)[0] for text in ("cycle~ 440", "limi~"))
     patch.connect([osc.outs[0], limiter.ins[0]], verbose=False)
     assert patch.get_coverage()["cords"]["not_checked_because"] == [("limi~ (obj-2)", "no type data", 1)]
-    patch.save(str(tmp_path / "p"), verbose=False)
+    patch.check()
     out = capsys.readouterr().out
     assert "1 not checked (no type data)" in out and "not checked:" not in out
 
@@ -319,7 +319,7 @@ def test_a_tap_link_into_the_wrong_object_says_what_a_tap_link_is():
     assert "tap link" in str(warning.message) and "tapout~" in str(warning.message)
 
 
-def test_the_save_summary_counts_a_misused_tap_link_as_a_tap_link_not_as_audio(tmp_path, capsys):
+def test_check_counts_a_misused_tap_link_as_a_tap_link_not_as_audio(capsys):
     patch = mp.MaxPatch(verbose=False)
     osc, tapin, gain, number = (patch.place(text, verbose=False)[0]
                                 for text in ("cycle~ 440", "tapin~ 1000", "*~ 0.5", "flonum"))
@@ -327,7 +327,7 @@ def test_the_save_summary_counts_a_misused_tap_link_as_a_tap_link_not_as_audio(t
         warnings.simplefilter("ignore")
         patch.connect([osc.outs[0], tapin.ins[0]], [tapin.outs[0], gain.ins[0]],
                       [gain.outs[0], number.ins[0]], verbose=False)
-        patch.save(str(tmp_path / "p"), verbose=False)
+        patch.check()
     assert ("3 cords, 1 sending audio into an inlet that takes none, "
             "1 sending a tap link to something that is not a tapout~, 0 not checked") in capsys.readouterr().out
 
@@ -338,12 +338,12 @@ def test_gain_takes_audio_in_its_first_inlet_only():
     assert cord("gain~", "ezdac~") == "ok"
 
 
-def test_a_long_list_of_unchecked_objects_is_cut_short(tmp_path, capsys):
+def test_a_long_list_of_unchecked_objects_is_cut_short(capsys):
     patch = mp.MaxPatch(verbose=False)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         patch.place("p sub", num_objs=8, verbose=False)
-        patch.save(str(tmp_path / "p"), verbose=False)
+        patch.check()
     assert "p (obj-5), and 3 more" in capsys.readouterr().out
 
 

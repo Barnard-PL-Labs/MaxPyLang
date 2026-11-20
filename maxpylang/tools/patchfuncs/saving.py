@@ -11,6 +11,8 @@ import json
 from pathlib import Path
 import copy
 
+from .checking import count_problems, count_unchecked
+
 #save patch to file
 def save(self, filename="default.maxpat", device_type=None, verbose=True, check=True):
 
@@ -21,10 +23,12 @@ def save(self, filename="default.maxpat", device_type=None, verbose=True, check=
     filename --> savefile name (.maxpat or .amxd)
     device_type --> for Max for Live .amxd files: "instrument", "audio_effect", or "midi_effect"
                     required when saving as .amxd; when set, forces .amxd extension
-    verbose --> print log message to console
-    check --> check the patch once it is written: unknown objects, js and abstraction links,
-              cords, and the shape of the patch (GraphWarning for a hot loop, audio feedback
-              with no delay, or output that reaches nothing)
+    verbose --> print one line naming the file, how many objects and cords it has, and how
+                many problems the checks found, e.g.
+                saved hello_world.maxpat (2 objects, 1 cord, no problems found)
+    check --> check the patch once it is written: unknown objects, js links, cords, and the
+              shape of the patch (GraphWarning for a hot loop, audio feedback with no delay,
+              or output that reaches nothing). For the full report, call patch.check().
     """
 
     ext = Path(filename).suffix
@@ -59,21 +63,37 @@ def save(self, filename="default.maxpat", device_type=None, verbose=True, check=
     #save filepath for later saving
     self._filename = filename
 
-    #log unknown objs and unlinked js objs
-    #(abstractions only get marked as abstractions if the file is found)
-    #also log linked abstractions and linked js files
-    if check:
-        self.check('unknown', 'js', 'abstractions', 'cords', 'graph', device_type=device_type)
+    #warnings for the shape of the patch come first, so the summary line can point back at them
+    problems = count_problems(self, device_type=device_type) if check else None
+    unchecked = count_unchecked(self) if check else 0
 
-    #log messages
     if verbose:
-        if device_type is not None:
-            print(f"maxpatch saved to {filename} (M4L {device_type})")
-        else:
-            print("maxpatch saved to", filename)
-
+        print(summary(self, filename, device_type, problems, unchecked))
 
     return
+
+
+def summary(patch, filename, device_type=None, problems=None, unchecked=0):
+    """
+    The line save() prints: the file, what is in it, and how many problems were found.
+    problems is None when the patch was not checked, so the line makes no claim about it.
+    unchecked counts objects the checks could not see into, so "no problems found" does not
+    claim more than the checks know.
+    """
+    def count(n, word):
+        return f"{n} {word}" + ("" if n == 1 else "s")
+
+    cords = sum(len(outlet.destinations) for obj in patch._objs.values() for outlet in obj.outs)
+    parts = [count(len(patch._objs), "object"), count(cords, "cord")]
+    if device_type is not None:
+        parts.insert(0, f"M4L {device_type}")
+    if problems == 0:
+        parts.append("no problems found")
+    elif problems is not None:
+        parts.append(count(problems, "problem") + ", see warning" + ("" if problems == 1 else "s") + " above")
+    if unchecked:
+        parts.append(count(unchecked, "object") + " not checked")
+    return f"saved {filename} ({', '.join(parts)})"
 
 
 

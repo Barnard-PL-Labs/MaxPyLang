@@ -20,7 +20,7 @@ from maxpylang.cordcheck import warn_if_problem
 from maxpylang.xlet import Inlet, Outlet
 
 # user usage
-def connect(self, *connections, verbose=True):
+def connect(self, *connections, verbose=False):
     """
     This method creates patchcords to connect objects. *currently fixing connection specification...*
 
@@ -28,8 +28,8 @@ def connect(self, *connections, verbose=True):
     (:class:`~maxpy.Outlet`, :class:`~maxpy.Inlet` (, ``list``)). The optional third element specifies midpoints \
     (curves) of the patchcord as a list of [x, y] coordinates.
 
-    :param verbose: for logging output.
-    :type verbose: bool, optional; default: True
+    :param verbose: print each cord as it is made.
+    :type verbose: bool, optional; default: False
 
     :returns: None
     """
@@ -43,7 +43,7 @@ def connect(self, *connections, verbose=True):
     return
 
 
-def link_cords(connections, verbose=True):
+def link_cords(connections, verbose=False):
     """
     Helper function for patchcords.
 
