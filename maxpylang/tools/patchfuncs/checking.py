@@ -15,7 +15,7 @@ Methods related to checking MaxPatches: unknown objects, abstraction/js links, a
 import collections
 import os
 
-from maxpylang.cordcheck import coverage, unchecked
+from maxpylang.cordcheck import coverage, misused_tap_links, unchecked
 from maxpylang.graphcheck import find_problems, from_patch, link_problems, warn_problems
 
 def check(self, *flags, device_type=None):
@@ -92,8 +92,10 @@ def check(self, *flags, device_type=None):
         counts = coverage(self)
         total = sum(counts.values())
         plural = "" if total == 1 else "s"
-        print(f"PatchCheck: cords : {total} cord{plural}, {counts['problem']} sending audio into an inlet "
-              f"that takes none, {counts['unknown']} not checked (no type data)")
+        taps = misused_tap_links(self)
+        tap_part = f"{taps} sending a tap link to something that is not a tapout~, " if taps else ""
+        print(f"PatchCheck: cords : {total} cord{plural}, {counts['problem'] - taps} sending audio into an inlet "
+              f"that takes none, {tap_part}{counts['unknown']} not checked (no type data)")
         # an object with no type data is a gap in maxpylang, not something the user can act on,
         # so those cords stay in the count above and in get_coverage() and are not named here
         _print_some("not checked:", [f"{n} on {label} ({why})" for label, why, n in unchecked(self)

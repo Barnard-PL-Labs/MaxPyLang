@@ -212,6 +212,17 @@ def coverage(patch):
     return counts
 
 
+def misused_tap_links(patch):
+    """How many of the patch's problem cords are a tap link into something that is not a tapout~."""
+    return sum(
+        1
+        for obj in patch.objs.values()
+        for outlet in obj.outs
+        for inlet in outlet.destinations
+        if rate(outlet, "outs") == TAP and verdict(outlet, inlet) == "problem"
+    )
+
+
 def _why_unknown(outlet, inlet):
     """The inlet or outlet a cord's "unknown" verdict is owed to, and the reason. The outlet comes
     first: when its rate is not known, the inlet is never looked at."""
