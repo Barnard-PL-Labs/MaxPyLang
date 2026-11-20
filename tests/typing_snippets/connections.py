@@ -4,7 +4,8 @@ Static checks on connect(), run by tests/test_static_types.py under ty, mypy and
 Every line ending in `# error` must be flagged, and no other line may be.
 
 tests/test_cordcheck.py also runs it line by line: the runtime check must warn on the
-`# error` lines that send audio into a control-only inlet, and on the lines ending in
+`# error` lines that send audio into a control-only inlet or a tap link into anything but
+a tapout~, and on the lines ending in
 `warns at runtime`, which a type checker cannot see.
 """
 
@@ -20,6 +21,8 @@ from maxpylang.objects import (
     metro,
     send_tilde,
     snapshot_tilde,
+    tapin_tilde,
+    tapout_tilde,
     toggle,
     vst_tilde,
 )
@@ -37,6 +40,8 @@ snd_sig = patch.place(send_tilde("audio"))[0]
 graph = patch.place(jit_graph)[0]
 train = patch.place(mc_train_tilde(200, 0.75))[0]
 plug = patch.place(vst_tilde(4, 4))[0]
+tap_in = patch.place(tapin_tilde(1000))[0]
+tap_out = patch.place(tapout_tilde(250))[0]
 pair = (osc.outs[0], dac.ins[0])
 
 # valid
@@ -66,6 +71,11 @@ patch.connect((met.outs[0], osc.ins[0]), (osc.outs[0], num.ins[0]))  # error
 patch.connect([met.outs[0], osc.ins[0]], (osc.outs[0], num.ins[0]))  # error
 patch.connect(pair, pair, pair, pair, pair, pair, pair, (osc.outs[0], num.ins[0]))  # error
 patch.connect((train.outs[0], tog.ins[0]))  # error
+
+# a tap link only fits a tapout~, which also takes its delay time as audio or a number
+patch.connect((tap_in.outs[0], tap_out.ins[0]), (osc.outs[0], tap_out.ins[0]), (num.outs[0], tap_out.ins[0]))
+patch.connect((tap_in.outs[0], dac.ins[0]))  # error
+patch.connect((tap_in.outs[0], num.ins[0]))  # error
 
 # index past a fixed count
 patch.connect((tog.outs[3], met.ins[0]))  # error

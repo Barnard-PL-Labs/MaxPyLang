@@ -113,7 +113,6 @@ def test_m4l_04_a_device_with_a_presentation_opens_in_it(tmp_path):
 
 # ── checking a device ───────────────────────────────────────────────────────────
 
-@gap
 def test_m4l_05_a_tap_link_only_fits_a_tapout(tmp_path):
     """M4L-05: tapin~'s outlet carries a tap link, which only tapout~ understands."""
     patch = mp.MaxPatch(verbose=False)
@@ -123,7 +122,6 @@ def test_m4l_05_a_tap_link_only_fits_a_tapout(tmp_path):
     assert patch.get_coverage()["cords"]["flagged"] == 1
 
 
-@gap
 def test_m4l_05_a_tapout_needs_a_tapin(tmp_path):
     """M4L-05: a tapout~ that no tapin~ feeds has no delay line to read."""
     patch = mp.MaxPatch(verbose=False)
@@ -212,11 +210,10 @@ def test_ezdac_in_a_device_is_caught(tmp_path):
 
 # ── M4L-11: audio objects whose inlets Max's own reference leaves untyped ─────────
 
-@gap
 def test_m4l_11_a_cord_into_cosh_is_judged():
-    """cosh~ takes a signal and nothing else, yet a cord into it is "not checked": its
-    reference page has a placeholder where the inlet type goes, so the type table says
-    "any". tanh~ had the same problem and was fixed by hand; about fifty objects remain."""
+    """M4L-11, closed. cosh~'s reference page has a placeholder where the inlet type goes,
+    so the type table said "any" and a cord into it was "not checked". The table now reads
+    the rest of the page: an MSP object with a signal method takes audio at its first inlet."""
     patch = mp.MaxPatch(verbose=False)
     osc, shaper = place(patch, "cycle~ 440", "cosh~")
     patch.connect([osc.outs[0], shaper.ins[0]], verbose=False)
@@ -224,7 +221,7 @@ def test_m4l_11_a_cord_into_cosh_is_judged():
 
 
 def test_m4l_11_tanh_is_judged():
-    """The one member of that family the generator uses, fixed in the type table."""
+    """The member of that family the generator uses. It was set by hand first."""
     patch = mp.MaxPatch(verbose=False)
     osc, shaper = place(patch, "cycle~ 440", "tanh~")
     patch.connect([osc.outs[0], shaper.ins[0]], verbose=False)

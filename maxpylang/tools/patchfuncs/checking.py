@@ -15,14 +15,15 @@ Methods related to checking MaxPatches: unknown objects, abstraction/js links, a
 import collections
 import os
 
-from maxpylang.cordcheck import coverage, unchecked
-from maxpylang.graphcheck import find_problems, from_patch, warn_problems
+from maxpylang.cordcheck import coverage, misused_tap_links, unchecked
+from maxpylang.graphcheck import find_problems, from_patch, link_problems, warn_problems
 
 def check(self, *flags, device_type=None):
     """
     This method checks the patch for linked abstractions, unknown objects, linked/unlinked js objects,
     cords that send audio into an inlet that takes no audio, and problems in the shape of the
-    patch: hot loops, audio feedback with no delay, and outputs that reach nothing.
+    patch: hot loops, audio feedback with no delay, outputs that reach nothing, a tapout~
+    with no tapin~, and names (receive, receive~, buffer~ readers) with nothing on the other end.
 
     :param \\*flags: takes keywords ``'abstractions'``, ``'unknowns'``, ``'js'``, ``'cords'``. If no flags given,
         checks all five categories. ``'graph'`` checks the shape of the patch.
@@ -91,8 +92,10 @@ def check(self, *flags, device_type=None):
         counts = coverage(self)
         total = sum(counts.values())
         plural = "" if total == 1 else "s"
-        print(f"PatchCheck: cords : {total} cord{plural}, {counts['problem']} sending audio into an inlet "
-              f"that takes none, {counts['unknown']} not checked (no type data)")
+        taps = misused_tap_links(self)
+        tap_part = f"{taps} sending a tap link to something that is not a tapout~, " if taps else ""
+        print(f"PatchCheck: cords : {total} cord{plural}, {counts['problem'] - taps} sending audio into an inlet "
+              f"that takes none, {tap_part}{counts['unknown']} not checked (no type data)")
         # an object with no type data is a gap in maxpylang, not something the user can act on,
         # so those cords stay in the count above and in get_coverage() and are not named here
         _print_some("not checked:", [f"{n} on {label} ({why})" for label, why, n in unchecked(self)
@@ -101,6 +104,7 @@ def check(self, *flags, device_type=None):
 
     if 'graph' in flags:
         problems = find_problems(*from_patch(self), max_for_live=device_type is not None)
+        problems += link_problems(self.get_json()["patcher"])
         warn_problems(problems)
         found = collections.Counter(problem.kind for problem in problems)
         def count(n, one, many):
@@ -108,6 +112,9 @@ def check(self, *flags, device_type=None):
         print(f"PatchCheck: graph : {count(found['hot loop'], 'hot loop', 'hot loops')}, "
               f"{count(found['audio feedback'], 'audio feedback loop', 'audio feedback loops')} with no delay, "
               f"{count(found['dead output'], 'part', 'parts')} of the patch whose output reaches nothing")
+        if found["no delay line"] or found["missing name"]:
+            print(f"PatchCheck: links : {count(found['no delay line'], 'tapout~', 'tapout~ objects')} with no "
+                  f"tapin~, {count(found['missing name'], 'name', 'names')} with nothing on the other end")
         _print_some("not seen into:", self.get_coverage()["objects"]["not_seen_into"])
         print()
 

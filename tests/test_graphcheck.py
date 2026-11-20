@@ -9,7 +9,7 @@ import pytest
 
 import maxpylang as mp
 from maxpylang import GraphWarning
-from maxpylang.graphcheck import find_problems, from_patch
+from maxpylang.graphcheck import find_problems, from_patch, link_problems
 
 
 def build(*texts, cords=(), **kwargs):
@@ -187,6 +187,110 @@ def test_an_object_maxpylang_cannot_see_into_is_never_reported(box):
     message_cycle = build("+ 1", unseen(), "print", cords=[(1, 0, 2, 0), (2, 0, 1, 0), (1, 0, 3, 0)])
     signal_cycle = build("*~ 0.5", unseen(), "ezdac~", cords=[(1, 0, 2, 0), (2, 0, 1, 0), (1, 0, 3, 0)])
     assert kinds(dead_end) == [] and kinds(message_cycle) == [] and kinds(signal_cycle) == []
+
+
+# ── tap links ───────────────────────────────────────────────────────────────
+
+def test_a_tapout_with_no_tapin_has_no_delay_line():
+    patch = build("tapout~ 250", "ezdac~", cords=[(1, 0, 2, 0)])
+    assert kinds(patch) == ["no delay line"]
+
+
+def test_a_tapout_fed_by_a_tapin_is_fine():
+    patch = build("cycle~ 440", "tapin~ 1000", "tapout~ 250", "ezdac~", cords=[(1, 0, 2, 0), (2, 0, 3, 0), (3, 0, 4, 0)])
+    assert kinds(patch) == []
+
+
+def test_a_delay_time_into_a_tapout_is_not_a_delay_line():
+    patch = build("cycle~ 2", "tapout~ 250", "ezdac~", cords=[(1, 0, 2, 0), (2, 0, 3, 0)])
+    assert kinds(patch) == ["no delay line"]
+
+
+def test_a_tap_link_may_come_in_from_the_parent_patch():
+    patch = build("inlet", "tapout~ 250", "outlet", cords=[(1, 0, 2, 0), (2, 0, 3, 0)])
+    assert kinds(patch) == []
+
+
+# ── names with nothing on the other end ────────────────────────────────────────
+
+def links(*texts, **kwargs):
+    patch = build(*texts, **kwargs)
+    return [p.message for p in link_problems(patch.get_json()["patcher"])]
+
+
+def test_a_receive_that_nothing_sends_to_is_reported_with_the_likely_name():
+    (message,) = links("send~ wet", "receive~ wett")
+    assert "receive~ wett" in message and "nothing in this patch sends to 'wett'" in message
+    assert "Did you mean 'wet'?" in message
+
+
+def test_matched_names_are_fine():
+    assert links("send~ wet", "receive~ wet", "s tempo", "r tempo", "buffer~ loop", "groove~ loop 2") == []
+
+
+def test_audio_and_message_names_are_separate():
+    (message,) = links("send wet", "receive~ wet")
+    assert "needs a `send~ wet`" in message
+
+
+def test_a_message_box_and_forward_send_by_name_too():
+    patch = build("r tempo", "r swing", "forward swing")
+    with contextlib.redirect_stdout(io.StringIO()), warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        patch.place("message", verbose=False)[0].edit(text="; tempo 120", text_add="replace")
+    assert link_problems(patch.get_json()["patcher"]) == []
+
+
+def test_a_buffer_reader_needs_its_buffer():
+    (message,) = links("buffer~ loop", "groove~ lop")
+    assert "there is no `buffer~ lop`" in message and "Did you mean 'loop'?" in message
+    assert len(links("cycle~ 440 wavetable")) == 1
+    assert links("cycle~ 440 0.5", "polybuffer~ kit", "play~ kit.3") == []
+
+
+def test_a_send_with_no_name_can_be_pointed_anywhere():
+    assert links("send~", "receive~ wet") == []
+    assert len(links("send", "receive~ wet")) == 1
+
+
+def test_names_filled_in_when_the_patch_loads_are_skipped():
+    assert links("r #0_gate", "receive~ $1", "groove~ #1") == []
+
+
+def test_nothing_is_reported_when_the_other_end_may_be_out_of_sight():
+    assert links("receive~ wet", "poly~ voice 4") == []            # in the poly~'s voices
+    assert links("receive~ wet", "inlet") == []                    # in the parent patch
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        assert links("receive~ wet", "my_abstraction") == []       # in another file
+
+
+def test_names_inside_a_saved_subpatcher_count():
+    inner = {"boxes": [{"box": {"id": "obj-1", "maxclass": "newobj", "text": "send~ wet"}}], "lines": []}
+    def top(*boxes):
+        return {"boxes": [{"box": b} for b in boxes], "lines": []}
+    sub = {"id": "obj-1", "maxclass": "newobj", "text": "p effects", "patcher": inner}
+    receiver = {"id": "obj-2", "maxclass": "newobj", "text": "receive~ wet"}
+    assert link_problems(top(sub, receiver)) == []
+    assert len(link_problems(top(receiver))) == 1
+    # an empty subpatcher is seen into like any other; a bpatcher kept in another file is not
+    assert len(link_problems(top(dict(sub, patcher={"boxes": [], "lines": []}), receiver))) == 1
+    assert link_problems(top({"id": "obj-3", "maxclass": "bpatcher", "name": "effects.maxpat"}, receiver)) == []
+
+
+def test_save_warns_about_links_and_counts_them(tmp_path, capsys):
+    patch = build("receive~ wett", "tapout~ 250", "ezdac~", cords=[(1, 0, 3, 0), (2, 0, 3, 1)])
+    with pytest.warns(GraphWarning) as caught:
+        patch.save(str(tmp_path / "p"), verbose=False)
+    messages = " ".join(str(w.message) for w in caught)
+    assert "nothing in this patch sends to 'wett'" in messages and "no tapin~" in messages
+    assert "PatchCheck: links : 1 tapout~ with no tapin~, 1 name with nothing on the other end" in capsys.readouterr().out
+
+
+def test_a_patch_with_sound_links_prints_no_links_line(tmp_path, capsys):
+    patch = build("cycle~ 440", "send~ wet", "receive~ wet", "ezdac~", cords=[(1, 0, 2, 0), (3, 0, 4, 0)])
+    patch.save(str(tmp_path / "p"), verbose=False)
+    assert "PatchCheck: links" not in capsys.readouterr().out
 
 
 # ── at save ───────────────────────────────────────────────────────────────────

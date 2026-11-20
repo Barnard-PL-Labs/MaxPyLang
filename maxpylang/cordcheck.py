@@ -2,7 +2,7 @@
 cordcheck
 
 The runtime form of the check in the .pyi stubs: audio into an inlet that takes no
-audio. It reads the same table, maxpylang/data/xlet_types.json, so a script gets the
+audio, and a tap link (tapin~'s outlet) into anything but a tapout~. It reads the same table, maxpylang/data/xlet_types.json, so a script gets the
 same answer whether or not a type checker runs on it, and whatever style it is
 written in (objects placed by string or by stub, connections as lists or tuples).
 
@@ -36,7 +36,7 @@ _DATA = Path(_PACKAGE_DIR) / "data" / "xlet_types.json"
 AUDIO = ("signal", "mc")
 
 # a box's saved outlet type, as a rate; every other type ("", "int", "bang"...) is a message
-_SAVED_KINDS = {"signal": "signal", "multichannelsignal": "mc", "jit_matrix": "matrix"}
+_SAVED_KINDS = {"signal": "signal", "multichannelsignal": "mc", "jit_matrix": "matrix", "tapconnect": "tap"}
 
 # objects whose saved outlet types say nothing sure: they pass on what they are sent, or
 # their outlets are made by a patcher or a script inside them
@@ -80,15 +80,40 @@ def _content_decides():
         return _CONTENT_DECIDES | set(json.load(f)["opaque"])
 
 
-def outlet_rate(name, index, saved_types):
+# Max works out what crosses a subpatcher's edge and saves it: on the box of a patcher or
+# bpatcher, the type each outlet sends; on an inlet object, the type its parent sends in.
+# Against Max's own shipped patches a patcher box saved with its contents is never wrong
+# (1,465 audio outlets and 3,060 message outlets whose source inside is known).
+#
+# An inlet object is trusted less. Saved as a message type (int, bang, list...) it sends
+# messages. Saved as audio it stays unknown, because an inlet that takes audio usually takes
+# messages on the same cord: BEAP's modules follow theirs with `routepass` to split the two,
+# and flagging that would be a false alarm.
+_MAX_RECORDS = {"patcher", "bpatcher", "inlet"}
+
+
+def outlet_rate(name, index, saved_types, seen_inside=False):
     """
     Rate of outlet `index` of the object called `name`: from the type data, else from
     `saved_types`, the box's own "outlettype" list. None when neither can say.
+
+    `seen_inside`: the box was saved with its contents (a subpatcher), so Max worked out
+    every one of its outlet types from them. Without it an empty type is not evidence: it
+    is also what a box holds before Max has seen what is connected.
     """
     known = rate_of(name, "outs", index)
-    if known is not None or name in _content_decides() or index >= len(saved_types or []):
+    if known is not None or index >= len(saved_types or []):
         return known
-    return _SAVED_KINDS.get(saved_types[index], "control")
+    kind = saved_types[index]
+    if name in _content_decides():
+        if name not in _MAX_RECORDS:
+            return None
+        if name == "inlet":
+            return None if not kind or _SAVED_KINDS.get(kind) in AUDIO else _SAVED_KINDS.get(kind, "control")
+        if kind in _SAVED_KINDS:
+            return _SAVED_KINDS[kind]
+        return "control" if kind or seen_inside else None
+    return _SAVED_KINDS.get(kind, "control")
 
 
 def rate(xlet, side):
@@ -97,8 +122,12 @@ def rate(xlet, side):
     if not name:
         return None
     if side == "outs":
-        return outlet_rate(name, xlet.index, (xlet.parent._dict or {}).get("box", {}).get("outlettype"))
+        box = (xlet.parent._dict or {}).get("box", {})
+        return outlet_rate(name, xlet.index, box.get("outlettype"), "patcher" in box)
     return rate_of(name, side, xlet.index)
+
+
+TAP = "tap"
 
 
 def judge(out_rate, in_rate):
@@ -106,9 +135,16 @@ def judge(out_rate, in_rate):
     "problem" when the outlet sends audio and the inlet takes none, "ok" when the data
     says the cord is fine, "unknown" when it cannot say. Messages and Jitter matrices
     may go into any inlet, so only audio cords can be a problem.
+
+    A tap link is the other kind of cord that can be wrong. tapin~ sends one, and it only
+    fits a tapout~, whose inlets take a tap link, audio or a number.
     """
     if out_rate is None:
         return "unknown"
+    if in_rate == TAP:
+        return "ok"
+    if out_rate == TAP:
+        return "unknown" if in_rate is None else "problem"
     if out_rate not in AUDIO:
         return "ok"
     if in_rate == "control":
@@ -150,6 +186,14 @@ def warn_if_problem(outlet, inlet):
     """Warn when the cord outlet -> inlet carries audio into an inlet that takes none."""
     if verdict(outlet, inlet) != "problem":
         return
+    if rate(outlet, "outs") == TAP:
+        message = (
+            f"{_describe(outlet)} outlet {outlet.index} sends a tap link, not audio, and only a "
+            f"tapout~ can read one, but it goes to {_describe(inlet)} inlet {inlet.index}. Connect "
+            f"it to a tapout~ and take the delayed audio from the tapout~'s outlet."
+        )
+        warnings.warn(message, ConnectionWarning, stacklevel=_user_stacklevel())
+        return
     message = (
         f"{_describe(outlet)} outlet {outlet.index} sends audio, but {_describe(inlet)} "
         f"inlet {inlet.index} takes no audio. Max keeps the cord and only prints a console "
@@ -166,6 +210,17 @@ def coverage(patch):
             for inlet in outlet.destinations:
                 counts[verdict(outlet, inlet)] += 1
     return counts
+
+
+def misused_tap_links(patch):
+    """How many of the patch's problem cords are a tap link into something that is not a tapout~."""
+    return sum(
+        1
+        for obj in patch.objs.values()
+        for outlet in obj.outs
+        for inlet in outlet.destinations
+        if rate(outlet, "outs") == TAP and verdict(outlet, inlet) == "problem"
+    )
 
 
 def _why_unknown(outlet, inlet):

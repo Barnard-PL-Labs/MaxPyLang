@@ -9,6 +9,11 @@ is saved, once every cord exists.
     audio feedback   a signal cycle with no delay in it
     dead output      an object whose output never reaches an output, a display or a side
                      effect, or that has no cords at all
+    no delay line    a tapout~ that no tapin~ is connected to, so it has nothing to read
+    missing name     a name with nothing on the other end: a receive or receive~ that
+                     nothing sends to, or a groove~, play~, index~... whose buffer~ is not
+                     in the patch. These are the links a cord does not show, so a typo in
+                     one is silent in Max: the object just outputs nothing.
 
 The roles behind them (what counts as an output, which objects break a loop, which have
 every inlet hot) are in data/graph_roles.json, ported from maxpy-studio's failure-taxonomy
@@ -29,13 +34,22 @@ UI object, a `set` message, a Jitter object, or something clocked (line, metro, 
 Max's own shipped patches the unnarrowed rule reports 213 cycles, all in working patches; this
 one reports none.
 
+Missing names are judged over the whole file, subpatchers included, and only when the file
+can be seen whole. Nothing is reported when the other end may be somewhere maxpylang cannot
+look: in an abstraction, a bpatcher kept in another file, a poly~ or a script, or in the
+parent of a patch that has inlets and outlets of its own. A name with # or $ in it is
+filled in when the patch loads, so it is skipped. Against Max's own shipped patches this
+reports 7 names, in 5 of 3122 files; without those limits it reported 163.
+
     find_problems() --> problems in a graph given as plain data
+    link_problems() --> missing names in a whole .maxpat patcher, nested ones included
     from_patch()    --> that data for a MaxPatch
     from_json()     --> that data for one patcher of a .maxpat, as the corpus test uses it
     warn_problems() --> GraphWarning for each problem, reported at the user's line
 """
 
 import collections
+import difflib
 import functools
 import json
 import re
@@ -236,6 +250,129 @@ def find_problems(nodes, edges, max_for_live=False):
             message = f"{describe(group)}: output never reaches an output, a display, or a side effect."
         problems.append(Problem("dead output", message, group))
 
+    # a tapout~ reads the delay line of the tapin~ connected to it; with none it is silent.
+    # The link may also come in from the parent patch (through an inlet, or a poly~ voice's
+    # `in`) or out of something that cannot be seen into.
+    linked_taps = {dest for source, outlet, dest, _ in edges
+                   if kind_of(source, outlet) == "tapconnect" or nodes[source].opaque
+                   or _is(nodes[source].names, "part_of_a_bigger_patch")}
+    for n, node in nodes.items():
+        if _is(node.names, "tap_readers") and n not in linked_taps:
+            problems.append(Problem("no delay line", f"{node.label} has no tapin~ connected to it, so it has no "
+                                    "delay line to read and outputs silence. Connect a tapin~'s outlet to "
+                                    "its left inlet.", [n]))
+
+    return problems
+
+
+def _boxes(patcher):
+    """Every box in a patcher and the patchers nested in it, with whether it is at the top.
+    gen~ and RNBO patchers hold their own operators, so they are not walked into."""
+    todo = [(patcher, True)]
+    while todo:
+        current, top = todo.pop()
+        for entry in current.get("boxes", []):
+            box = entry.get("box", {})
+            yield box, top
+            inner = box.get("patcher")
+            if isinstance(inner, dict) and inner.get("classnamespace", "box") == "box":
+                todo.append((inner, False))
+
+
+def _words(box):
+    """(Max name, arguments) of an object box, attributes left off; (None, []) for other boxes."""
+    if box.get("maxclass") != "newobj":
+        return None, []
+    words = (box.get("text") or "").split(" @")[0].split()
+    if not words:
+        return None, []
+    return _aliases().get(words[0], words[0]), words[1:]
+
+
+def _filled_in_later(name):
+    return "#" in name or "$" in name
+
+
+_SEMICOLON_TARGET = re.compile(r";\s*([^\s;,]+)")
+_NUMBER = re.compile(r"-?\.?\d")
+
+
+def link_problems(patcher):
+    """
+    Missing names in a whole patcher (the "patcher" dict of a .maxpat), nested ones included.
+    See the module docstring for when a file is judged and when it is left alone.
+    """
+    senders = {"message": set(), "audio": set()}
+    open_senders = set()  # a send with no name can be pointed anywhere by a message
+    receivers, readers, buffers, polybuffers = [], [], set(), set()
+
+    for box, top in _boxes(patcher):
+        maxclass = box.get("maxclass", "")
+        label = f"{(box.get('text') or maxclass).strip()} ({box.get('id')})"
+        if maxclass == "message":
+            for target in _SEMICOLON_TARGET.findall(box.get("text") or ""):
+                if _filled_in_later(target):
+                    open_senders.add("message")
+                senders["message"].add(target)
+            continue
+        if top and maxclass in roles()["part_of_a_bigger_patch"]:
+            return []
+        if maxclass == "bpatcher" and "patcher" not in box:
+            return []
+        name, args = _words(box)
+        if name is None:
+            continue
+        names = {name, name[3:] if name.startswith("mc.") else name}
+        if top and _is(names, "part_of_a_bigger_patch"):
+            return []
+        if name in ("patcher", "p"):
+            if "patcher" not in box:
+                return []
+            continue
+        if _is(names, "may_hold_the_other_end") or name not in _known():
+            return []
+        first = args[0] if args else None
+        if names & {"send", "forward"} or names & {"send~"}:
+            kind = "audio" if "send~" in names else "message"
+            if first is None or _filled_in_later(first):
+                open_senders.add(kind)
+            else:
+                senders[kind].add(first)
+        elif names & {"receive", "receive~"} and first is not None:
+            receivers.append(("audio" if "receive~" in names else "message", first, label, box.get("id")))
+        elif _is(names, "buffer_makers") and first is not None:
+            buffers.add(first)
+        elif "polybuffer~" in names and first is not None:
+            polybuffers.add(first)
+        elif _is(names, "buffer_readers") and first is not None:
+            readers.append((first, label, box.get("id")))
+        elif "cycle~" in names and len(args) > 1 and not _NUMBER.match(args[1]):
+            readers.append((args[1], label, box.get("id")))
+
+    def hint(name, candidates):
+        close = difflib.get_close_matches(name, sorted(candidates), n=1, cutoff=0.75)
+        return f" Did you mean '{close[0]}'?" if close else ""
+
+    # one report per name, however many boxes use it: the fix is one object
+    missing = {}
+    for kind, name, label, box_id in receivers:
+        if not (kind in open_senders or name in senders[kind] or _filled_in_later(name)):
+            missing.setdefault((kind, name), []).append((label, box_id))
+    for name, label, box_id in readers:
+        if not (name in buffers or _filled_in_later(name) or any(name.startswith(p + ".") for p in polybuffers)):
+            missing.setdefault(("buffer", name), []).append((label, box_id))
+
+    problems = []
+    for (kind, name), users in missing.items():
+        label = users[0][0] + (f" and {len(users) - 1} more" if len(users) > 1 else "")
+        if kind == "buffer":
+            message = (f"{label}: there is no `buffer~ {name}` in this patch, so there are no samples "
+                       f"to work on.{hint(name, buffers)}")
+        else:
+            sender = "send~" if kind == "audio" else "send"
+            message = (f"{label}: nothing in this patch sends to '{name}', so nothing ever comes out. "
+                       f"It needs a `{sender} {name}`.{hint(name, senders[kind])}")
+        problems.append(Problem("missing name", message, [box_id for _, box_id in users]))
     return problems
 
 

@@ -19,8 +19,9 @@ which reads Max's refpages and the inlet/outlet counts Max saved in its own patc
 Table format, per object: "ins" and "outs" are either a list with one rate per xlet (a
 fixed count) or a single rate shared by any number of xlets (a count that depends on
 arguments, attributes or contents). Inlet rates are "control" (takes no audio), "signal"
-(documented to take audio, and usually messages too) or "any" (not known).
-Outlet rates are "signal", "mc", "matrix", "control" or "any".
+(documented to take audio, and usually messages too), "tap" (a tapout~'s: a tap link, audio
+or messages) or "any" (not known).
+Outlet rates are "signal", "mc", "matrix", "control", "tap" (a tapin~'s) or "any".
 """
 
 import argparse
@@ -44,8 +45,10 @@ REPO_ROOT = _HERE.parent.parent
 
 # "signal" and "any" inlets both accept audio statically; the runtime check tells them apart
 # so its coverage score counts a cord into a documented audio inlet as checked.
-_INLET = {"control": "Control", "signal": "Signal | Control", "any": "Signal | Control"}
-_OUTLET = {"signal": "Signal", "mc": "MCSignal", "matrix": "Matrix", "control": "Control", "any": "Any"}
+_INLET = {"control": "Control", "signal": "Signal | Control", "any": "Signal | Control",
+          "tap": "Signal | Control | Tap"}
+_OUTLET = {"signal": "Signal", "mc": "MCSignal", "matrix": "Matrix", "control": "Control", "any": "Any",
+           "tap": "Tap"}
 
 
 #************************************************************
@@ -97,13 +100,25 @@ _PASS_THROUGH = {"inlet", "outlet"}
 # rates set by hand where the signature table cannot give them. gain~ has one inlet as a
 # multichannel box and two otherwise (audio in, then the ramp time), so the table calls its
 # count open; maxpylang builds the two-inlet form.
-_HAND_SET = {"gain~": {"ins": ["signal", "control"]}}
+_HAND_SET = {
+    "gain~": {"ins": ["signal", "control"]},
+    # its reference page types neither inlet and its second digest is "phase/theta input";
+    # both take audio, as cartopol~'s do
+    "poltocar~": {"ins": ["signal", "signal"]},
+    # the cord from a tapin~ to a tapout~ is a tap link (Max saves its type as "tapconnect"),
+    # which the refpages describe as a plain outlet and a signal inlet
+    "tapin~": {"outs": ["tap"]},
+    "mc.tapin~": {"outs": ["tap"]},
+    "tapout~": {"ins": "tap"},
+    "mc.tapout~": {"ins": "tap"},
+    "mcs.tapout~": {"ins": "tap"},
+}
 
 
 def object_types(max_name, sig):
     """Static rates of one object's inlets ("ins") and outlets ("outs") from its signature row."""
 
-    types = {"ins": _side(sig, "inlets"), "outs": _side(sig, "outlets")}
+    types = {"ins": _side(sig, "inlets", max_name), "outs": _side(sig, "outlets", max_name)}
     if max_name in _PASS_THROUGH:
         # they take anything, audio included; what comes out depends on what goes in
         for side, rate in (("ins", "signal"), ("outs", "any")):
@@ -113,7 +128,7 @@ def object_types(max_name, sig):
     return types
 
 
-def _side(sig, key):
+def _side(sig, key, max_name=""):
     """Rates for one side of an object: a list for a fixed count, else one shared rate."""
 
     arity = (sig.get("arity") or {}).get(key) or {}
@@ -121,7 +136,8 @@ def _side(sig, key):
         return "any"  # containers (bpatcher, poly~, js...): xlets come from what is inside
 
     if key == "inlets":
-        rates = [_inlet_rate(sig, inlet) for inlet in sig["inlets"]]
+        first_takes_audio = max_name.endswith("~")
+        rates = [_inlet_rate(sig, inlet, first_takes_audio and i == 0) for i, inlet in enumerate(sig["inlets"])]
     else:
         rates = [_outlet_rate(outlet) for outlet in sig["outlets"]]
 
@@ -139,13 +155,25 @@ def _side(sig, key):
     return "any"
 
 
-def _inlet_rate(sig, inlet):
+# an inlet's own description saying it takes audio: "(signal) Order Forcing", "Right Audio
+# Input", "(int/float/sig) Begin"
+_AUDIO_DIGEST = re.compile(r"\b(signal|sig|audio)\b", re.IGNORECASE)
+
+
+def _inlet_rate(sig, inlet, msp_first_inlet=False):
     """
     An inlet takes no audio ("control") when its object has documented methods and none is
     signal. It takes audio ("signal") when its documented rate says so. A rate marked
     uncertain ("signal|control?") is unsure about messages, not audio: it takes audio when
     its refpage declares a signal type, as all of Max 9's do (lores~ and clip~'s input).
-    Otherwise it is not known ("any").
+
+    About seventy inlets have no documented rate at all: their refpage has a placeholder
+    where the type goes (`<inlet id="0" type="INLET_TYPE">`), so the signature row falls
+    back to "control" by convention. Two things on the same page still decide most of them.
+    The inlet's own description may say it takes audio. And an MSP object (`msp_first_inlet`:
+    this is the first inlet of an object named with a ~) that documents a signal method takes
+    audio there, because an MSP object's signal inlets are its leftmost ones (cosh~, sig~,
+    click~). Otherwise it is not known ("any").
     """
 
     methods = sig.get("methods") or []
@@ -154,8 +182,14 @@ def _inlet_rate(sig, inlet):
         return "control"
     if rate in ("signal", "signal|control"):
         return "signal"
-    if rate == "signal|control?" and "signal" in (inlet.get("declared_type") or "").lower():
+    declared = inlet.get("declared_type") or ""
+    if rate == "signal|control?" and "signal" in declared.lower():
         return "signal"
+    if inlet.get("source") == "convention":
+        if _AUDIO_DIGEST.search(f"{inlet.get('digest') or ''} {declared}"):
+            return "signal"
+        if msp_first_inlet and "signal" in methods:
+            return "signal"
     return "any"
 
 
@@ -329,7 +363,7 @@ def build_pyi(package, xlet_types):
         "from typing import Any",
         "",
         "from maxpylang.maxobject import MaxObject",
-        "from maxpylang.rates import Control, Matrix, MCSignal, Signal",
+        "from maxpylang.rates import Control, Matrix, MCSignal, Signal, Tap",
         "from maxpylang.xlet import Inlet, Outlet",
         "",
         "__all__ = [",

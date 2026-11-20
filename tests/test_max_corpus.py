@@ -79,7 +79,8 @@ def survey_corpus():
             if src is None or dst is None:
                 continue
             saved = src.get("outlettype") if box_name(src) in _KNOWN else None
-            outcome = judge(outlet_rate(box_name(src), out_i, saved), rate_of(box_name(dst), "ins", in_i))
+            outcome = judge(outlet_rate(box_name(src), out_i, saved, "patcher" in src),
+                            rate_of(box_name(dst), "ins", in_i))
             counts[outcome] += 1
             if outcome == "problem":
                 problems.append(f"{path.relative_to(C74)}: {src.get('text') or box_name(src)} outlet {out_i}"
@@ -98,22 +99,35 @@ def survey():
     return survey_corpus()
 
 
+# The one mistake of this kind Max ships. LiveUI.Map's first outlet is fed by a `+~`, and
+# liveui.multimap packs eight of them with `pak i i i i i i i i`: audio into an inlet that
+# takes numbers. It surfaced once a subpatcher's saved outlet types were read.
+_SHIPPED_MISTAKE = "bpatcher outlet 0 -> pak i i i i i i i i inlet"
+
+
 def test_no_shipped_cord_is_flagged(survey):
     counts, problems, _ = survey
+    real = [p for p in problems if _SHIPPED_MISTAKE in p]
+    assert len(real) == 16 and {p.split(":")[0].rsplit("/", 1)[-1] for p in real} == {
+        "Multi-Mapping.maxpat", "liveui.multimap.maxpat"}
+    problems = [p for p in problems if p not in real]
     total = counts["ok"] + counts["problem"] + counts["unknown"]
     print(f"\n{counts['files']} files, {total} cords: {counts['ok']} checked ok, "
-          f"{counts['problem']} flagged, {counts['unknown']} not checked")
+          f"{len(problems)} flagged falsely, {len(real)} flagged rightly, {counts['unknown']} not checked")
     assert total > 100_000, "the corpus looks incomplete"
     assert problems == [], f"{len(problems)} false alarms, e.g.\n" + "\n".join(problems[:20])
 
 
 def test_most_shipped_cords_are_checked(survey):
     """A cord that is not checked can hide a mistake. This was 27,000 of 140,082 before an
-    open outlet was read from the box's own outlet types; it is 24,663 now, nearly all of
-    them on patchers, bpatchers, inlets, abstractions and objects not in the database."""
+    open outlet was read from the box's own outlet types, and 24,658 after. It is 17,445 now
+    that a subpatcher's outlets and an inlet object are read from the types Max saved on
+    them, and that an inlet with no documented type is read from the rest of its reference
+    page. What is left is mostly inlet objects Max saved no type for, objects not in the
+    database, and bpatchers kept in another file."""
     counts, _, _ = survey
     total = counts["ok"] + counts["problem"] + counts["unknown"]
-    assert counts["unknown"] <= 0.18 * total, f"{counts['unknown']} of {total} shipped cords not checked"
+    assert counts["unknown"] <= 0.13 * total, f"{counts['unknown']} of {total} shipped cords not checked"
 
 
 def test_no_outlet_the_data_calls_audio_is_saved_as_a_message(survey):
@@ -124,7 +138,7 @@ def test_no_outlet_the_data_calls_audio_is_saved_as_a_message(survey):
 def survey_graphs():
     """Graph problems over every shipped patcher, counted by kind, with examples."""
     from maxpylang.graphcheck import find_problems, from_json
-    counts = {"patchers": 0, "objects": 0, "hot loop": 0, "audio feedback": 0, "dead output": 0,
+    counts = {"patchers": 0, "objects": 0, "hot loop": 0, "audio feedback": 0, "dead output": 0, "no delay line": 0,
               "patches": 0, "patches with a dead output": 0}
     examples = []
     for path, patcher in corpus():
@@ -167,6 +181,31 @@ def test_few_shipped_patches_have_a_dead_output(graph_survey):
     print(f"\n{flagged} of {total} shipped .maxpat patchers have a dead output")
     assert total > 1000, "the corpus looks incomplete"
     assert flagged <= 0.05 * total, f"{flagged} of {total} shipped patchers flagged"
+
+
+def test_few_shipped_files_have_a_name_with_nothing_on_the_other_end():
+    """A receive nothing sends to, or a groove~ with no buffer~, judged over each whole file.
+    Shipped patches work, so each one found is a false alarm or a name another file supplies.
+    It is 7 names in 5 of 3122 files: a loose `r` kept as a note, a name another file sends."""
+    from maxpylang.graphcheck import link_problems
+    files, flagged, found = 0, 0, []
+    for path in sorted(C74.rglob("*")):
+        if path.suffix not in (".maxpat", ".maxhelp"):
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8", errors="replace"))
+        except (ValueError, OSError):
+            continue
+        if not isinstance(data.get("patcher"), dict):
+            continue
+        files += 1
+        problems = link_problems(data["patcher"])
+        flagged += bool(problems)
+        found += [f"{path.relative_to(C74)}: {p.message}" for p in problems]
+    print(f"\n{len(found)} names in {flagged} of {files} shipped files have nothing on the other end:\n"
+          + "\n".join(found[:20]))
+    assert files > 3000, "the corpus looks incomplete"
+    assert flagged <= 0.005 * files, f"{flagged} of {files} files flagged, e.g.\n" + "\n".join(found[:20])
 
 
 # ── the object database ───────────────────────────────────────────────────────
