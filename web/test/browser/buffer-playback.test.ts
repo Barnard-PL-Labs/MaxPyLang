@@ -90,4 +90,17 @@ describe('buffer~ and its readers', () => {
     for (const v of y) sum += v * v;
     expect(Math.sqrt(sum / y.length)).toBeGreaterThan(0.01);
   });
+
+  it('line~ runs every target-time pair in a message, in turn, as in Max', async () => {
+    const ctx = new OfflineAudioContext(1, Math.round(SR * 0.4), SR);
+    const line = getFactory('line~')!([0], { ctx });
+    (line.signalOuts[0] as AudioNode).connect(ctx.destination);
+    line.controlIns![0]!([5, 0, 1, 100, 3, 200]); // jump to 5, to 1 over 100 ms, to 3 over 200 ms
+    const y = (await ctx.startRendering()).getChannelData(0);
+    expect(y[1]).toBeCloseTo(5, 2);
+    expect(y[Math.round(0.05 * SR)]).toBeCloseTo(3, 1);   // halfway from 5 to 1
+    expect(y[Math.round(0.1 * SR)]).toBeCloseTo(1, 1);
+    expect(y[Math.round(0.2 * SR)]).toBeCloseTo(2, 1);    // halfway from 1 to 3
+    expect(y[Math.round(0.35 * SR)]).toBeCloseTo(3, 2);
+  });
 });
