@@ -12,5 +12,10 @@
   "conditional": ["gate", "select", "sel", "route", "if", "split", "past", "ggate", "gswitch", "switch", "zl", "counter", "urn", "coll", "live.colors"],
   "ui": ["number", "flonum", "slider", "umenu", "toggle", "gain~", "kslider", "multislider", "dial", "rslider", "tab", "nslider", "matrixctrl", "radiogroup", "textbutton", "pictslider", "incdec", "function", "number~", "button", "led", "attrui", "chooser", "textedit", "multirange", "jit.cellblock", "live.dial", "live.slider", "live.numbox", "live.menu", "live.tab", "live.text", "live.toggle", "live.gain~", "live.button", "mc.live.gain~", "hi", "lcd", "jsui", "v8ui", "themecolor"],
   "clocked": ["line", "bline", "line~", "metro", "tempo", "transport", "makenote"],
+  "tap_readers": ["tapout~", "mc.tapout~", "mcs.tapout~"],
+  "buffer_readers": ["groove~", "play~", "wave~", "2d.wave~", "index~", "peek~", "poke~", "record~", "lookup~", "buffir~", "info~", "stretch~"],
+  "buffer_makers": ["buffer~", "jit.buffer~"],
+  "may_hold_the_other_end": ["poly~", "mc.poly~", "pfft~", "js", "jsui", "v8", "v8ui", "node.script", "rnbo~", "jweb", "amxd~", "mxj", "mxj~", "pattrforward", "vst~", "mc.vst~", "mcs.vst~"],
+  "part_of_a_bigger_patch": ["inlet", "outlet", "in", "in~", "out", "out~", "thispoly~", "fftin~", "fftout~", "mc.in~", "mc.out~"],
   "all_inlets_hot": ["pak", "bondo", "buddy", "timer", "gate", "switch"]
 }

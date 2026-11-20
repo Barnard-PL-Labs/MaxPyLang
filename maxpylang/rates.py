@@ -11,6 +11,8 @@ These classes are markers only and are never instantiated.
     Matrix   --> a Jitter matrix; it travels as a message, so it is a Control
     Signal   --> MSP audio
     MCSignal --> multichannel audio; legal wherever a Signal is
+    Tap      --> the link from tapin~ to tapout~: neither audio nor a message, it tells a
+                 tapout~ which delay line to read, and nothing else understands it
 
 Control into an audio inlet is always allowed, because most audio inlets also
 take messages (``start``, a float for a constant). Only Signal into an inlet
@@ -34,6 +36,10 @@ class Signal:
 
 class MCSignal(Signal):
     """Multichannel audio."""
+
+
+class Tap:
+    """A tap link: what tapin~ sends, and only tapout~ takes."""
 
 
 R = TypeVar("R")

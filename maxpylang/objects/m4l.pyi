@@ -3,7 +3,7 @@
 from typing import Any
 
 from maxpylang.maxobject import MaxObject
-from maxpylang.rates import Control, Matrix, MCSignal, Signal
+from maxpylang.rates import Control, Matrix, MCSignal, Signal, Tap
 from maxpylang.xlet import Inlet, Outlet
 
 __all__ = [

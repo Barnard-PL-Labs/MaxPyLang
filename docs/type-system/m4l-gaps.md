@@ -31,13 +31,13 @@ current device had to work around, read off the generated script.
 | M4L-02 | express | Presentation mode has no API and is rejected on some objects | open |
 | M4L-03 | express | A comment is saved with its object name in front of its words | open |
 | M4L-04 | express | Patcher settings (open in presentation, device width) have no API | open |
-| M4L-05 | check | A tap link is not a type: `tapin~` and `tapout~` pairing is unchecked | open |
+| M4L-05 | check | A tap link is not a type: `tapin~` and `tapout~` pairing is unchecked | closed |
 | M4L-06 | check | The device type is not a contract | open |
 | M4L-07 | check | A parameter's range is invisible to the checks | open |
 | M4L-08 | check | Duplicate parameter names are accepted | open |
 | M4L-09 | check | Output level is unbounded: the `clip~` rule is not checked | open |
 | M4L-10 | check | A parameter that controls nothing is accepted | open |
-| M4L-11 | check | About fifty audio objects have an inlet with no type, so cords into them are not judged | open (`tanh~` fixed) |
+| M4L-11 | check | About fifty audio objects have an inlet with no type, so cords into them are not judged | closed |
 
 "Express" gaps block the generator and are worked around in its script. "Check" gaps
 do not block it: the generator happens to build correct devices, and the checks would
@@ -128,18 +128,20 @@ second option; the first would also close it once the test is adapted.
 
 ## M4L-05: a tap link is not a type
 
-**Missing.** `tapin~`'s outlet does not carry audio or numbers. It carries a tap link
+**Closed.** `tapin~`'s outlet did not carry audio or numbers. It carries a tap link
 (Max's `tapconnect`), and the only thing that understands one is `tapout~`. Every delay,
-chorus and flanger in a device is built on this pair.
+chorus and flanger in a device is built on this pair, and `tapin~ -> *~` was accepted as
+a checked, unflagged cord. A `tapout~` fed by no `tapin~` was accepted too, although it
+has no line to read and outputs silence.
 
-**Evidence.** `tapin~ -> *~` is accepted by the cord check as a checked, unflagged cord.
-A `tapout~` fed by no `tapin~` is accepted too, although it has no line to read and
-outputs silence. The data already knows the outlet's type: the xlet's `_types` is
-`'tapconnect'`.
+**Fix.** The tap link is a cord type of its own, `Tap` in `maxpylang/rates.py` and `tap`
+in the type table. A `tapin~` outlet sends one, a `tapout~` inlet takes a tap link, audio
+or a number, and nothing else takes a tap link. `connect()` warns at the line, and ty,
+mypy and pyright reject the same cord in a script written with stubs. At save, a
+`tapout~` that no `tapin~` reaches is reported as "no delay line".
 
-**Proposed fix.** Give `tapconnect` its own cord type in the cord check: an outlet of
-that type may only reach an inlet that accepts it. Add a graph rule that a `tapout~`
-must be reachable from a `tapin~` through a tap link.
+Against Max's own shipped patches neither rule flags anything, once a tap link coming in
+through an `inlet` or a `poly~` voice's `in` is allowed for.
 
 **Tests.** `test_m4l_05_a_tap_link_only_fits_a_tapout`,
 `test_m4l_05_a_tapout_needs_a_tapin`.
@@ -245,27 +247,23 @@ require a cord from an outlet, or a `varname` that something refers to.
 
 ## M4L-11: audio objects whose inlets have no type
 
-**Missing.** A type for the inlet of about fifty audio objects, among them `tanh~`,
-`cosh~`, `sinh~`, `tanx~`, `sinx~`, `cosx~`, `receive~` and `gen~`.
+**Closed.** `cycle~ -> tanh~` was reported as a cord the checks could not judge ("no type
+data"), on an object that takes a signal and nothing else. The cause is upstream: the
+reference pages Max ships for about seventy inlets have a placeholder where the inlet
+type goes (`<inlet id="0" type="INLET_TYPE">`), so the type table recorded them as `any`.
+It showed up as soon as the generator used `tanh~`: the page's "Type check" panel went
+from "all cords checked" to "2 not checked".
 
-**Evidence.** `cycle~ -> tanh~` was reported as a cord the checks could not judge
-("no type data"), on an object that takes a signal and nothing else. The cause is
-upstream: the reference pages Max ships for these objects have a placeholder where the
-inlet type goes (`<inlet id="0" type="INLET_TYPE">`), so the type table records the inlet
-as `any`. 53 objects in `msp-ref` have both the placeholder and an `any` inlet.
+**Fix.** Where the type is a placeholder, the table now reads the rest of the page
+(`_inlet_rate` in `maxpylang/tools/typedstubs.py`). An inlet whose own description says
+it takes audio does ("Trigger Reset (signal)", "Right Audio Input"). An MSP object that
+documents a `signal` method takes audio at its first inlet, since an MSP object's signal
+inlets are its leftmost ones. That types `tanh~`, `cosh~`, `sinh~`, `tanx~`, `sinx~`,
+`cosx~`, `sig~`, `click~`, `receive~`, `phasor~`'s second inlet and about fifty more.
+The rule can only turn "not checked" into "takes audio", so it cannot cause a false
+alarm. Inlets with no sign either way stay open (`number~`'s ramp time, `limi~`).
 
-It showed up as soon as the generator used `tanh~` for its tube distortion and for the
-saturating delay loop: the page's "Type check" panel went from "all cords checked" to
-"2 not checked".
-
-**Done so far.** `tanh~`'s inlet is set to `signal` in `data/xlet_types.json`, by hand,
-after confirming in Max that it processes audio.
-
-**Proposed fix.** The same pages describe each inlet in their method list
-(`<method name="signal">`), and for most of the fifty that is enough to tell a signal
-inlet from a message inlet. Use it as a fallback when the inlet type is the placeholder.
-
-**Tests.** `test_m4l_11_tanh_is_judged` (passes), `test_m4l_11_a_cord_into_cosh_is_judged`.
+**Tests.** `test_m4l_11_tanh_is_judged`, `test_m4l_11_a_cord_into_cosh_is_judged`.
 
 ---
 

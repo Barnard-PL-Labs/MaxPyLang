@@ -2,6 +2,7 @@
 
 import contextlib
 import io
+import json
 import warnings
 from pathlib import Path
 
@@ -195,12 +196,12 @@ def test_save_adds_no_line_when_everything_was_checked(tmp_path, capsys):
 
 
 def test_save_does_not_name_a_known_object_with_no_type_data(tmp_path, capsys):
-    """plot~ is a real object whose inlets are not recorded as taking audio or not: the user
+    """limi~ is a real object whose inlets are not recorded as taking audio or not: the user
     cannot act on that, so save() only counts the cord. get_coverage() still names it."""
     patch = mp.MaxPatch(verbose=False)
-    osc, plot = (patch.place(text, verbose=False)[0] for text in ("cycle~ 440", "plot~"))
-    patch.connect([osc.outs[0], plot.ins[0]], verbose=False)
-    assert patch.get_coverage()["cords"]["not_checked_because"] == [("plot~ (obj-2)", "no type data", 1)]
+    osc, limiter = (patch.place(text, verbose=False)[0] for text in ("cycle~ 440", "limi~"))
+    patch.connect([osc.outs[0], limiter.ins[0]], verbose=False)
+    assert patch.get_coverage()["cords"]["not_checked_because"] == [("limi~ (obj-2)", "no type data", 1)]
     patch.save(str(tmp_path / "p"), verbose=False)
     out = capsys.readouterr().out
     assert "1 not checked (no type data)" in out and "not checked:" not in out
@@ -231,10 +232,91 @@ def test_play_has_an_outlet_per_channel_then_its_done_bang():
     assert cord("play~ buf", "metro 500", outlet=1) == "ok"
 
 
-def test_outlets_made_by_what_is_inside_or_sent_in_stay_unknown():
-    for name in ("inlet", "patcher", "bpatcher", "gen~", "js"):
+def test_outlets_made_by_what_is_inside_stay_unknown():
+    for name in ("gen~", "js", "poly~"):
         assert outlet_rate(name, 0, ["signal"]) is None
-        assert outlet_rate(name, 0, [""]) is None
+
+
+def test_a_subpatcher_outlet_is_read_from_the_type_max_saved_on_its_box():
+    """Max works out what a patcher's outlets send from what is inside and saves it."""
+    for name in ("patcher", "bpatcher"):
+        assert outlet_rate(name, 0, ["signal", "int"]) == "signal"
+        assert outlet_rate(name, 1, ["signal", "int"]) == "control"
+
+
+def test_an_empty_saved_type_is_evidence_only_when_the_contents_were_saved_too():
+    """A box holds an empty type before Max has seen what is connected, as a new `p` placed
+    by maxpylang does. Saved with its contents, an empty type means messages."""
+    assert outlet_rate("patcher", 0, [""]) is None
+    assert outlet_rate("patcher", 0, [""], seen_inside=True) == "control"
+
+
+def test_an_inlet_object_is_read_from_its_saved_type_unless_that_is_audio():
+    """An inlet that takes audio usually takes messages on the same cord, and what follows
+    may be there to split them (BEAP's `routepass`), so it stays unknown."""
+    assert outlet_rate("inlet", 0, ["int"]) == "control"
+    assert outlet_rate("inlet", 0, ["jit_matrix"]) == "matrix"
+    assert outlet_rate("inlet", 0, ["signal"]) is None
+    assert outlet_rate("inlet", 0, [""], seen_inside=True) is None
+
+
+def test_a_loaded_subpatcher_that_sends_audio_is_checked(tmp_path):
+    inner = {"fileversion": 1, "boxes": [], "lines": []}
+    def box(i, **more):
+        return {"box": dict(id=f"obj-{i}", numinlets=1, patching_rect=[20.0, 40.0 * i, 60.0, 22.0], **more)}
+
+    patcher = {"patcher": {"fileversion": 1, "rect": [0, 0, 400, 300], "boxes": [
+        box(1, maxclass="newobj", text="p voice", numoutlets=1, outlettype=["signal"], patcher=inner),
+        box(2, maxclass="toggle", numoutlets=1, outlettype=["int"], parameter_enable=0),
+    ], "lines": [{"patchline": {"source": ["obj-1", 0], "destination": ["obj-2", 0]}}]}}
+    path = tmp_path / "sub.maxpat"
+    path.write_text(json.dumps(patcher))
+    with contextlib.redirect_stdout(io.StringIO()), warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        patch = mp.MaxPatch(load_file=str(path), verbose=False)
+    assert patch.get_coverage()["cords"]["flagged"] == 1
+    assert len(connection_warnings(caught)) == 1
+
+
+# ── inlets whose reference page gives no type ────────────────────────────────
+
+@pytest.mark.parametrize("text", ["cosh~", "sinh~", "tanh~", "sinx~", "sig~", "click~", "phasewrap~", "receive~ a"])
+def test_an_msp_object_with_a_signal_method_takes_audio_at_its_first_inlet(text):
+    assert cord("cycle~ 440", text) == "ok"
+
+
+def test_an_inlet_described_as_taking_audio_takes_audio():
+    assert cord("cycle~ 440", "phasor~", inlet=1) == "ok"      # "Trigger Reset (signal)"
+    assert cord("cycle~ 440", "buffir~ b", inlet=2) == "ok"    # "(int/float/sig) Length"
+    assert cord("cycle~ 440", "poltocar~", inlet=1) == "ok"    # set by hand
+
+
+def test_an_inlet_with_no_sign_of_audio_stays_unknown():
+    assert cord("cycle~ 440", "number~", inlet=1) == "unknown"  # "Ramp time in Milliseconds"
+
+
+# ── tap links ───────────────────────────────────────────────────────────────
+
+def test_a_tap_link_fits_a_tapout_and_nothing_else():
+    assert cord("tapin~ 1000", "tapout~ 250") == "ok"
+    assert cord("tapin~ 1000", "*~ 0.5") == "problem"
+    assert cord("tapin~ 1000", "print") == "problem"
+    assert cord("mc.tapin~ 1000", "mc.tapout~ 250") == "ok"
+
+
+def test_a_tapout_takes_a_delay_time_as_audio_or_a_number():
+    assert cord("cycle~ 2", "tapout~ 250") == "ok"
+    assert cord("flonum", "tapout~ 250") == "ok"
+
+
+def test_a_tap_link_into_the_wrong_object_says_what_a_tap_link_is():
+    patch = mp.MaxPatch(verbose=False)
+    tapin, gain = (patch.place(text, verbose=False)[0] for text in ("tapin~ 1000", "*~ 0.5"))
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        patch.connect([tapin.outs[0], gain.ins[0]], verbose=False)
+    (warning,) = connection_warnings(caught)
+    assert "tap link" in str(warning.message) and "tapout~" in str(warning.message)
 
 
 def test_gain_takes_audio_in_its_first_inlet_only():

@@ -16,13 +16,14 @@ import collections
 import os
 
 from maxpylang.cordcheck import coverage, unchecked
-from maxpylang.graphcheck import find_problems, from_patch, warn_problems
+from maxpylang.graphcheck import find_problems, from_patch, link_problems, warn_problems
 
 def check(self, *flags, device_type=None):
     """
     This method checks the patch for linked abstractions, unknown objects, linked/unlinked js objects,
     cords that send audio into an inlet that takes no audio, and problems in the shape of the
-    patch: hot loops, audio feedback with no delay, and outputs that reach nothing.
+    patch: hot loops, audio feedback with no delay, outputs that reach nothing, a tapout~
+    with no tapin~, and names (receive, receive~, buffer~ readers) with nothing on the other end.
 
     :param \\*flags: takes keywords ``'abstractions'``, ``'unknowns'``, ``'js'``, ``'cords'``. If no flags given,
         checks all five categories. ``'graph'`` checks the shape of the patch.
@@ -101,6 +102,7 @@ def check(self, *flags, device_type=None):
 
     if 'graph' in flags:
         problems = find_problems(*from_patch(self), max_for_live=device_type is not None)
+        problems += link_problems(self.get_json()["patcher"])
         warn_problems(problems)
         found = collections.Counter(problem.kind for problem in problems)
         def count(n, one, many):
@@ -108,6 +110,9 @@ def check(self, *flags, device_type=None):
         print(f"PatchCheck: graph : {count(found['hot loop'], 'hot loop', 'hot loops')}, "
               f"{count(found['audio feedback'], 'audio feedback loop', 'audio feedback loops')} with no delay, "
               f"{count(found['dead output'], 'part', 'parts')} of the patch whose output reaches nothing")
+        if found["no delay line"] or found["missing name"]:
+            print(f"PatchCheck: links : {count(found['no delay line'], 'tapout~', 'tapout~ objects')} with no "
+                  f"tapin~, {count(found['missing name'], 'name', 'names')} with nothing on the other end")
         _print_some("not seen into:", self.get_coverage()["objects"]["not_seen_into"])
         print()
 
