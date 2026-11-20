@@ -48,3 +48,18 @@ describe('coverage', () => {
     expect(gaps).toEqual([]);
   });
 });
+
+describe('completeness', () => {
+  it('every object in maxpylang.objects, or that maxpylang can place, has a page', async () => {
+    const stubs = (await import('../src/generated/stubs.json')).default as Record<string, string>;
+    const known = (await import('../src/generated/known.json')).default as Record<string, unknown>;
+    const onPage = new Set(categories().flatMap((c) => c.entries.map((e) => e.name)));
+    const missing = [...new Set([...Object.keys(stubs), ...Object.keys(known)])].filter((n) => !onPage.has(n));
+    expect(missing).toEqual([]);
+  });
+
+  it('no object is listed twice', () => {
+    const names = categories().flatMap((c) => c.entries.map((e) => e.name));
+    expect(names.filter((n, i) => names.indexOf(n) !== i)).toEqual([]);
+  });
+});

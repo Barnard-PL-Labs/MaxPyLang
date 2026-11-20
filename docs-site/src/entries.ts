@@ -115,8 +115,10 @@ function sharedExamples(name: string): { examples: Example[]; sameAs: string | n
 }
 
 function entryFor(info: ObjectInfo | undefined, name: string, category: string, color: string): Entry {
-  const doc = objdocs[name] ?? objdocs[manifest[name]?.aliasOf ?? ''] ?? {};
-  const man = manifest[name] ?? {};
+  // An alias (s, del, <~) has no reference page of its own: use the object it names.
+  const alias = manifest[name]?.aliasOf ?? known[name]?.aliasOf ?? '';
+  const doc = objdocs[name] ?? objdocs[alias] ?? {};
+  const man = manifest[name] ?? manifest[alias] ?? {};
   const outletDomains = man.outletDomains ?? [];
   return {
     name,
@@ -154,24 +156,26 @@ export function categories(): Category[] {
     }),
   }));
 
-  const rest = [...infos.values()].filter((o) => !listed.has(o.name) && objdocs[o.name]);
-  const byName = (a: ObjectInfo, b: ObjectInfo) => a.name.localeCompare(b.name);
-  out.push({
-    name: 'Multichannel',
-    color: '#b8b8b8',
-    blurb: 'mc.* versions of the objects above: one box, many channels. The examples are written for Max; this browser player plays each mc.* object as one channel, in the left speaker.',
-    collapsed: true,
-    entries: rest.filter((o) => o.tier === 'B' && o.name.startsWith('mc.')).sort(byName)
-      .map((o) => entryFor(o, o.name, 'Multichannel', '#b8b8b8')),
+  // Everything else: every object the browser engine knows, every stub in maxpylang.objects,
+  // and every object maxpylang can place by name. test/content.test.ts checks none is left out.
+  const restNames = [...new Set([...infos.keys(), ...Object.keys(stubs), ...Object.keys(known)])]
+    .filter((n) => !listed.has(n));
+  const rest = restNames.map((n) => ({ name: n, info: infos.get(n), plays: infos.get(n)?.tier === 'B' || isSupported(n) }));
+  type Rest = (typeof rest)[number];
+  const byName = (a: Rest, b: Rest) => a.name.localeCompare(b.name);
+  const group = (name: string, color: string, blurb: string, pick: (o: Rest) => boolean): Category => ({
+    name, color, blurb, collapsed: true,
+    entries: rest.filter(pick).sort(byName).map((o) => entryFor(o.info, o.name, name, color)),
   });
-  out.push({
-    name: 'More objects (Max only)',
-    color: '#d9d9d9',
-    blurb: 'These work in Max but do not make sound in this browser player yet.',
-    collapsed: true,
-    entries: rest.filter((o) => o.tier === 'A').sort(byName)
-      .map((o) => entryFor(o, o.name, 'More objects (Max only)', '#d9d9d9')),
-  });
+  out.push(group('Multichannel', '#b8b8b8',
+    'mc.* versions of the objects above: one box, many channels. The examples are written for Max; this browser player plays each mc.* object as one channel, in the left speaker.',
+    (o) => o.plays && o.name.startsWith('mc.')));
+  out.push(group('More objects that play here', '#c9c0b8',
+    'Objects this browser player runs that have no example here yet.',
+    (o) => o.plays && !o.name.startsWith('mc.')));
+  out.push(group('More objects (Max only)', '#d9d9d9',
+    'These work in Max but do not run in this browser player yet. Some, such as array.* and string.*, maxpylang cannot place yet either; their pages say so.',
+    (o) => !o.plays));
   cache = out;
   return out;
 }
