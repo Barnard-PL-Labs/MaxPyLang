@@ -76,6 +76,8 @@ a { color: var(--link); }
 .tab { font: 15px var(--mono); padding: 4px 10px; background: #fff3ee; color: var(--ink); text-decoration: none; }
 .tab.on { background: #b98b80; color: #fff; }
 .buttons { display: flex; gap: 4px; }
+.volume { display: flex; align-items: center; gap: 4px; margin-left: auto; font-size: 15px; }
+.volume input { width: 90px; accent-color: #8a5f55; }
 .buttons button {
   font-size: 16px; width: 38px; height: 32px; cursor: pointer; border: 1px solid #8a5f55;
   background: #fff3ee; color: var(--ink);

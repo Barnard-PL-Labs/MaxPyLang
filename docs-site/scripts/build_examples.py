@@ -19,6 +19,8 @@ It also builds a wheel of this repo's maxpylang into public/py/, which the brows
 Python installs when someone edits an example, and records its file name in
 src/generated/wheel.json.
 
+    python docs-site/scripts/build_examples.py --check FILE...   # compile only, write nothing
+
 Writes src/generated/examples.json, plus two files the page uses for every entry:
   stubs.json  Max object name -> Python name in maxpylang.objects ("cycle~": "cycle_tilde")
   known.json  objects maxpylang can place, with the arguments it requires
@@ -168,7 +170,10 @@ def main():
     shown_as = {target: alias for alias, target in aliases().items() if alias in listed and target not in listed}
     examples, errors = [], []
 
-    for path in sorted(EXAMPLES.glob("*/*.py")):
+    check = "--check" in sys.argv
+    paths = ([Path(a).resolve() for a in sys.argv[sys.argv.index("--check") + 1:]] if check
+             else sorted(EXAMPLES.glob("*/*.py")))
+    for path in paths:
         stub = path.parent.name
         obj = by_stub.get(stub)
         obj = shown_as.get(obj, obj)
@@ -191,8 +196,11 @@ def main():
             errors.append(f"{rel}: unknown objects: {'; '.join(unknown)}")
         if "dac~" in names:
             errors.append(f"{rel}: uses dac~, which is silent in the browser; use ezdac~")
-        if "ezdac~" not in names and "playlist~" not in names:
-            errors.append(f"{rel}: has no ezdac~, so it makes no sound")
+        # Every example has an output: speakers (ezdac~, mc.ezdac~, playlist~), or for a
+        # video example, a picture (jit.pwindow / jit.window).
+        outputs = {"ezdac~", "mc.ezdac~", "playlist~", "jit.pwindow", "jit.window"}
+        if not outputs & set(names):
+            errors.append(f"{rel}: has no output (ezdac~, or jit.pwindow for video), so nothing happens")
         if not title:
             errors.append(f"{rel}: needs a docstring whose first line is the example's title")
         examples.append({
@@ -206,6 +214,10 @@ def main():
         for e in errors:
             print("  " + e, file=sys.stderr)
         sys.exit(1)
+    if check:
+        for e in examples:
+            print(f"ok  {e['file']}  ->  {e['object']}: {e['title']}  [{', '.join(e['objects'])}]")
+        return
 
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "examples.json").write_text(json.dumps(examples, indent=1))

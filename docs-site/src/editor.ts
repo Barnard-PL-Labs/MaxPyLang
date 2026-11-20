@@ -21,9 +21,13 @@ export function mountEditor(
       basicSetup,
       lang,
       lang.language.data.of({ autocomplete: maxpyComplete }),
-      // Highest precedence: basicSetup binds Mod-Enter to "insert blank line", and the
-      // first binding that handles a key wins.
-      Prec.highest(keymap.of([{ key: 'Mod-Enter', preventDefault: true, run: () => { opts.onRun(); return true; } }])),
+      // Run on Ctrl+Enter AND Cmd+Enter: 'Mod-Enter' alone means Cmd on a Mac, so
+      // Ctrl+Enter there did nothing. Highest precedence, because basicSetup binds
+      // Mod-Enter to "insert blank line" and the first binding that handles a key wins.
+      Prec.highest(keymap.of([
+        { key: 'Mod-Enter', preventDefault: true, run: () => { opts.onRun(); return true; } },
+        { key: 'Ctrl-Enter', preventDefault: true, run: () => { opts.onRun(); return true; } },
+      ])),
       keymap.of([indentWithTab]),
       EditorView.updateListener.of((u) => { if (u.docChanged) opts.onChange(u.state.doc.toString()); }),
       EditorView.theme({

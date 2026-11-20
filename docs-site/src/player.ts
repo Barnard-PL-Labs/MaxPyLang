@@ -17,7 +17,8 @@ const nativeDestination = Object.getOwnPropertyDescriptor(BaseAudioContext.proto
 
 export class TapAudioContext extends AudioContext {
   readonly analyser: AnalyserNode;
-  private readonly tap: GainNode;
+  /** Everything the patch sends to the speakers passes through this; its gain is the volume. */
+  readonly tap: GainNode;
 
   constructor() {
     super();
@@ -35,6 +36,16 @@ export class TapAudioContext extends AudioContext {
 }
 
 let engine: Engine | null = null;
+let volume = 1;
+
+/** Set the page's output volume, 0..1. Applies now and to every patch played later. */
+export function setVolume(v: number): void {
+  volume = Math.min(1, Math.max(0, v));
+  const ctx = engine?.ctx as TapAudioContext | undefined;
+  ctx?.tap.gain.setTargetAtTime(volume, ctx.currentTime, 0.02); // smooth: no clicks
+}
+
+export const getVolume = (): number => volume;
 let ready: Promise<Engine> | null = null;
 let current: string | null = null;
 const listeners = new Set<(playing: string | null) => void>();
@@ -42,6 +53,7 @@ const listeners = new Set<(playing: string | null) => void>();
 function audio(): Promise<Engine> {
   ready ??= (async () => {
     const ctx = new TapAudioContext();
+    ctx.tap.gain.value = volume;
     engine = new Engine(ctx);
     await preloadWorklets(ctx);
     return engine;
@@ -72,6 +84,9 @@ export async function stop(): Promise<void> {
 }
 
 export const playing = (): string | null => current;
+
+/** The shared engine, for tests and debugging. */
+export const engineForTests = () => engine;
 
 /** The DOM the engine built for a box (a number box, a slider…), while a patch is built. */
 export function builtWidget(id: string): HTMLElement | undefined {

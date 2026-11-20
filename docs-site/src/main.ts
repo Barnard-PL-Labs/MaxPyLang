@@ -4,7 +4,7 @@
 // Route: #objects/<name>/<example>, e.g. #objects/cycle~/1 (Hydra: #functions/noise/0).
 
 import './style.css';
-import { play, stop, playing, onChange, builtWidget } from './player';
+import { play, stop, playing, onChange, builtWidget, engineForTests, setVolume, getVolume } from './player';
 import { categories, findEntry, pyArg, type Entry, type Example } from './entries';
 import { compile, lastLine, LoadError, onStatus, pythonLoaded } from './compiler';
 import { mountEditor } from './editor';
@@ -129,11 +129,12 @@ function showPanel(name: string, index: number): void {
         <div class="patch-host" aria-label="The example's patch"></div>
         <canvas class="scope" aria-label="Live waveform and spectrum"></canvas>
       </div>
-      <p class="patch-note">The patch this code makes, arranged top to bottom for reading. Drag to move it or its boxes; ⌘/Ctrl + scroll to zoom.</p>
+      <p class="patch-note">The patch this code makes, arranged top to bottom for reading. While it plays, its sliders, dials and keys are live: drag them to change the sound. Drag the background to move around; ⌘/Ctrl + scroll to zoom.</p>
       <div class="bar">
         <div class="tabs">${tabs}</div>
+        <label class="volume" title="Volume">🔈<input type="range" min="0" max="1" step="0.01" aria-label="Volume" /></label>
         <div class="buttons">
-          <button class="play" title="Play / stop (Ctrl+Enter)">▶</button>
+          <button class="play" title="Play / stop (Ctrl+Enter or ⌘+Enter)">▶</button>
           <button class="reset" title="Undo your edits">↺</button>
           <button class="copy" title="Copy the code">⧉</button>
           <button class="studio" title="Open this patch in MaxPyStudio">↗</button>
@@ -141,7 +142,7 @@ function showPanel(name: string, index: number): void {
       </div>
       <p class="ex-title"><b>${esc(example.title)}</b> ${esc(example.note)}</p>
       <div class="editor"></div>
-      <p class="status">Edit the code and press ▶ or Ctrl+Enter to run it.</p>`
+      <p class="status">Edit the code and press ▶ or Ctrl+Enter (⌘+Enter) to run it.</p>`
     : `<p class="none">No example for this object yet.</p>`}
     ${entry.description ? `<h3>About</h3><p class="desc">${esc(entry.description)}</p>` : ''}
     ${portsHtml(entry)}`;
@@ -166,6 +167,13 @@ function showPanel(name: string, index: number): void {
   });
   stopScope = mountScope(panel.querySelector('.scope') as HTMLCanvasElement, () => entry.color, () => playing() === key);
 
+  const vol = panel.querySelector('.volume input') as HTMLInputElement;
+  vol.value = String(getVolume());
+  vol.addEventListener('input', () => {
+    setVolume(Number(vol.value));
+    try { localStorage.setItem('reference-volume', vol.value); } catch { /* private mode: just don't remember */ }
+  });
+
   const playBtn = panel.querySelector('.play') as HTMLButtonElement;
   const syncButton = () => {
     playBtn.textContent = playing() === key ? '■' : '▶';
@@ -186,7 +194,7 @@ function showPanel(name: string, index: number): void {
       }
       shown.patch = patch;
       await play(key, patch);
-      setStatus(edited ? 'Playing your edited code.' : 'Playing. Edit the code and press ▶ or Ctrl+Enter to run it.', 'ok');
+      setStatus(edited ? 'Playing your edited code.' : 'Playing. Edit the code and press ▶ or Ctrl+Enter (⌘+Enter) to run it.', 'ok');
     } catch (err) {
       if (err instanceof LoadError) console.warn('Python failed to start:', err.detail);
       setStatus(err instanceof LoadError ? err.message : lastLine(String((err as Error).message ?? err)), 'error');
@@ -258,6 +266,7 @@ function openExpanded(entry: Entry, key: string, code: () => string, patch: () =
   setCode(text: string) { editor?.dispatch({ changes: { from: 0, to: editor.state.doc.length, insert: text } }); },
   code: () => editor?.state.doc.toString() ?? null,
   playing,
+  engine: engineForTests,
 };
 onStatus((message) => {
   const s = panel.querySelector('.status');
@@ -280,6 +289,11 @@ function onRoute(): void {
   if (shown && playing() && !playing()!.startsWith(name + '/')) void stop();
   showPanel(name, Number(m[2] ?? 0));
 }
+
+try {
+  const saved = localStorage.getItem('reference-volume');
+  if (saved !== null && Number.isFinite(Number(saved))) setVolume(Number(saved));
+} catch { /* storage blocked: start at full volume */ }
 
 renderList();
 window.addEventListener('hashchange', onRoute);
