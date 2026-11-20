@@ -111,7 +111,7 @@ afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 describe('every reference example plays', () => {
   for (const ex of examples as { object: string; index: number; title: string; objects: string[]; patch: unknown }[]) {
     it(`${ex.object}/${ex.index}: ${ex.title}`, async () => {
-      vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'setTimeout', 'clearTimeout'] });
+      vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'setTimeout', 'clearTimeout', 'Date'] });
       if (ex.objects.includes('jit.grab')) return; // needs a camera; build_examples checks it compiles
       const { rms, zcr, peak, bright } = analyse(await render(ex.patch, ex.objects.includes('playlist~') || ex.objects.includes('buffer~')));
 
