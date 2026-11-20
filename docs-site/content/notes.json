@@ -30,7 +30,14 @@
   "patcher": "maxpylang places p (patcher) as an empty subpatcher with no inlets or outlets, and can't put objects inside it, so nothing can be connected to it. Build an abstraction instead: see the inlet and outlet examples.",
   "bpatcher": "maxpylang places bpatcher with no inlets or outlets, even when it names a patch file, so nothing can be connected to it. Use an abstraction instead: see the inlet and outlet examples.",
   "js": "maxpylang writes a js box as js 1 1 file.js, with the inlet and outlet counts before the file name, and Max may not find the script in a box like that (see known issues). An example here would teach a box that may not load.",
-  "mc.gen~": "maxpylang places mc.gen~ without the gen patch inside it, so what it does depends on code you write in Max. Open it in Max to write that code."
+  "mc.gen~": "maxpylang places mc.gen~ without the gen patch inside it, so what it does depends on code you write in Max. Open it in Max to write that code.",
+  "p": "maxpylang places p (patcher) as an empty subpatcher with no inlets or outlets, and can't put objects inside it, so nothing can be connected to it. Build an abstraction instead: see the inlet and outlet examples.",
+  "cpuclock": "cpuclock reports the time, in milliseconds, when banged. On its own it makes no sound, and to time events, timer is simpler (see timer).",
+  "closebang": "closebang sends a bang when the patch closes, so there is nothing to see or hear while it plays. Connect it to whatever should happen on closing.",
+  "freebang": "freebang sends a bang when its box is deleted or the patch closes, so there is nothing to see or hear while it plays.",
+  "hint": "hint is a box of text shown on the patch; it doesn't send or change anything.",
+  "bgcolor": "bgcolor sets a patch's background colour (in old patches; today's Max sets it in the patch's settings). It doesn't send or change anything.",
+  "combine": "combine joins numbers and words into one word (a symbol), such as a file name. On its own it makes no sound; an example would only show text."
  },
  "note": {
   "notein": "In Max this reads your MIDI keyboard. This browser player doesn't read MIDI devices yet, so here you hear the default sound.",
@@ -53,6 +60,11 @@
   "mc.record~": "This browser player doesn't write recorded sound into buffer~ yet. In Max this records.",
   "dict": "The browser player's dict sends values and dictionaries out of different outlets from Max, so this example plays only in Max.",
   "inlet": "An inlet or outlet object makes a port on an abstraction (a patch saved to its own file and placed by name in another patch). This browser player can't run abstractions yet, so this example shows the patch and plays nothing. In Max it plays.",
-  "outlet": "An inlet or outlet object makes a port on an abstraction (a patch saved to its own file and placed by name in another patch). This browser player can't run abstractions yet, so this example shows the patch and plays nothing. In Max it plays."
+  "outlet": "An inlet or outlet object makes a port on an abstraction (a patch saved to its own file and placed by name in another patch). This browser player can't run abstractions yet, so this example shows the patch and plays nothing. In Max it plays.",
+  "bondo": "This browser player's bondo sends its values only when the left inlet gets something; Max's sends them when any inlet does. So this example, written for Max, plays only in Max.",
+  "bucket": "This browser player's bucket has one outlet, which sends the oldest number; Max's has one outlet per stage. So this example, written for Max, plays only in Max.",
+  "offer": "This browser player's offer keeps a pair after it is read; Max's forgets it. So this example, written for Max, plays only in Max.",
+  "date": "This browser player's date answers any bang with the day, month and year; Max's answers date, time and ticks messages. So this example, written for Max, plays only in Max.",
+  "active": "This browser player has no patch window to come to the front, so active never sends anything here. In Max this plays while the window is in front."
  }
 }
