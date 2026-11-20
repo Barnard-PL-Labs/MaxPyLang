@@ -155,7 +155,7 @@ function showPanel(name: string, index: number): void {
       <p class="patch-note">The patch this code makes, arranged top to bottom for reading. While it plays, its sliders, dials and keys are live: drag them to change the sound. Drag the background to move around; ⌘/Ctrl + scroll to zoom.</p>
       <div class="bar">
         <div class="tabs">${tabs}</div>
-        <label class="volume" title="Volume">🔈<input type="range" min="0" max="1" step="0.01" aria-label="Volume" /></label>
+        <label class="volume" title="Volume"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M2 6h3l4-3v10l-4-3H2z" fill="currentColor"/><path d="M11 5.5a3.5 3.5 0 0 1 0 5M12.8 3.5a6 6 0 0 1 0 9" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><input type="range" min="0" max="1" step="0.01" aria-label="Volume" /></label>
         <div class="buttons">
           <button class="play" title="Play / stop (Ctrl+Enter or ⌘+Enter)">▶</button>
           <button class="reset" title="Undo your edits">↺</button>
