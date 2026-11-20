@@ -1,7 +1,7 @@
 // AudioWorklet host.
 //
 // Custom-DSP MSP objects (biquad~, +=~, rampsmooth~, deltaclip~, allpass~, degrade~,
-// onepole~, svf~, overdrive~, tanh~, pong~, comb~, pow~, phasor~) need
+// onepole~, svf~, overdrive~, tanh~, pong~, comb~, pow~, phasor~, wave~, play~) need
 // per-sample stateful math that no stock Web Audio node can express. They run inside
 // AudioWorkletProcessors whose source is the INLINE string below — a worklet module
 // runs in its own global scope and cannot import our TypeScript, so the processors
@@ -27,6 +27,7 @@ export const PROCESSORS = {
   comb: 'mpl-comb',
   pow: 'mpl-pow',
   phasor: 'mpl-phasor',
+  bufread: 'mpl-bufread',
 } as const;
 
 // The worklet module source. One class per DSP object; each mirrors the matching
@@ -454,6 +455,60 @@ class PhasorProcessor extends AudioWorkletProcessor {
   }
 }
 registerProcessor('${PROCESSORS.phasor}', PhasorProcessor);
+
+// wave~ and play~ : read a buffer~ at the position the input signal gives, between
+// samples linearly. The buffer's samples arrive on the port as {channels, sr}, again
+// whenever the buffer~ loads a new file.
+//   mode 'wave': the input is a phase from 0 to 1 across the region from start to end
+//                (ms); an end of 0 or less than start means the end of the buffer.
+//   mode 'play': the input is a position in ms. Outside the buffer it is silent.
+class BufReadProcessor extends AudioWorkletProcessor {
+  static get parameterDescriptors() {
+    return [
+      { name: 'start', defaultValue: 0, automationRate: 'k-rate' },
+      { name: 'end', defaultValue: 0, automationRate: 'k-rate' },
+    ];
+  }
+  constructor(opts) {
+    super();
+    this.mode = (opts && opts.processorOptions && opts.processorOptions.mode) || 'wave';
+    this.data = null;
+    this.sr = sampleRate;
+    this.port.onmessage = (e) => {
+      if (e.data && Array.isArray(e.data.channels)) { this.data = e.data.channels; this.sr = e.data.sr || sampleRate; }
+    };
+  }
+  process(inputs, outputs, params) {
+    const out = outputs[0], inp = inputs[0];
+    const data = this.data;
+    const x = inp && inp.length ? inp[0] : null;
+    for (let ch = 0; ch < out.length; ch++) {
+      const y = out[ch];
+      const d = data && data.length ? data[ch % data.length] : null;
+      if (!d || d.length < 2) { y.fill(0); continue; }
+      const len = d.length, k = this.sr / 1000;
+      const s0 = Math.max(0, params.start[0] * k);
+      let e0 = params.end[0] * k;
+      if (!(e0 > s0)) e0 = len - 1;
+      for (let i = 0; i < y.length; i++) {
+        const v = x ? x[i] : 0;
+        let pos;
+        if (this.mode === 'play') {
+          pos = v * k;
+          if (pos < 0 || pos > len - 1) { y[i] = 0; continue; }
+        } else {
+          const ph = v < 0 ? 0 : v > 1 ? 1 : v;
+          pos = s0 + ph * (e0 - s0);
+          if (pos > len - 1) pos = len - 1;
+        }
+        const j = Math.floor(pos), f = pos - j;
+        y[i] = j + 1 < len ? d[j] + f * (d[j + 1] - d[j]) : d[j];
+      }
+    }
+    return true;
+  }
+}
+registerProcessor('${PROCESSORS.bufread}', BufReadProcessor);
 `;
 
 // Contexts whose worklet module has been successfully loaded.

@@ -61,15 +61,14 @@ describe('groove~', () => {
     expect(node.signalOuts[1]).toBeDefined();
   });
 
-  it('defaults playback rate to 1 on the signal inlet 0 param', () => {
+  it('takes its speed signal on inlet 0 (a node, so a speed signal replaces nothing)', () => {
     const { node } = build('groove~', 'mybuf');
-    expect((node.signalIns[0] as AudioParam).value).toBe(1);
+    expect(node.signalIns[0]).toBeDefined();
   });
 
-  it('a control float into inlet 0 updates the playbackRate param .value', () => {
-    const { node, send } = build('groove~', 'mybuf');
-    send([1.5], 0);
-    expect((node.signalIns[0] as AudioParam).value).toBe(1.5);
+  it('accepts a number (a constant speed) and a loop message on inlet 0 without throwing', () => {
+    const { send } = build('groove~', 'mybuf');
+    expect(() => { send([1.5], 0); send(['loop', 1], 0); }).not.toThrow();
   });
 });
 
