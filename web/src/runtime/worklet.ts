@@ -1,7 +1,7 @@
 // AudioWorklet host.
 //
 // Custom-DSP MSP objects (biquad~, +=~, rampsmooth~, deltaclip~, allpass~, degrade~,
-// onepole~, svf~, overdrive~, tanh~, pong~, comb~, pow~) need
+// onepole~, svf~, overdrive~, tanh~, pong~, comb~, pow~, phasor~) need
 // per-sample stateful math that no stock Web Audio node can express. They run inside
 // AudioWorkletProcessors whose source is the INLINE string below — a worklet module
 // runs in its own global scope and cannot import our TypeScript, so the processors
@@ -26,6 +26,7 @@ export const PROCESSORS = {
   shaper: 'mpl-shaper',
   comb: 'mpl-comb',
   pow: 'mpl-pow',
+  phasor: 'mpl-phasor',
 } as const;
 
 // The worklet module source. One class per DSP object; each mirrors the matching
@@ -421,6 +422,38 @@ class PowProcessor extends AudioWorkletProcessor {
   }
 }
 registerProcessor('${PROCESSORS.pow}', PowProcessor);
+
+// phasor~ : a ramp from 0 up to 1 (never reaching it), frequency times a second,
+// starting at 0, as in Max. A negative frequency ramps down. A message {phase} on the
+// port sets the phase, as a number into Max's right inlet does.
+class PhasorProcessor extends AudioWorkletProcessor {
+  static get parameterDescriptors() {
+    return [{ name: 'frequency', defaultValue: 0, automationRate: 'a-rate' }];
+  }
+  constructor() {
+    super();
+    this.phase = 0;
+    this.port.onmessage = (e) => {
+      const p = e.data && e.data.phase;
+      if (typeof p === 'number' && Number.isFinite(p)) this.phase = p - Math.floor(p);
+    };
+  }
+  process(inputs, outputs, params) {
+    const out = outputs[0];
+    const y = out[0];
+    if (!y) return true;
+    let ph = this.phase;
+    for (let i = 0; i < y.length; i++) {
+      y[i] = ph;
+      ph += pv(params.frequency, i) / sampleRate;
+      ph -= Math.floor(ph);
+    }
+    this.phase = ph;
+    for (let ch = 1; ch < out.length; ch++) out[ch].set(y);
+    return true;
+  }
+}
+registerProcessor('${PROCESSORS.phasor}', PhasorProcessor);
 `;
 
 // Contexts whose worklet module has been successfully loaded.
