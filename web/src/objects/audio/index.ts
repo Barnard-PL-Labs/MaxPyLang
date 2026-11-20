@@ -6,6 +6,7 @@
 
 import { num, register, type MaxNode } from '../../engine/registry';
 import { firstNum } from '../../runtime/atoms';
+import { PROCESSORS, tryWorkletNode } from '../../runtime/worklet';
 import { makeOutlets } from '../../runtime/outlets';
 import { stopSource, unwire } from './lifecycle';
 
@@ -21,21 +22,38 @@ register('cycle~', (args, { ctx }) => {
   } satisfies MaxNode;
 });
 
-// phasor~ : 0..1 rising ramp. Approximated as a sawtooth scaled/offset to 0..1
-// (Web Audio 'sawtooth' runs -1..1). Good enough for the classic phasor->wave math.
+// phasor~ : a ramp from 0 to 1, as in Max: it starts at 0, wraps every 1/frequency
+// seconds, and a number into the right inlet sets the phase. A worklet counts the phase
+// exactly. Without worklets (Node), a sawtooth oscillator stands in, scaled to 0..1.
 register('phasor~', (args, { ctx }) => {
+  const node = tryWorkletNode(ctx, PROCESSORS.phasor, { numberOfInputs: 0, outputChannelCount: [1] });
+  if (node) {
+    const frequency = node.parameters.get('frequency')!;
+    frequency.value = num(args[0], 0);
+    return {
+      signalIns: [frequency, undefined],
+      signalOuts: [node],
+      controlIns: [
+        (m) => { const n = firstNum(m); if (n !== undefined) frequency.value = n; },
+        (m) => { const n = firstNum(m); if (n !== undefined) node.port.postMessage({ phase: n }); },
+      ],
+      dispose: () => { try { node.disconnect(); } catch { /* nothing connected */ } },
+    } satisfies MaxNode;
+  }
   const saw = new OscillatorNode(ctx, { type: 'sawtooth', frequency: num(args[0], 0) });
-  const half = new GainNode(ctx, { gain: 0.5 });      // -0.5..0.5
-  const offset = new ConstantSourceNode(ctx, { offset: 0.5 }); // -> 0..1
+  const half = new GainNode(ctx, { gain: 0.5 });       // -0.5..0.5
+  const sum = new GainNode(ctx, { gain: 1 });
+  const offset = new ConstantSourceNode(ctx, { offset: 0.5 }); // + 0.5 -> 0..1
   saw.connect(half);
-  offset.connect(half); // ConstantSource sums into half's input
+  half.connect(sum);
+  offset.connect(sum);
   saw.start();
   offset.start();
   return {
-    signalIns: [saw.frequency],
-    signalOuts: [half],
-    controlIns: [(m) => { const n = firstNum(m); if (n !== undefined) saw.frequency.value = n; }],
-    dispose: () => { stopSource(saw); stopSource(offset); unwire(half); },
+    signalIns: [saw.frequency, undefined],
+    signalOuts: [sum],
+    controlIns: [(m) => { const n = firstNum(m); if (n !== undefined) saw.frequency.value = n; }, () => {}],
+    dispose: () => { stopSource(saw); stopSource(offset); unwire(sum); },
   } satisfies MaxNode;
 });
 
