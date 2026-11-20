@@ -11,6 +11,7 @@
 
 import { num, register, type MaxNode } from '../../engine/registry';
 import { firstNum } from '../../runtime/atoms';
+import { PROCESSORS, tryWorkletNode } from '../../runtime/worklet';
 
 const CURVE_LEN = 2048;
 
@@ -51,19 +52,33 @@ register('sqrt~', (_args, { ctx }) => {
   return { signalIns: [shaper], signalOuts: [shaper] } satisfies MaxNode;
 });
 
-// pow~ : raise the inlet-0 signal to a power (inlet 1 / argument sets the exponent).
-// A WaveShaper holds the curve; changing the exponent rebuilds it. Negative inputs
-// use an odd extension (sign(x)·|x|^n) so the curve stays finite and defined.
+// pow~ : base ^ exponent, matching Max: the LEFT inlet is the exponent (signal or number)
+// and the RIGHT inlet is the base (number, or the base-value argument). So `pow~ 2` fed
+// a signal x gives 2^x. A worklet computes it per sample for any exponent (a WaveShaper
+// only maps -1..1). A signal into the right inlet drives the base, adding to the number,
+// as signals into parameters do throughout this engine. Without worklets (Node), it
+// builds as a silent node with the same ports.
 register('pow~', (args, { ctx }) => {
-  const shaper = new WaveShaperNode(ctx, {});
-  const rebuild = (exp: number) => {
-    shaper.curve = makeCurve((x) => (x === 0 ? 0 : Math.sign(x) * Math.pow(Math.abs(x), exp)));
-  };
-  rebuild(num(args[0], 1));
+  const node = tryWorkletNode(ctx, PROCESSORS.pow, { numberOfInputs: 1, outputChannelCount: [1] });
+  if (node) {
+    const base = node.parameters.get('base')!;
+    const exponent = node.parameters.get('exponent')!;
+    base.value = num(args[0], 0);
+    return {
+      signalIns: [node, base],
+      signalOuts: [node],
+      controlIns: [
+        (m) => { const n = firstNum(m); if (n !== undefined) exponent.value = n; },
+        (m) => { const n = firstNum(m); if (n !== undefined) base.value = n; },
+      ],
+      dispose: () => { try { node.disconnect(); } catch { /* nothing connected */ } },
+    } satisfies MaxNode;
+  }
+  const silent = new GainNode(ctx, { gain: 0 });
   return {
-    signalIns: [shaper, undefined], // inlet 1 = exponent (control only; no AudioParam target)
-    signalOuts: [shaper],
-    controlIns: [undefined, (m) => { const n = firstNum(m); if (n !== undefined) rebuild(n); }],
+    signalIns: [silent, undefined],
+    signalOuts: [silent],
+    controlIns: [() => {}, () => {}],
   } satisfies MaxNode;
 });
 
