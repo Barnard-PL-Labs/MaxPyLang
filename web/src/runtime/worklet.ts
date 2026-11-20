@@ -462,11 +462,15 @@ registerProcessor('${PROCESSORS.phasor}', PhasorProcessor);
 //   mode 'wave': the input is a phase from 0 to 1 across the region from start to end
 //                (ms); an end of 0 or less than start means the end of the buffer.
 //   mode 'play': the input is a position in ms. Outside the buffer it is silent.
+//   mode '2d':   2d.wave~. The region from start to end is split into 'rows' equal rows;
+//                input 0 (X, 0..1) is the position within a row and input 1 (Y, 0..1)
+//                picks the row, blending the two rows it falls between.
 class BufReadProcessor extends AudioWorkletProcessor {
   static get parameterDescriptors() {
     return [
       { name: 'start', defaultValue: 0, automationRate: 'k-rate' },
       { name: 'end', defaultValue: 0, automationRate: 'k-rate' },
+      { name: 'rows', defaultValue: 1, automationRate: 'k-rate' },
     ];
   }
   constructor(opts) {
@@ -493,6 +497,22 @@ class BufReadProcessor extends AudioWorkletProcessor {
       for (let i = 0; i < y.length; i++) {
         const v = x ? x[i] : 0;
         let pos;
+        if (this.mode === '2d') {
+          const rows = Math.max(1, Math.round(params.rows[0]));
+          const rowLen = (e0 - s0) / rows;
+          const yIn = inputs[1] && inputs[1].length ? inputs[1][0][i] : 0;
+          const px = v < 0 ? 0 : v > 1 ? 1 : v;
+          const r = (yIn < 0 ? 0 : yIn > 1 ? 1 : yIn) * (rows - 1);
+          const r0 = Math.floor(r), r1 = Math.min(rows - 1, r0 + 1), rf = r - r0;
+          const read = (p) => {
+            const q = p > len - 1 ? len - 1 : p, j = Math.floor(q), f = q - j;
+            return j + 1 < len ? d[j] + f * (d[j + 1] - d[j]) : d[j];
+          };
+          const a = read(s0 + r0 * rowLen + px * rowLen);
+          const b = read(s0 + r1 * rowLen + px * rowLen);
+          y[i] = a + rf * (b - a);
+          continue;
+        }
         if (this.mode === 'play') {
           pos = v * k;
           if (pos < 0 || pos > len - 1) { y[i] = 0; continue; }

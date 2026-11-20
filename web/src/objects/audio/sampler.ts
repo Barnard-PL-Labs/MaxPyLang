@@ -8,7 +8,7 @@
 //     Loading takes a moment, so readers WATCH the name and pick up the new buffer.
 //   • wave~ and play~ read it at the position a signal gives, in a worklet (bufread).
 //   • groove~ is an AudioBufferSourceNode whose speed is the signal into inlet 0.
-//   • 2d.wave~ still loops its region, and record~ doesn't write yet.
+//   • 2d.wave~ reads rows of it at an X and a Y phase (same worklet). record~ doesn't write yet.
 
 import { num, register, type MaxNode } from '../../engine/registry';
 import { firstNum } from '../../runtime/atoms';
@@ -109,9 +109,9 @@ register('buffer~', (args, { ctx }) => {
 });
 
 /** A worklet that reads a named buffer (wave~, play~), fed the buffer as it changes. */
-function bufferReader(ctx: BaseAudioContext, name: string, mode: 'wave' | 'play') {
+function bufferReader(ctx: BaseAudioContext, name: string, mode: 'wave' | 'play' | '2d') {
   const node = tryWorkletNode(ctx, PROCESSORS.bufread, {
-    numberOfInputs: 1,
+    numberOfInputs: mode === '2d' ? 2 : 1,
     outputChannelCount: [1],
     processorOptions: { mode },
   });
@@ -295,4 +295,31 @@ register('wave~', (args, { ctx }) => {
   } satisfies MaxNode;
 });
 
-register('2d.wave~', makeRegionPlayer(4)); // buffer-name, x/y phase, start, end, rows
+// 2d.wave~ : as in Max, args buffer-name, start, end (ms), channels, rows. The region is
+// split into rows; the signal into inlet 0 (X, 0..1) is the position within a row, and
+// the signal into inlet 1 (Y, 0..1) picks the row, blending neighbours. Inlets 2 and 3
+// set start and end; a "rows n" message sets the number of rows.
+register('2d.wave~', (args, { ctx }) => {
+  const name = bufferName(args);
+  const reader = bufferReader(ctx, name, '2d');
+  if (!reader) return makeRegionPlayer(4)(args, { ctx });
+  const y = new GainNode(ctx, { gain: 1 }); // the Y phase signal, into the worklet's input 1
+  y.connect(reader.node, 0, 1);
+  const start = reader.node.parameters.get('start')!;
+  const end = reader.node.parameters.get('end')!;
+  const rows = reader.node.parameters.get('rows')!;
+  start.value = num(args[1], 0);
+  end.value = num(args[2], 0);
+  rows.value = Math.max(1, num(args[4], 1));
+  return {
+    signalIns: [reader.node, y, start, end],
+    signalOuts: [reader.node],
+    controlIns: [
+      (m) => { if (m[0] === 'rows') { const n = num(m[1], 1); rows.value = Math.max(1, n); } },
+      () => {},
+      (m) => { const n = firstNum(m); if (n !== undefined) start.value = n; },
+      (m) => { const n = firstNum(m); if (n !== undefined) end.value = n; },
+    ],
+    dispose: () => { reader.dispose(); try { y.disconnect(); } catch { /* nothing connected */ } },
+  } satisfies MaxNode;
+});
