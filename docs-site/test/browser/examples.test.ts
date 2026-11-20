@@ -18,6 +18,7 @@ import { Engine } from '../../../web/src/engine/engine';
 import { parseMaxPat } from '../../../web/src/parser/maxpat';
 import { preloadWorklets } from '../../../web/src/runtime/worklet';
 import examples from '../../src/generated/examples.json';
+import { silentReason } from '../../src/entries';
 import { loadClip, playTrack } from '../../src/player';
 
 // The real timer, kept before vi.useFakeTimers replaces it: playlist~ fetches and decodes
@@ -102,6 +103,7 @@ describe('every reference example plays', () => {
     it(`${ex.object}/${ex.index}: ${ex.title}`, async () => {
       vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'setTimeout', 'clearTimeout'] });
       if (ex.objects.includes('jit.grab')) return; // needs a camera; build_examples checks it compiles
+      if (silentReason(ex.object, ex.patch)) return; // graph-only: for Max; test/content.test.ts says when that's allowed
       const { rms, zcr, peak, bright } = analyse(await render(ex.patch, ex.objects.includes('playlist~')));
 
       const loudest = Math.max(...rms);

@@ -17,6 +17,7 @@ import knownFile from './generated/known.json';
 import digestsFile from './generated/digests.json';
 import objdocsFile from '../../web/src/generated/objdocs.json';
 import manifestFile from '../../web/src/generated/manifest.json';
+import notesFile from '../content/notes.json';
 
 export interface Example {
   object: string;
@@ -190,3 +191,33 @@ export function findEntry(name: string): Entry | undefined {
 
 /** A Python-friendly argument name: buffer-name -> buffer_name. */
 export const pyArg = (name: string): string => name.replace(/[^A-Za-z0-9_]/g, '_');
+
+type Box = { box: { maxclass?: string; text?: string; patcher?: { boxes?: Box[] } } };
+
+/** The objects in a patch (and in its subpatchers) that this browser player cannot run. */
+export function notInBrowser(patch: unknown): string[] {
+  const missing = new Set<string>();
+  const walk = (boxes: Box[] = []) => {
+    for (const { box } of boxes) {
+      const name = box.maxclass === 'newobj' ? (box.text ?? '').split(' ')[0] : box.maxclass ?? '';
+      if (name && !isSupported(name)) missing.add(name);
+      walk(box.patcher?.boxes);
+    }
+  };
+  walk((patch as { patcher?: { boxes?: Box[] } } | null)?.patcher?.boxes);
+  return [...missing].sort();
+}
+
+const graphOnlyReasons = (notesFile as { graphOnly?: Record<string, string> }).graphOnly ?? {};
+
+/**
+ * Why an example plays nothing in this browser, or null if it plays. An example is
+ * graph-only (its patch is shown, nothing plays) when it uses an object the browser can't
+ * run, or documents an object listed under graphOnly in content/notes.json.
+ */
+export function silentReason(object: string, patch: unknown): string | null {
+  if (graphOnlyReasons[object]) return graphOnlyReasons[object];
+  const missing = notInBrowser(patch);
+  if (missing.length) return `This example is for Max: this browser player can't run ${missing.join(', ')}, so it shows the patch maxpylang builds and plays nothing.`;
+  return null;
+}

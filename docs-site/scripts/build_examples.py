@@ -116,6 +116,9 @@ PROBLEMS = (UnknownObjectWarning, ConnectionWarning, GraphWarning)
 #   patch that only shows a value in mc.number~ is reported as having a dead output.
 FALSE_ALARMS = {
     "GraphWarning: mc.number~ (obj-5): output never reaches an output, a display, or a side effect.",
+    # maxpylang/data/graph_roles.json lists record~ as a side effect (it writes a buffer~)
+    # but not mc.record~, which does the same for each channel.
+    "GraphWarning: mc.record~ (obj-6): output never reaches an output, a display, or a side effect.",
 }
 
 
@@ -228,9 +231,12 @@ def main():
         # Every example has an output: speakers (ezdac~, mc.ezdac~, playlist~, or plugout~,
         # a Max for Live device's output, which the browser plays too), or for a
         # video example, a picture (jit.pwindow / jit.window).
-        outputs = {"ezdac~", "mc.ezdac~", "playlist~", "plugout~", "jit.pwindow", "jit.window"}
+        # MIDI out (noteout, midiout) counts too, for MIDI examples, which are graph-only, and
+        # so does outlet: an abstraction's output, for the inlet and outlet examples.
+        outputs = {"ezdac~", "mc.ezdac~", "playlist~", "plugout~", "jit.pwindow", "jit.window",
+                   "noteout", "midiout", "outlet"}
         if not outputs & set(names):
-            errors.append(f"{rel}: has no output (ezdac~, or jit.pwindow for video), so nothing happens")
+            errors.append(f"{rel}: has no output (ezdac~, jit.pwindow for video, or noteout/midiout for MIDI), so nothing happens")
         if not title:
             errors.append(f"{rel}: needs a docstring whose first line is the example's title")
         examples.append({

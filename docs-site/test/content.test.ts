@@ -5,7 +5,11 @@ import '../../web/src/objects';
 import { isSupported } from '../../web/src/engine/registry';
 import categoryFile from '../content/categories.json';
 import examples from '../src/generated/examples.json';
-import { categories, findEntry } from '../src/entries';
+import { categories, findEntry, notInBrowser } from '../src/entries';
+import known from '../src/generated/known.json';
+import notesFile from '../content/notes.json';
+
+const graphOnly = (notesFile as { graphOnly?: Record<string, string> }).graphOnly ?? {};
 
 const listed = categoryFile.categories.flatMap((c) => c.objects);
 
@@ -21,9 +25,15 @@ describe('categories', () => {
 });
 
 describe('examples', () => {
-  it.each(examples.map((e) => [`${e.object}/${e.index}`, e] as const))('%s uses only playable objects', (_, ex) => {
-    const silent = ex.objects.filter((n) => !isSupported(n));
-    expect(silent).toEqual([]);
+  // An example may be graph-only (it shows its patch but plays nothing) only when the
+  // object it documents is one the browser can't run. Then nothing silent hides among the
+  // examples that should play.
+  const alias = (n: string) => (known as Record<string, { aliasOf?: string }>)[n]?.aliasOf ?? n;
+  it.each(examples.map((e) => [`${e.object}/${e.index}`, e] as const))('%s plays, or is for an object the browser cannot run', (_, ex) => {
+    const missing = notInBrowser(ex.patch);
+    if (missing.length === 0) return;
+    if (graphOnly[ex.object]) return; // a stated reason (content/notes.json)
+    expect(missing.map(alias), `${ex.object} plays in the browser, so its example must too`).toContain(alias(ex.object));
   });
 
   it('every example belongs to an object with a page', () => {

@@ -5,7 +5,7 @@
 
 import './style.css';
 import { play, stop, playing, onChange, builtWidget, engineForTests, setVolume, getVolume } from './player';
-import { categories, findEntry, pyArg, type Entry, type Example } from './entries';
+import { categories, findEntry, silentReason, pyArg, type Entry, type Example } from './entries';
 import { compile, lastLine, LoadError, onStatus, pythonLoaded } from './compiler';
 import { takeWarnings, wrapForChecks } from './checks';
 import { mountEditor } from './editor';
@@ -164,8 +164,9 @@ function showPanel(name: string, index: number): void {
         </div>
       </div>
       <p class="ex-title"><b>${esc(example.title)}</b> ${esc(example.note)}</p>
+      ${silentReason(entry.name, example.patch) ? `<p class="warn graph-only">${esc(silentReason(entry.name, example.patch)!)}</p>` : ''}
       <div class="editor"></div>
-      <p class="status">Edit the code and press ▶ or Ctrl+Enter (⌘+Enter) to run it.</p>
+      <p class="status">${silentReason(entry.name, example.patch) ? 'Edit the code and press ▶ or Ctrl+Enter (⌘+Enter) to build it and run maxpylang\'s checks.' : 'Edit the code and press ▶ or Ctrl+Enter (⌘+Enter) to run it.'}</p>
       <ul class="warnings" hidden></ul>`
     : `<p class="none">${esc(notes.noExample[entry.name] ?? 'No example for this object yet.')}</p>`}
     ${entry.description ? `<h3>About</h3><p class="desc">${esc(entry.description)}</p>` : ''}
@@ -256,6 +257,15 @@ function showPanel(name: string, index: number): void {
       }
       showWarnings(found);
       shown.patch = patch;
+      const silent = silentReason(entry!.name, patch);
+      if (silent) {
+        // Graph-only: the patch is real maxpylang output, but the browser can't run part of it.
+        if (playing()) await stop();
+        setStatus(`Built${edited ? ' your edited code' : ''}: the patch is drawn above. ${edited ? silent : 'It plays in Max, not here.'}`
+          + (edited ? (found.length ? ` maxpylang's checks found ${found.length === 1 ? 'a problem' : `${found.length} problems`}:` : " maxpylang's checks found no problems.") : ''),
+          found.length ? 'warn-status' : '');
+        return;
+      }
       await play(key, patch);
       setStatus(!edited ? 'Playing. Edit the code and press ▶ or Ctrl+Enter (⌘+Enter) to run it.'
         : found.length ? `Playing your edited code. maxpylang's checks found ${found.length === 1 ? 'a problem' : `${found.length} problems`}:`
