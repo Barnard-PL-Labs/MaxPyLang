@@ -103,4 +103,17 @@ describe('buffer~ and its readers', () => {
     expect(y[Math.round(0.2 * SR)]).toBeCloseTo(2, 1);    // halfway from 1 to 3
     expect(y[Math.round(0.35 * SR)]).toBeCloseTo(3, 2);
   });
+
+  it('curve~ runs every target-time-curve triple in a message, in turn', async () => {
+    const ctx = new OfflineAudioContext(1, Math.round(SR * 1), SR);
+    const curve = getFactory('curve~')!([0], { ctx });
+    (curve.signalOuts[0] as AudioNode).connect(ctx.destination);
+    curve.controlIns![0]!([1, 5, 0, 0, 800, 0.8]); // up to 1 in 5 ms, down to 0 over 800 ms
+    const y = (await ctx.startRendering()).getChannelData(0);
+    expect(y[Math.round(0.006 * SR)]).toBeGreaterThan(0.9);   // risen
+    const mid = y[Math.round(0.4 * SR)];
+    expect(mid).toBeGreaterThan(0.01);
+    expect(mid).toBeLessThan(0.9);                            // falling
+    expect(y[Math.round(0.9 * SR)]).toBeCloseTo(0, 3);         // landed on 0
+  });
 });
