@@ -9,6 +9,7 @@
 
 import '../../web/src/objects'; // tiers are only right once objects are registered
 import { objectOptions, type ObjectInfo } from '../../web/src/engine/catalog';
+import { isSupported } from '../../web/src/engine/registry';
 import categoryFile from '../content/categories.json';
 import examplesFile from './generated/examples.json';
 import stubsFile from './generated/stubs.json';
@@ -121,7 +122,9 @@ function entryFor(info: ObjectInfo | undefined, name: string, category: string, 
     name,
     category,
     color,
-    playable: info?.tier === 'B',
+    // The registry, not the catalog: an object can be implemented before its data reaches
+    // the generated catalog (live.dial).
+    playable: info?.tier === 'B' || isSupported(name),
     known: name in known,
     required: known[name]?.required ?? [],
     stub: stubs[name] ?? null,

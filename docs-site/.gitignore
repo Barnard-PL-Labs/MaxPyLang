@@ -3,3 +3,4 @@ src/generated/
 public/py/
 node_modules
 public/samples/
+.vite/

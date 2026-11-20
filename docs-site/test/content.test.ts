@@ -2,7 +2,7 @@
 // the browser, and every example only uses objects that do.
 import { describe, expect, it } from 'vitest';
 import '../../web/src/objects';
-import { objectInfo } from '../../web/src/engine/catalog';
+import { isSupported } from '../../web/src/engine/registry';
 import categoryFile from '../content/categories.json';
 import examples from '../src/generated/examples.json';
 import { categories, findEntry } from '../src/entries';
@@ -16,13 +16,13 @@ describe('categories', () => {
   });
 
   it.each(listed)('%s plays in the browser engine', (name) => {
-    expect(objectInfo(name)?.tier, `${name} is not a playable (tier B) object`).toBe('B');
+    expect(isSupported(name), `${name} has no implementation in the browser engine`).toBe(true);
   });
 });
 
 describe('examples', () => {
   it.each(examples.map((e) => [`${e.object}/${e.index}`, e] as const))('%s uses only playable objects', (_, ex) => {
-    const silent = ex.objects.filter((n) => objectInfo(n)?.tier !== 'B');
+    const silent = ex.objects.filter((n) => !isSupported(n));
     expect(silent).toEqual([]);
   });
 

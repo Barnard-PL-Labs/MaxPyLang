@@ -38,7 +38,10 @@ from contextlib import redirect_stdout
 from pathlib import Path
 
 import maxpylang as mp
-from maxpylang.exceptions import UnknownObjectWarning
+import os
+import tempfile
+
+from maxpylang.exceptions import ConnectionWarning, GraphWarning, UnknownObjectWarning
 
 HERE = Path(__file__).resolve().parent
 SITE = HERE.parent
@@ -55,13 +58,13 @@ def aliases():
 
 
 def stub_names():
-    """Max object name -> Python name, read from maxpylang/objects/{max,msp,jit}.py.
+    """Max object name -> Python name, read from maxpylang/objects/{max,msp,jit,m4l}.py.
 
     An alias gets its target's stub: '*~' -> times_tilde, which places times~, the same
     object as *~.
     """
     names = {}
-    for pkg in ("max", "msp", "jit"):
+    for pkg in ("max", "msp", "jit", "m4l"):
         for py, max_name in STUB_LINE.findall((ROOT / "maxpylang" / "objects" / f"{pkg}.py").read_text()):
             names.setdefault(max_name, py)
     for alias, target in aliases().items():
@@ -74,13 +77,13 @@ STUB_DIGEST = re.compile(r'^class _T_\w+\(MaxObject\):\n    """\n(\S+) - (.+)$',
 
 
 def digests():
-    """One-line summaries for every object, from the stubs' docstrings (maxpylang/objects/*.pyi).
+    """One-line summaries for every object, from the stubs' docstrings (maxpylang/objects/*.pyi, all four packages).
 
     web/src/generated/objdocs.json has fuller docs, but misses some objects (abs, whose stub
     is abs_); the page falls back to these.
     """
     out = {}
-    for pkg in ("max", "msp", "jit"):
+    for pkg in ("max", "msp", "jit", "m4l"):
         for name, digest in STUB_DIGEST.findall((ROOT / "maxpylang" / "objects" / f"{pkg}.pyi").read_text()):
             out.setdefault(name, digest.strip())
     return out
@@ -102,24 +105,50 @@ def known_objects():
     return known
 
 
+# What an example must never trigger: an object maxpylang doesn't know, a cord that sends
+# audio where it can't go (checked at connect), or a patch whose shape is wrong: a hot
+# loop, audio feedback with no delay, output that reaches nothing (checked at save).
+PROBLEMS = (UnknownObjectWarning, ConnectionWarning, GraphWarning)
+
+# Warnings known to be false alarms in maxpylang, each matched exactly. Remove an entry
+# once maxpylang is fixed (the build then fails until the entry goes).
+# - maxpylang/data/graph_roles.json lists number~ as a display but not mc.number~, so a
+#   patch that only shows a value in mc.number~ is reported as having a dead output.
+FALSE_ALARMS = {
+    "GraphWarning: mc.number~ (obj-5): output never reaches an output, a display, or a side effect.",
+}
+
+
 def compile_example(source):
-    """Run a script and return the patch it saves, as the browser worker does."""
+    """Run a script and return the patch it saves, and any warnings maxpylang raised.
+
+    save() really runs, with its checks, into a scratch folder; the patch is captured as
+    the browser worker does (web/src/compiler/pyodide-worker.ts).
+    """
     captured = {}
     original = mp.MaxPatch.save
 
-    def _save(self, *args, **kwargs):
+    def _save(self, filename="default.maxpat", *args, **kwargs):
         captured["json"] = self.get_json()
+        kwargs["verbose"] = False
+        original(self, os.path.basename(str(filename)), *args, **kwargs)
 
     mp.MaxPatch.save = _save
     namespace = {}
+    cwd = os.getcwd()
     try:
-        with warnings.catch_warnings(record=True) as caught, redirect_stdout(io.StringIO()):
+        with tempfile.TemporaryDirectory() as scratch, warnings.catch_warnings(record=True) as caught, \
+                redirect_stdout(io.StringIO()):
+            os.chdir(scratch)
             warnings.simplefilter("always")
             exec(compile(source, "<example>", "exec"), namespace)
     finally:
+        os.chdir(cwd)
         mp.MaxPatch.save = original
-    unknown = [str(w.message) for w in caught if issubclass(w.category, UnknownObjectWarning)]
-    return captured.get("json"), unknown
+    problems = [f"{w.category.__name__}: {str(w.message).splitlines()[0]}"
+                for w in caught if issubclass(w.category, PROBLEMS)]
+    problems = [p for p in problems if p not in FALSE_ALARMS]
+    return captured.get("json"), problems
 
 
 def box_names(patch):
@@ -192,8 +221,8 @@ def main():
             errors.append(f"{rel}: makes no patch (call patch.save())")
             continue
         names = box_names(patch)
-        if unknown:
-            errors.append(f"{rel}: unknown objects: {'; '.join(unknown)}")
+        for problem in unknown:
+            errors.append(f"{rel}: {problem}")
         if "dac~" in names:
             errors.append(f"{rel}: uses dac~, which is silent in the browser; use ezdac~")
         # Every example has an output: speakers (ezdac~, mc.ezdac~, playlist~), or for a
