@@ -1,7 +1,7 @@
 // AudioWorklet host.
 //
 // Custom-DSP MSP objects (biquad~, +=~, rampsmooth~, deltaclip~, allpass~, degrade~,
-// onepole~, svf~, overdrive~, tanh~, pong~, comb~) need
+// onepole~, svf~, overdrive~, tanh~, pong~, comb~, pow~) need
 // per-sample stateful math that no stock Web Audio node can express. They run inside
 // AudioWorkletProcessors whose source is the INLINE string below — a worklet module
 // runs in its own global scope and cannot import our TypeScript, so the processors
@@ -25,6 +25,7 @@ export const PROCESSORS = {
   svf: 'mpl-svf',
   shaper: 'mpl-shaper',
   comb: 'mpl-comb',
+  pow: 'mpl-pow',
 } as const;
 
 // The worklet module source. One class per DSP object; each mirrors the matching
@@ -394,6 +395,32 @@ class CombProcessor extends AudioWorkletProcessor {
   }
 }
 registerProcessor('${PROCESSORS.comb}', CombProcessor);
+
+// pow~ : y = base ^ exponent, as in Max: the exponent is the left inlet (a signal, or a
+// number), the base is the right inlet or the argument. Every sample, at any size: a
+// WaveShaper can only map inputs between -1 and 1. A result that isn't a number (a
+// negative base to a fractional power) is 0, so it can't poison what follows.
+class PowProcessor extends AudioWorkletProcessor {
+  static get parameterDescriptors() {
+    return [
+      { name: 'base', defaultValue: 0, automationRate: 'a-rate' },
+      { name: 'exponent', defaultValue: 0, automationRate: 'k-rate' },
+    ];
+  }
+  process(inputs, outputs, params) {
+    const inp = inputs[0], out = outputs[0];
+    const e0 = params.exponent[0];
+    for (let ch = 0; ch < out.length; ch++) {
+      const x = inp && inp.length ? (inp[ch] || inp[0]) : null, y = out[ch];
+      for (let i = 0; i < y.length; i++) {
+        const v = Math.pow(pv(params.base, i), e0 + (x ? x[i] : 0));
+        y[i] = Number.isFinite(v) ? v : 0;
+      }
+    }
+    return true;
+  }
+}
+registerProcessor('${PROCESSORS.pow}', PowProcessor);
 `;
 
 // Contexts whose worklet module has been successfully loaded.
