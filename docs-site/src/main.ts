@@ -104,7 +104,7 @@ function usageHtml(e: Entry): string {
   const lines = [`<code class="usage">${call}</code>`];
   if (e.stub) lines.push(`<p class="hint">from <code>maxpylang.objects</code>; or as text: <code>patch.place("${esc(e.name)}${e.args.length ? ' …' : ''}")</code></p>`);
   if (!e.known) lines.push(`<p class="warn">maxpylang has no data for <code>${esc(e.name)}</code> yet: <code>place()</code> gives an unknown object with no inlets. See <a href="${BASE}guide/known-issues.html">known issues</a>.</p>`);
-  else if (e.required.length) lines.push(`<p class="warn">maxpylang needs ${e.required.map((r) => `<code>${esc(pyArg(r))}</code>`).join(' and ')}: a bare <code>${esc(e.stub ?? e.name)}</code> is placed as an unknown object, with no warning.</p>`);
+  else if (e.required.length) lines.push(`<p class="warn">Always give ${e.required.map((r) => `<code>${esc(pyArg(r))}</code>`).join(' and ')}, as in the example below. Without it, maxpylang quietly places an empty unknown object (no inlets, no outlets) and doesn't warn you.</p>`);
   if (!e.playable) lines.push(`<p class="warn">Plays in Max, but not in this browser player yet.</p>`);
   if (notes.note[e.name]) lines.push(`<p class="warn">${esc(notes.note[e.name])}</p>`);
   if (e.sameAs) lines.push(`<p class="hint"><code>${esc(e.name)}</code> and <code>${esc(e.sameAs)}</code> are two names for the same object, so they share examples.</p>`);

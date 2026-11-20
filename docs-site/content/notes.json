@@ -2,7 +2,6 @@
  "_comment": "Notes shown on an object's panel. 'noExample': why there is no example (shown instead of 'No example yet'). 'note': a caveat shown with the example. Each reason was found while writing the examples; see the PR for evidence.",
  "noExample": {
   "record~": "This browser player doesn't write recorded sound into buffer~ yet. It works in Max.",
-  "2d.wave~": "This browser player's 2d.wave~ still loops its region rather than reading the buffer at the phases it is given, so no example would sound as in Max.",
   "teeth~": "The browser player reads teeth~'s arguments differently from Max (samples instead of milliseconds), so no example would be correct in both.",
   "past": "maxpylang requires two arguments for past, which changes what it does in Max, so no example would be correct in both.",
   "router": "The browser player numbers router's inlets and outlets from 1 and Max from 0, so no example would route the same way in both.",
@@ -31,7 +30,6 @@
   "hint": "hint is a box of text shown on the patch; it doesn't send or change anything.",
   "bgcolor": "bgcolor sets a patch's background colour (in old patches; today's Max sets it in the patch's settings). It doesn't send or change anything.",
   "combine": "combine joins numbers and words into one word (a symbol), such as a file name. On its own it makes no sound; an example would only show text.",
-  "mc.2d.wave~": "This browser player's mc.2d.wave~ still loops its region rather than reading the buffer at the phases it is given, so no example would sound as in Max.",
   "mc.record~": "This browser player doesn't write recorded sound into buffer~ yet. It works in Max.",
   "dict": "The browser player's dict sends values and dictionaries out of different outlets from Max, so no example would be correct in both.",
   "inlet": "An inlet or outlet object is a port on a subpatcher or an abstraction. This browser player runs neither kind that maxpylang can make: it can't run abstractions yet, and maxpylang places p (patcher) empty. So no example would run here. It works in Max.",
