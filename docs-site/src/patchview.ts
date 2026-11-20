@@ -105,7 +105,15 @@ export interface PatchPaneOptions {
   widgetFor?(id: string): HTMLElement | undefined;
   /** Open this patch larger, beside its code. */
   onExpand?(): void;
+  /**
+   * Size the view to the patch, between these heights (px), instead of filling the host:
+   * a three-box patch then gets a short view, not a tall empty one.
+   */
+  fitHeight?: { min: number; max: number };
 }
+
+/** Room under the patch for the zoom buttons, which sit over the bottom right corner. */
+const TOOLS_H = 44;
 
 /** A pannable, zoomable, read-only view of one patch, with its own small toolbar. */
 export class PatchPane {
@@ -116,7 +124,7 @@ export class PatchPane {
   private touched = false; // after the reader pans or zooms, stop re-fitting on resize
   private readonly resize: ResizeObserver;
 
-  constructor(host: HTMLElement, private readonly opts: PatchPaneOptions = {}) {
+  constructor(private readonly host: HTMLElement, private readonly opts: PatchPaneOptions = {}) {
     this.el = document.createElement('div');
     this.el.className = 'ref-patch';
     this.el.innerHTML = `
@@ -147,11 +155,29 @@ export class PatchPane {
   /** Show a patch (maxpat JSON), laid out for reading. */
   show(patch: unknown): void {
     this.view?.destroy();
-    this.doc = PatchDoc.fromIR(parseMaxPat(layoutForReading(patch)));
+    const laidOut = layoutForReading(patch);
+    this.sizeTo(laidOut);
+    this.doc = PatchDoc.fromIR(parseMaxPat(laidOut));
     this.view = new PatcherView(this.canvas, { doc: this.doc, widgetFor: this.opts.widgetFor });
     this.view.setMode('run');
     this.touched = false;
     requestAnimationFrame(() => this.view?.fit(PAD));
+  }
+
+  /** With fitHeight, make the host as tall as the patch at full size (fit never enlarges it). */
+  private sizeTo(patch: unknown): void {
+    const range = this.opts.fitHeight;
+    if (!range) return;
+    let top = Infinity, bottom = -Infinity;
+    for (const { box } of (patch as Patch).patcher.boxes) {
+      const r = box.patching_rect;
+      if (!r) continue;
+      top = Math.min(top, r[1]);
+      bottom = Math.max(bottom, r[1] + (r[3] || BOX_H));
+    }
+    const content = Number.isFinite(top) ? bottom - top : 0;
+    const height = Math.min(range.max, Math.max(range.min, content + 2 * PAD + TOOLS_H));
+    this.host.style.height = `${Math.round(height)}px`;
   }
 
   /** Re-mount the engine's widgets, after the patch starts or stops playing. */
