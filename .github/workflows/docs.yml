@@ -98,16 +98,15 @@ jobs:
       - name: Build the guides (strict)
         run: make -C docs html SPHINXOPTS="-W --keep-going"
 
-      # Guides first, reference last: the reference writes docs/index.html.
-      - name: Copy the site into docs/
-        if: github.event_name != 'pull_request'
+      # Guides first, reference last: the reference writes docs/index.html. A pull request
+      # builds the whole site too (to check it), but only main commits it.
+      - name: Assemble the site in docs/
         run: |
           make -C docs deploy
           npm --prefix docs-site run build
 
-      - name: Build the reference (pull request check)
-        if: github.event_name == 'pull_request'
-        run: npm --prefix docs-site run build
+      - name: Check every link
+        run: python docs-site/scripts/check_links.py docs
 
       # docs/app is the MaxPyStudio web app, built separately from web/. The docs build must never touch it.
       - name: Check docs/app is untouched
