@@ -116,4 +116,26 @@ describe('buffer~ and its readers', () => {
     expect(mid).toBeLessThan(0.9);                            // falling
     expect(y[Math.round(0.9 * SR)]).toBeCloseTo(0, 3);         // landed on 0
   });
+
+  it('2d.wave~ splits the region into rows: X is the place in a row, Y picks the row', async () => {
+    resetSamples();
+    // 1000 samples in 4 rows of 250; sample i holds i / 1000.
+    addSampleFile('ramp.wav', wav(1000, (i) => i / 1000));
+    const ctx = new OfflineAudioContext(1, Math.round(SR * 0.05), SR);
+    await preloadWorklets(ctx);
+    const buf = getFactory('buffer~')!(['b', 'ramp.wav'], { ctx });
+    await new Promise((r) => setTimeout(r, 300));
+    const node = getFactory('2d.wave~')!(['b', 0, 0, 1, 4], { ctx });
+    const x = new ConstantSourceNode(ctx, { offset: 0.5 });
+    const yPhase = new ConstantSourceNode(ctx, { offset: 2 / 3 }); // row 2 of rows 0..3
+    x.connect(node.signalIns[0] as AudioNode);
+    yPhase.connect(node.signalIns[1] as AudioNode);
+    (node.signalOuts[0] as AudioNode).connect(ctx.destination);
+    x.start(); yPhase.start();
+    await new Promise((r) => setTimeout(r, 50));
+    const y = (await ctx.startRendering()).getChannelData(0);
+    // row 2 starts at sample 2 * 249.75; halfway along it is about sample 624
+    expect(y[1000]).toBeCloseTo(0.624, 2);
+    node.dispose?.(); buf.dispose?.();
+  });
 });
