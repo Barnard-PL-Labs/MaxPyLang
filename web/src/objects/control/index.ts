@@ -31,17 +31,25 @@ function isTrigger(m: Msg): boolean {
 //
 // Prototype convenience: on by default, and the shared scheduler only lets it tick
 // while the transport is running — so a loaded patch plays on ▶ without a toggle
-// click. An explicit 0 into inlet 0 still stops it.
+// click. An explicit 0 into inlet 0 still stops it. Like Max's, it bangs at once when
+// it starts, not one interval later.
 register('metro', (args) => {
   const o = makeOutlets();
   let interval = Math.max(1, num(args[0], 500));
   let cancel: (() => void) | null = null;
-  const on = () => { if (!cancel) cancel = scheduler.everyMs(interval, () => o.emit(0, BANG)); };
+  // As in Max, a metro bangs as soon as it starts, then every interval: when it is
+  // switched on while the transport runs, and (being on by default) when ▶ starts it.
+  const on = () => {
+    if (cancel) return;
+    cancel = scheduler.everyMs(interval, () => o.emit(0, BANG));
+    if (scheduler.isRunning) o.emit(0, BANG);
+  };
   const off = () => { if (cancel) { cancel(); cancel = null; } };
   on(); // auto-start (scheduler gates actual ticking to the transport)
   return {
     signalIns: [],
     signalOuts: [],
+    start: () => { if (cancel) o.emit(0, BANG); },
     controlIns: [
       (m) => {
         if (isBang(m)) on();
