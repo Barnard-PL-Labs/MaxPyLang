@@ -2,13 +2,14 @@
 
 What maxpylang cannot yet **say** or **check** about a Max for Live device.
 
-This log is fed by the plugin generator (`web/interactive-plugin.html`). The generator
-builds real audio effects with maxpylang, so every time it needs a workaround, or the
+This log is fed by the plugin generator, a browser page that builds Max for Live audio
+effects. It started in this repo's `web/` folder and is now a project of its own. The
+generator builds real audio effects with maxpylang, so every time it needs a workaround, or the
 checks pass a device that is broken, that is a gap, and it goes here.
 
 ## How the loop works
 
-1. **Find.** A gap shows up as a workaround in `web/src/plugin/fxgen.py` (a comment
+1. **Find.** A gap shows up as a workaround in the generator's `fxgen.py` (a comment
    reading `gap M4L-NN`), or as a broken device that `save()` accepts without a warning.
 2. **Log.** It gets an entry below: what is missing, the evidence, a proposed fix.
 3. **Pin.** It gets a test in `tests/test_m4l_gaps.py` that states the wanted behaviour
@@ -17,8 +18,8 @@ checks pass a device that is broken, that is a gap, and it goes here.
    into a failure. That failure is the reminder to remove the mark, set the status here
    to closed, and delete the workaround from `fxgen.py`.
 
-`tests/test_fxgen.py::test_named_gaps_are_the_ones_in_the_log` keeps the two ends
-attached: every gap the generated script names must have an entry in this file.
+The generator's own tests keep the other end attached: every gap its script names must
+be one of the entries in this file.
 
 The page shows the same thing to its users. Its "Type check" panel lists the gaps the
 current device had to work around, read off the generated script.
@@ -299,8 +300,8 @@ maxpylang's types, and are listed so they are not lost.
   echo arrived 2.9 ms after it does in Max, and a reverb built on looped delays came out
   detuned. `tapout~` now has an early read for the cords that close a loop, and `comb~`
   is a worklet with its loop inside.
-- **The preview is checked against Max, not assumed.** `web/scripts/maxcheck/` renders
-  one test signal through the same generated patches in Max and in the engine and
+- **The preview is checked against Max, not assumed.** The generator's
+  `scripts/maxcheck/` renders one test signal through the same generated patches in Max and in the engine and
   compares the recordings. The filter, every distortion type, the crusher, the delay, the
   flanger and the reverb now match a Max 9 recording to its last bit. What still differs
   (where an LFO starts, and a one-vector offset inside Max) is listed in that folder's

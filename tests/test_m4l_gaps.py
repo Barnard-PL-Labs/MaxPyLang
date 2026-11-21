@@ -5,9 +5,10 @@ Every test here states what SHOULD happen and is marked xfail(strict=True) becau
 does not happen yet. The pair is the point: the test is the executable half of an entry
 in docs/type-system/m4l-gaps.md, and strict means that the day a gap is closed its test
 fails loudly as "unexpectedly passing", which is the cue to delete the mark, update the
-log, and remove the matching workaround from web/src/plugin/fxgen.py.
+log, and remove the matching workaround from the plugin generator's fxgen.py.
 
-The gaps were found by building real devices with the plugin generator. Nothing here is
+The gaps were found by building real devices with the plugin generator, a browser page
+that started in this repo's web/ folder and is now a project of its own. Nothing here is
 hypothetical: each one is either a workaround the generator needs, or a broken device
 the checks let through.
 """

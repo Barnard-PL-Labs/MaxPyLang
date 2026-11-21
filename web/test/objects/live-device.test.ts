@@ -1,18 +1,15 @@
-// The plugin generator's browser half: the Max for Live objects the engine gained for it
-// (live.dial, plugin~, plugout~, overdrive~), and the settings model the page edits.
-// The Python half, fxgen.py, is tested natively in tests/test_fxgen.py.
+// The Max for Live objects the engine plays: live.dial and its parameter block,
+// plugin~ / plugout~ on the host bus, and overdrive~.
 
 import { describe, expect, it } from 'vitest';
-import '../src/objects/ui/live-dial';
-import '../src/objects/audio/plug';
-import '../src/objects/audio/dynamics';
-import { getFactory, isSupported } from '../src/engine/registry';
-import { formatParam, liveParam, paramPosition, paramValue } from '../src/objects/ui/live-param';
-import { hostBus } from '../src/runtime/host';
-import type { IRNode } from '../src/ir/types';
-import type { Msg } from '../src/runtime/atoms';
-import { highlightPython } from '../src/plugin/device-view';
-import { PRESETS, SCHEMA, decodeSettings, dialIndex, encodeSettings, normalize } from '../src/plugin/model';
+import '../../src/objects/ui/live-dial';
+import '../../src/objects/audio/plug';
+import '../../src/objects/audio/dynamics';
+import { getFactory, isSupported } from '../../src/engine/registry';
+import { formatParam, liveParam, paramPosition, paramValue } from '../../src/objects/ui/live-param';
+import { hostBus } from '../../src/runtime/host';
+import type { IRNode } from '../../src/ir/types';
+import type { Msg } from '../../src/runtime/atoms';
 
 const ctx = new (globalThis as any).OfflineAudioContext(2, 128, 44100) as BaseAudioContext;
 
@@ -156,75 +153,5 @@ describe('overdrive~', () => {
       if (drive === 1) expect(quarter).toBeCloseTo(0.25, 2);
       else expect(quarter).toBeGreaterThan(0.3); // quiet input is pushed up
     }
-  });
-});
-
-describe('settings model', () => {
-  it('normalize fills in every module, off, after the ones that were given', () => {
-    const s = normalize({ chain: [{ module: 'reverb' }, { module: 'filter' }] });
-    expect(s.chain.map((e) => e.module).slice(0, 2)).toEqual(['reverb', 'filter']);
-    expect(s.chain.length).toBe(SCHEMA.modules.length);
-    expect(s.chain.filter((e) => e.on).map((e) => e.module)).toEqual(['reverb', 'filter']);
-  });
-
-  it('normalize clamps values, rejects unknown options and cleans the name', () => {
-    const s = normalize({
-      name: '<script>alert(1)</script>',
-      accent: 'javascript:1',
-      chain: [{ module: 'filter', values: { cutoff: 1e9, res: 'x' }, options: { mode: 'nope' } }, { module: 'filter' }, { module: 'ghost' }],
-      output: { gain: 500 },
-    });
-    expect(s.name).toBe('scriptalert1script');
-    expect(s.accent).toBe(SCHEMA.accents[0]);
-    const filter = s.chain[0];
-    expect(filter.values.cutoff).toBe(10000); // a quarter of the sample rate is as far as svf~ goes
-    expect(filter.values.res).toBe(30);
-    expect(filter.options.mode).toBe('lowpass');
-    expect(s.chain.filter((e) => e.module === 'filter').length).toBe(1);
-    expect(s.output.gain).toBe(12);
-    expect(normalize(null)).toEqual(normalize({}));
-  });
-
-  it('a shared link round-trips every preset', () => {
-    for (const preset of PRESETS) {
-      const s = normalize(preset.settings);
-      const back = decodeSettings(encodeSettings(s))!;
-      expect(back.name).toBe(s.name);
-      expect(back.chain.filter((e) => e.on)).toEqual(s.chain.filter((e) => e.on));
-      expect(back.output).toEqual(s.output);
-    }
-    expect(decodeSettings('not base64 json')).toBeUndefined();
-  });
-
-  it('every dial fxgen names maps back to a setting', () => {
-    const index = dialIndex();
-    const count = SCHEMA.modules.reduce((n, m) => n + m.params.length, 0) + SCHEMA.output.params.length;
-    expect(index.size).toBe(count);
-    expect(index.get('filter_cutoff')).toEqual({ module: 'filter', param: 'cutoff' });
-    expect(index.get('delay_feedback')).toEqual({ module: 'delay', param: 'feedback' });
-    expect(index.get('output_gain')).toEqual({ module: 'output', param: 'gain' });
-  });
-
-  it('every preset names real modules, and its sample is one the page ships', () => {
-    const modules = new Set(SCHEMA.modules.map((m) => m.id));
-    for (const p of PRESETS) {
-      for (const e of p.settings.chain ?? []) expect(modules.has(e.module)).toBe(true);
-      if (p.sample) expect(['piano', 'guitar', 'vocals', 'drums']).toContain(p.sample);
-    }
-  });
-});
-
-describe('script view', () => {
-  it('escapes the source and marks comments, strings and gap references', () => {
-    const html = highlightPython('x = place("a<b>", 1, 2.5)  # why (gap M4L-01)\nreturn x');
-    expect(html).not.toContain('<b>');
-    expect(html).toContain('<span class="c-str">"a&lt;b&gt;"</span>');
-    expect(html).toContain('<span class="c-gap">gap M4L-01</span>');
-    expect(html).toContain('<span class="c-kw">return</span>');
-    expect(html).toContain('<span class="c-num">2.5</span>');
-  });
-
-  it('does not treat a # inside a string as a comment', () => {
-    expect(highlightPython('c = "#ff7a45"')).toBe('c = <span class="c-str">"#ff7a45"</span>');
   });
 });
