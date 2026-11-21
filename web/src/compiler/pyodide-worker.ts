@@ -13,8 +13,8 @@
 //   → {type:'call', id, module, fn, args: (string|number|boolean)[]}
 //   ← {type:'result', id, json} | {type:'error', id, phase:'call', message}
 //
-// `install` + `call` are how a page runs its OWN Python against maxpylang (the plugin
-// generator's fxgen.py) instead of a script the user typed. The function must return a
+// `install` + `call` are how a page runs its OWN Python against maxpylang instead of a
+// script the user typed. The function must return a
 // string; by convention it is JSON, which is why the reply reuses the `json` field.
 
 // We rely on the ambient `self`/`postMessage` from the DOM lib rather than pulling
