@@ -53,6 +53,11 @@ def load_amxd(filename):
             raise ValueError(f"Chunk {tag!r} size {size} extends past end of file")
         if tag == b"ptch":
             json_bytes = data[offset + 8:offset + 8 + size]
+            if json_bytes[:4] == b"mx@c":
+                # a frozen device: a 16-byte header, the patcher JSON, then the files it
+                # depends on. The header's second word is its own length.
+                start = struct.unpack(">I", json_bytes[4:8])[0]
+                json_bytes = json_bytes[start:].split(b"\x00", 1)[0]
             try:
                 return json.loads(json_bytes.rstrip(b"\x00"))
             except json.JSONDecodeError as e:

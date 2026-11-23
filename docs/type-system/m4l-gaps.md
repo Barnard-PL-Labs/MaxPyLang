@@ -28,16 +28,16 @@ current device had to work around, read off the generated script.
 
 | ID | Kind | Gap | Status |
 |----|------|-----|--------|
-| M4L-01 | express | A dial's range, unit and start value cannot be set | open |
-| M4L-02 | express | Presentation mode has no API and is rejected on some objects | open |
+| M4L-01 | express | A dial's range, unit and start value cannot be set | closed |
+| M4L-02 | express | Presentation mode has no API and is rejected on some objects | closed |
 | M4L-03 | express | A comment is saved with its object name in front of its words | open |
 | M4L-04 | express | Patcher settings (open in presentation, device width) have no API | open |
 | M4L-05 | check | A tap link is not a type: `tapin~` and `tapout~` pairing is unchecked | closed |
-| M4L-06 | check | The device type is not a contract | open |
-| M4L-07 | check | A parameter's range is invisible to the checks | open |
-| M4L-08 | check | Duplicate parameter names are accepted | open |
-| M4L-09 | check | Output level is unbounded: the `clip~` rule is not checked | open |
-| M4L-10 | check | A parameter that controls nothing is accepted | open |
+| M4L-06 | check | The device type is not a contract | closed |
+| M4L-07 | check | A parameter's range is invisible to the checks | closed for documented inlets |
+| M4L-08 | check | Duplicate parameter names are accepted | closed |
+| M4L-09 | check | Output level is unbounded: the `clip~` rule is not checked | closed |
+| M4L-10 | check | A parameter that controls nothing is accepted | closed |
 | M4L-11 | check | About fifty audio objects have an inlet with no type, so cords into them are not judged | closed |
 
 "Express" gaps block the generator and are worked around in its script. "Check" gaps
@@ -48,42 +48,38 @@ not have noticed if it had not.
 
 ## M4L-01: a dial's range, unit and start value cannot be set
 
-**Missing.** A `live.dial` is only useful with a range. Max keeps the range, the unit,
-the curve and the starting value in the Live parameter block, saved on the box under
-`saved_attribute_attributes.valueof` (`parameter_mmin`, `parameter_mmax`,
-`parameter_unitstyle`, `parameter_exponent`, `parameter_initial`, `parameter_longname`).
+**Closed.** A `live.dial` is only useful with a range. Max keeps the range, the unit, the
+curve and the starting value in the Live parameter block, saved on the box under
+`saved_attribute_attributes.valueof`. `edit()` rejected that key with a `print`, so a script
+could not set it and could not tell that it had not.
 
-**Evidence.** `dial.edit(saved_attribute_attributes={...})` prints
-`Error: live.dial : saved_attribute_attributes is not a valid attribute argument` and
-drops it. The rejection is a `print`, not a warning or an exception, so a script cannot
-detect it and the device saves with every dial at Max's default of 0 to 127.
+**Fix.** `obj.parameter(name, lo, hi, initial=, unit=, exponent=, short_name=, integer=,
+options=)` on every object that can be a parameter. It writes the block Max writes, turns
+`parameter_enable` on, and raises on an empty range, a start value outside the range, an
+unknown unit, or an object that cannot be a parameter (`cycle~`). `unit` is a `Literal`, so
+a type checker rejects a misspelt one before the script runs. `edit()` also accepts a whole
+`saved_attribute_attributes` block now.
 
-**Workaround.** `obj._dict["box"]["saved_attribute_attributes"] = {...}`.
+Separately, an attribute that is dropped is no longer a `print`: `edit()`, `place()` and
+`MaxObject()` raise an `AttributeWarning` at the user's line. That surfaced one of
+maxpylang's own: `replace()` passed its `verbose` flag on to the object as an attribute.
 
-**Proposed fix.** A typed parameter on the object, for example
-`dial.parameter(name, lo, hi, initial, unit, exponent)`, shared by every `live.*` object.
-Separately, make `edit()` warn (`UnknownAttributeWarning`) instead of printing.
-Once ranges are first-class, M4L-07 and M4L-08 become checkable.
+With ranges first-class, M4L-07, M4L-08 and M4L-10 became checkable, and are closed below.
 
 **Tests.** `test_m4l_01_a_dial_range_can_be_set`,
-`test_m4l_01_a_rejected_attribute_is_not_silent`.
+`test_m4l_01_the_parameter_block_can_also_be_given_whole`,
+`test_m4l_01_a_rejected_attribute_is_not_silent`, and `tests/test_devicecheck.py`.
 
 ## M4L-02: presentation mode has no API and is rejected on some objects
 
-**Missing.** A device's interface is its presentation view: each visible box needs
-`presentation: 1` and a `presentation_rect`. Background panels also need `background: 1`.
+**Closed.** `edit(presentation=1, presentation_rect=[...])` worked on `live.dial` and was
+rejected on `panel`. The difference was whether the object's scraped attribute list held
+the `COMMON` marker, which is an accident of the scrape. Presentation is a property of
+every box, so every object now takes the common box attributes (`presentation`,
+`presentation_rect`, `background`, `hidden`, `varname`, `annotation`...).
 
-**Evidence.** `edit(presentation=1, presentation_rect=[...])` works on `live.dial` and
-`live.comment`, and is rejected on `panel`
-(`Error: panel : presentation is not a valid attribute argument`). The difference is
-whether the object's scraped attribute list contains the `COMMON` marker, which is an
-accident of the scrape. Presentation is a property of every box.
-
-**Workaround.** Write the three keys straight into the box dict.
-
-**Proposed fix.** `obj.present(x, y, w, h)` on `MaxObject`, valid for every box, with the
-rect checked as four numbers. Accept the common box attributes on every object whether
-or not its data file lists `COMMON`.
+There is still no `obj.present(x, y, w, h)` shorthand. `edit()` does the job, so it is not
+counted as a gap.
 
 **Test.** `test_m4l_02_any_box_can_be_put_in_presentation`.
 
@@ -149,31 +145,32 @@ through an `inlet` or a `poly~` voice's `in` is allowed for.
 
 ## M4L-06: the device type is not a contract
 
-**Missing.** `device_type` says what the device is for, which fixes what it must contain:
+**Closed.** `device_type` says what the device is for, which fixes what it must contain:
 
 | `device_type` | must read | must write |
 |---|---|---|
 | `audio_effect` | `plugin~` | `plugout~` |
-| `instrument` | a MIDI input (`notein`, `midiin`) | `plugout~` |
+| `instrument` | a MIDI input (`notein`, `midiin`...) | `plugout~` |
 | `midi_effect` | a MIDI input | a MIDI output |
 
-**Evidence.** An "instrument" that is `cycle~ 440 -> plugout~`, with no MIDI input at
-all, saves with no warning. So does an "audio effect" that never reads `plugin~`.
+An "instrument" that was `cycle~ 440 -> plugout~`, with no MIDI input at all, saved with no
+warning. So did an "audio effect" that never read `plugin~`.
 
-Part of this is already done, and it is worth saying so: the graph check knows that
-inside a device `dac~` and `ezdac~` are not outputs, and reports audio that only reaches
-them as reaching nothing (`test_ezdac_in_a_device_is_caught`). The message does not yet
-say "use `plugout~`".
+**Fix.** `save(device_type=...)` checks the table (`_contract` in
+`maxpylang/devicecheck.py`) and raises a `DeviceWarning` for each missing end, naming the
+object to add. A device with a `dac~` and no `plugout~` is told that `dac~` is silent
+inside Live. The file is only judged when it can be seen whole: an abstraction, a
+`bpatcher` kept in another file or a `poly~` may hold the missing object.
 
-**Proposed fix.** Treat `device_type` as a signature and check it in `save()`:
-required sources and sinks per type, each with a message that names the object to add.
+Of the 82 devices that ship with Max, 18 can be seen whole (the rest are frozen, with
+their abstractions beside the patcher), and none of them is flagged.
 
 **Tests.** `test_m4l_06_an_instrument_needs_midi_in`,
-`test_m4l_06_an_audio_effect_needs_audio_in`.
+`test_m4l_06_an_audio_effect_needs_audio_in`, `test_a_device_lacking_what_its_type_needs`.
 
 ## M4L-07: a parameter's range is invisible to the checks
 
-**Missing.** The checks type a cord by rate (audio or not). They know nothing about the
+**Closed for the inlets whose range Max documents.** The checks type a cord by rate (audio or not). They know nothing about the
 values on it. In a device nearly every control cord starts at a dial with a declared
 range and ends at an inlet with an expected one.
 
@@ -198,51 +195,69 @@ something a check can read. A fifth case was a matter of degree, not of limits: 
 resonance is nominally 0 to 1, and measured in Max it is flat below 0.17 and rings for
 seconds above 0.85, so the dial now maps onto 0.17 to 0.75.
 
-**Proposed fix.** This is the refinement the formal model leaves open. A first step that
-does not need full interval typing: record the documented range of the few dozen inlets
-where it matters (resonance, feedback, gain coefficients), read the dial's range from its
-parameter block, follow it through the arithmetic objects that have an obvious interval
-rule (`* k`, `+ k`, `scale`, `!- k`), and warn when the intervals do not overlap. Depends
-on M4L-01.
+**Fix.** A first step that does not need full interval typing, in
+`maxpylang/devicecheck.py`. The dial's range is read from its parameter block. It is
+followed through the objects that have a plain rule for it (`*`, `/`, `+`, `-`, `!-`,
+`!/`, `scale`, `zmap`, `clip`, `abs`, `mtof`, `dbtoa`, number boxes, `trigger`) and
+compared with the inlet's documented range. A range that reaches past it raises a
+`DeviceWarning` naming the parameter, both ranges and the inlet. Anything else on the way,
+or a cord into an operator's right inlet, and the range is not known: no report.
 
-**Test.** `test_m4l_07_a_dial_range_is_checked_against_its_inlet`.
+The inlet ranges are in `maxpylang/data/value_ranges.json`, each with the sentence of
+Max's reference page it was read from: `svf~` (cutoff, resonance), `onepole~` (cutoff),
+`lores~` (resonance), `overdrive~` (drive), `triangle~` (peak position). That covers the
+four dials above. A cutoff limit of a quarter of the sample rate is taken at 44.1 kHz.
+
+**Still open.** The table is five objects. The other limits are in the scraped reference
+data as prose, and reading them out wholesale is its own piece of work. Ranges are not
+followed through `expr`, `line`, or a subpatcher.
+
+**Tests.** `test_m4l_07_a_dial_range_is_checked_against_its_inlet`,
+`test_a_range_that_fits_after_what_is_on_the_way`, `test_a_range_that_does_not_fit`.
 
 ## M4L-08: duplicate parameter names are accepted
 
-**Missing.** Live identifies a parameter by its long name. Two parameters with the same
-long name collide: automation and mappings attach to the wrong one, and Max renames one
-of them on load.
+**Closed.** Live identifies a parameter by its long name. Two parameters with the same
+long name collide: automation and mappings attach to the wrong one, and Max renames one of
+them on load. Two dials both named "Gain" saved with no warning.
 
-**Evidence.** Two dials both named "Gain" save with no warning.
-
-**Proposed fix.** A patch-level check in `save()` for devices: long names unique across
-all objects with `parameter_enable`. Depends on M4L-01.
+**Fix.** At save, long names are compared across the whole file, subpatchers included, and
+a name used twice raises a `DeviceWarning` listing the boxes. It holds for a plain patch
+too. Parameters left unnamed are not compared: Max numbers those itself.
 
 **Test.** `test_m4l_08_parameter_names_are_unique`.
 
 ## M4L-09: output level is unbounded
 
-**Missing.** `CLAUDE.md` states a rule for every device: `clip~ -1. 1.` before
-`plugout~`, for speaker safety. It is a convention; nothing enforces it.
+**Closed.** `CLAUDE.md` states a rule for every device: `clip~ -1. 1.` before `plugout~`,
+for speaker safety. Nothing enforced it: `plugin~ -> *~ 4. -> plugout~` saved with no
+warning.
 
-**Evidence.** `plugin~ -> *~ 4. -> plugout~` saves with no warning.
+**Fix.** The level reaching each `plugout~` is followed back through the signal cords as a
+multiple of full scale. `plugin~` and the oscillators are 1. `*~ 0.5` halves it, `*~ 4.`
+quadruples it, and a dial into `*~` counts by the dial's range, which is M4L-01 at work
+again. Two cords into one inlet add. `clip~`, `tanh~`, `overdrive~` and `limi~` bring it
+back to 1. A filter, a feedback loop, or any object with no rule may raise the level, so
+it counts as unlimited. Above 1, `save()` raises a `DeviceWarning` naming the object
+responsible. A device that only passes audio through or attenuates it is not warned, and
+a path through a subpatcher, an abstraction or a `line~` ramp is not judged.
 
-**Proposed fix.** A lint in the graph check for devices: every path into `plugout~`
-passes through an object that bounds amplitude (`clip~`, `limi~`, `tanh~`,
-`overdrive~`). Reported as advice, not as an error, because a device that only
-attenuates is safe without one.
+This one is advice, and it does fire on working devices: 6 of the 82 that ship with Max
+end in a filter, a compressor or a `gain~` with nothing after it.
 
-**Test.** `test_m4l_09_output_level_is_bounded`.
+**Tests.** `test_m4l_09_output_level_is_bounded`, `test_a_level_that_stays_inside_full_scale`,
+`test_a_level_that_can_pass_full_scale`, `test_a_gain_dial_counts_by_its_range`.
 
 ## M4L-10: a parameter that controls nothing is accepted
 
-**Missing.** A `live.dial` with no cord leaving it is a knob in Live that does nothing.
+**Closed.** A `live.dial` with no cords is a knob in Live that does nothing. The graph
+check reports other objects whose output reaches nothing, and did not report a
+disconnected dial, because a UI object counts as a display.
 
-**Evidence.** The graph check reports other objects whose output reaches nothing, and
-does not report a disconnected dial, because a UI object counts as a display.
-
-**Proposed fix.** For objects with `parameter_enable`, being visible is not enough:
-require a cord from an outlet, or a `varname` that something refers to.
+**Fix.** In a device, a parameter with no cords at all raises a `DeviceWarning`. One that
+is only fed is left alone: a `live.numbox` showing a value is a display. So is every
+parameter in a device that holds something able to reach it by name (the `pattr` family,
+`js`, `thispatcher`, `live.banks`). None of the devices that ship with Max is flagged.
 
 **Test.** `test_m4l_10_a_parameter_controls_something`.
 

@@ -110,7 +110,7 @@ class MaxObject():
 
         return MaxObject(" ".join(words))
 
-    from .tools.objfuncs.exposed import move, edit, link, inspect #exposed functions for user use
+    from .tools.objfuncs.exposed import move, edit, parameter, link, inspect #exposed functions for user use
 
 
 

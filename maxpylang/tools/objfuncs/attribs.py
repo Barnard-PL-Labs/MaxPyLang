@@ -12,7 +12,16 @@ Methods dealing with attribs for MaxObjects.
     retain_attribs() --> retain all possible attribs (extra only) from another MaxObject
 """
 
+import warnings
+
 from .. import typechecks as tc
+from ...exceptions import AttributeWarning
+
+
+def _warn(message):
+    """An AttributeWarning at the user's line: their place(), edit() or MaxObject() call."""
+    from ...cordcheck import _user_stacklevel
+    warnings.warn(message, AttributeWarning, stacklevel=_user_stacklevel())
 
 
 def add_extra_attribs(self, extra_attribs):
@@ -37,12 +46,12 @@ def get_all_valid_attribs(self, text_attribs, extra_attribs, attrib_info):
     #first, check text attribs
     text_attribs = self.remove_bad_attribs(text_attribs, attrib_info)
 
-    #add common box attributes if necessary
-    total_attrib_info = attrib_info
-    #add access to patching_rect attrib
-    total_attrib_info.append({'name': 'patching_rect', 'type': 'float', 'size': '4'})
-    if 'COMMON' in [attrib['name'] for attrib in attrib_info]:
-        total_attrib_info += self.common_box_attribs
+    #every box has the common box attributes (presentation, varname, hidden...), whether or
+    #not its data file says so, and a place for its Live parameter block
+    total_attrib_info = attrib_info + [{'name': 'patching_rect', 'type': 'float', 'size': '4'},
+                                       {'name': 'parameter_enable', 'type': 'int', 'size': 1},
+                                       {'name': 'saved_attribute_attributes', 'type': 'any', 'size': 1}]
+    total_attrib_info += self.common_box_attribs
 
     #then, check extra attribs
     extra_attribs = self.remove_bad_attribs(extra_attribs, total_attrib_info)
@@ -66,7 +75,7 @@ def remove_bad_attribs(self, attribs, attrib_speclist):
 
         #check for no value specified
         if len(vals) == 0:
-            print("warning:", self._name,": no argument given for attribute", attrib)
+            _warn(f"{self._name}: no value given for attribute {attrib}, so it is left out.")
             continue
 
         #look for attrib spec in attrib_speclist
@@ -74,7 +83,7 @@ def remove_bad_attribs(self, attribs, attrib_speclist):
 
         #if not found
         if len(attrib_spec) == 0:
-            print("Error:", self._name, ":", attrib, "is not a valid attribute argument")
+            _warn(f"{self._name} has no attribute '{attrib}', so it is left out.")
             notvalid.append(attrib)
 
         #if found
@@ -82,12 +91,13 @@ def remove_bad_attribs(self, attribs, attrib_speclist):
             attrib_spec = attrib_spec[0] #bc list comprehension, etc.....
             #check length of val at least as big as size (reflecting Max behavior...)
             if len(vals) < int(attrib_spec['size']):
-                print("Error:", self._name, ":", attrib, "requires", attrib_spec['size'], "arguments")
+                _warn(f"{self._name}: attribute {attrib} takes {attrib_spec['size']} values, so it is left out.")
                 notvalid.append(attrib)
 
             #check type for all vals
-            if not all([tc.check_type([attrib_spec['type']], single_val) for single_val in vals]):
-                print("Error:", self._name, ":", attrib, "requires arguments of type", attrib_spec['type'])
+            elif not all([tc.check_type([attrib_spec['type']], single_val) for single_val in vals]):
+                _warn(f"{self._name}: attribute {attrib} takes values of type {attrib_spec['type']}, "
+                      "so it is left out.")
                 notvalid.append(attrib)
 
     #remove nonvalid attribs from attribs

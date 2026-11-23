@@ -1,0 +1,23 @@
+{
+  "_doc": "The values an inlet takes, where Max's reference page states them. Used by maxpylang/devicecheck.py to compare a Live parameter's range with the inlet it reaches. Keyed by Max object name, then inlet index. `hi` may be \"sr/4\", a quarter of the sample rate, which the check takes at 44.1 kHz. `says` quotes the reference page the limits were read from, so an entry can be checked against Max. Only add an inlet whose page states a range: a guess here becomes a false alarm.",
+  "svf~": {
+    "1": {"what": "cutoff frequency", "lo": 0, "hi": "sr/4",
+          "says": "the center frequency is expressed in Hz, where the allowable range is from 0 to one quarter of the current sampling rate"},
+    "2": {"what": "resonance", "lo": 0, "hi": 1, "says": "Resonance (0-1)"}
+  },
+  "onepole~": {
+    "1": {"what": "cutoff frequency", "lo": 0, "hi": "sr/4",
+          "says": "frequency is expressed in Hz, where the allowable range is from 0 to one fourth of the current sampling rate"}
+  },
+  "lores~": {
+    "2": {"what": "resonance", "lo": 0, "hi": 1,
+          "says": "Sets a \"resonance factor\" between 0 (minimum resonance) and 1 (maximum resonance)"}
+  },
+  "overdrive~": {
+    "1": {"what": "drive", "lo": 1, "hi": 10, "says": "The drive factor should usually be in the range 1 - 10"}
+  },
+  "triangle~": {
+    "1": {"what": "peak position", "lo": 0, "hi": 1,
+          "says": "Peak value phase offset, expressed as a fraction of a cycle, from 0 to 1.0"}
+  }
+}

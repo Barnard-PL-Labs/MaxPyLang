@@ -71,7 +71,11 @@ def test_max_for_live_stubs_are_importable():
 def test_a_device_with_live_objects_saves_with_no_warning(tmp_path):
     patch = mp.MaxPatch(verbose=False)
     dial, mul, osc, out = patch.place("live.dial", "*~", "cycle~ 220", "plugout~", verbose=False)
-    patch.connect([osc.outs[0], mul.ins[0]], [dial.outs[0], mul.ins[1]],
+    note, pitch = patch.place("notein", "mtof", verbose=False)
+    # a bare live.dial runs 0 to 127, which into *~ would be 127 times full scale
+    dial.parameter("Level", 0, 1)
+    patch.connect([note.outs[0], pitch.ins[0]], [pitch.outs[0], osc.ins[0]],
+                  [osc.outs[0], mul.ins[0]], [dial.outs[0], mul.ins[1]],
                   [mul.outs[0], out.ins[0]], [mul.outs[0], out.ins[1]], verbose=False)
     with warnings.catch_warnings():
         warnings.simplefilter("error")

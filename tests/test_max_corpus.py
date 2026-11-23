@@ -208,6 +208,48 @@ def test_few_shipped_files_have_a_name_with_nothing_on_the_other_end():
     assert flagged <= 0.005 * files, f"{flagged} of {files} files flagged, e.g.\n" + "\n".join(found[:20])
 
 
+
+def test_shipped_devices_pass_the_device_checks():
+    """The Max for Live devices that ship with Max, each checked as the type it was saved as.
+    They work, so a missing plugin~, a name used twice, an idle parameter or a range that
+    does not fit would each be a false alarm: there are none. The level check is advice and
+    does find some: 6 of the 82 end in a filter, a compressor or a gain~ with no limiter
+    after it. Most of the 82 are frozen, with their abstractions kept beside the patcher,
+    so the contract is judged for 18 of them."""
+    import maxpylang as mp
+    from maxpylang.devicecheck import device_problems
+    types = {b"aaaa": "audio_effect", b"iiii": "instrument", b"mmmm": "midi_effect"}
+    files, found, loud = 0, [], 0
+    for path in sorted(C74.rglob("*.amxd")):
+        device_type = types[path.read_bytes()[8:12]]
+        problems = device_problems(mp.load_amxd(str(path))["patcher"], device_type)
+        files += 1
+        loud += any(p.kind == "output level" for p in problems)
+        found += [f"{path.name}: {p.message}" for p in problems if p.kind != "output level"]
+    print(f"\n{files} shipped devices: {len(found)} problems, {loud} with nothing limiting the output level")
+    assert files > 70, "the corpus looks incomplete"
+    assert not found, "\n".join(found[:20])
+    assert loud <= 0.1 * files, f"{loud} of {files} devices flagged for output level"
+
+
+def test_no_shipped_patch_has_a_parameter_problem():
+    """Parameter names used twice and ranges that do not fit, which hold outside a device too."""
+    from maxpylang.devicecheck import device_problems
+    files, found = 0, []
+    for path in sorted(C74.rglob("*")):
+        if path.suffix not in (".maxpat", ".maxhelp"):
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8", errors="replace"))
+        except (ValueError, OSError):
+            continue
+        if not isinstance(data.get("patcher"), dict):
+            continue
+        files += 1
+        found += [f"{path.relative_to(C74)}: {p.message}" for p in device_problems(data["patcher"])]
+    assert files > 3000, "the corpus looks incomplete"
+    assert not found, "\n".join(found[:20])
+
 # ── the object database ───────────────────────────────────────────────────────
 
 def test_few_shipped_boxes_hold_an_object_maxpylang_does_not_know():

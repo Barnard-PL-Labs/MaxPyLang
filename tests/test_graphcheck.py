@@ -326,7 +326,7 @@ def test_a_clean_patch_saves_without_graph_warnings(tmp_path):
 
 
 def test_saving_a_device_takes_plugout_as_the_output_and_not_the_dac(tmp_path):
-    good = build("cycle~ 440", "plugout~", cords=[(1, 0, 2, 0)])
+    good = build("notein", "mtof", "cycle~", "plugout~", cords=[(1, 0, 2, 0), (2, 0, 3, 0), (3, 0, 4, 0)])
     with warnings.catch_warnings(), contextlib.redirect_stdout(io.StringIO()):
         warnings.simplefilter("error", GraphWarning)
         good.save(str(tmp_path / "good.amxd"), device_type="instrument", verbose=False)

@@ -17,5 +17,12 @@
   "buffer_makers": ["buffer~", "jit.buffer~"],
   "may_hold_the_other_end": ["poly~", "mc.poly~", "pfft~", "js", "jsui", "v8", "v8ui", "node.script", "rnbo~", "jweb", "amxd~", "mxj", "mxj~", "pattrforward", "vst~", "mc.vst~", "mcs.vst~"],
   "part_of_a_bigger_patch": ["inlet", "outlet", "in", "in~", "out", "out~", "thispoly~", "fftin~", "fftout~", "mc.in~", "mc.out~"],
-  "all_inlets_hot": ["pak", "bondo", "buddy", "timer", "gate", "switch"]
+  "all_inlets_hot": ["pak", "bondo", "buddy", "timer", "gate", "switch"],
+  "midi_in": ["notein", "midiin", "ctlin", "bendin", "touchin", "pgmin", "polyin", "xnotein", "xbendin", "sysexin", "rtin", "mpeparse", "polymidiin"],
+  "audio_in_max_for_live": ["plugin~"],
+  "level_limiters": ["clip~", "tanh~", "overdrive~", "limi~", "omx.peaklim~"],
+  "level_one_sources": ["plugin~", "adc~", "ezadc~", "cycle~", "saw~", "rect~", "tri~", "phasor~", "noise~", "pink~", "triangle~", "rand~", "train~"],
+  "level_passes": ["delay~", "live.gain~", "meter~", "live.meter~"],
+  "level_set_by_messages": ["line~", "curve~", "adsr~", "zigzag~", "function"],
+  "reads_parameters_by_name": ["pattr", "autopattr", "pattrstorage", "pattrhub", "pattrforward", "js", "jsui", "v8", "v8ui", "thispatcher", "live.banks", "preset"]
 }

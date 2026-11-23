@@ -16,7 +16,8 @@ import collections
 import os
 
 from maxpylang.cordcheck import coverage, misused_tap_links, unchecked
-from maxpylang.graphcheck import find_problems, from_patch, link_problems, warn_problems
+from maxpylang.devicecheck import device_problems
+from maxpylang.graphcheck import DEVICE_KINDS, find_problems, from_patch, link_problems, warn_problems
 
 def check(self, *flags, device_type=None):
     """
@@ -24,11 +25,14 @@ def check(self, *flags, device_type=None):
     cords that send audio into an inlet that takes no audio, and problems in the shape of the
     patch: hot loops, audio feedback with no delay, outputs that reach nothing, a tapout~
     with no tapin~, and names (receive, receive~, buffer~ readers) with nothing on the other end.
+    For a device and for Live parameters it also checks what the device type needs, the level
+    reaching plugout~, parameter names used twice, parameters with no cords, and a parameter
+    range against the inlet it reaches.
 
     :param \\*flags: takes keywords ``'abstractions'``, ``'unknowns'``, ``'js'``, ``'cords'``. If no flags given,
         checks all five categories. ``'graph'`` checks the shape of the patch.
     :param device_type: the Max for Live device type the patch is saved as, if any. Inside a
-        device, dac~ and ezdac~ are not outputs.
+        device, dac~ and ezdac~ are not outputs, and the checks that only hold inside Live run.
     :type \\*flags: str, optional
 
     :returns: outputs a list of all the objects that fall under the specified categories, \
@@ -114,6 +118,14 @@ def check(self, *flags, device_type=None):
         if found["no delay line"] or found["missing name"]:
             print(f"PatchCheck: links : {count(found['no delay line'], 'tapout~', 'tapout~ objects')} with no "
                   f"tapin~, {count(found['missing name'], 'name', 'names')} with nothing on the other end")
+        device = [kind for kind in DEVICE_KINDS if found[kind]]
+        if device:
+            words = {"device contract": ("thing the device type needs is missing", "things the device type needs are missing"),
+                     "output level": ("plugout~ with nothing limiting its level", "plugout~ objects with nothing limiting their level"),
+                     "parameter name": ("parameter name used twice", "parameter names used twice"),
+                     "idle parameter": ("parameter with no cords", "parameters with no cords"),
+                     "value range": ("parameter range that does not fit its inlet", "parameter ranges that do not fit their inlet")}
+            print("PatchCheck: device : " + ", ".join(count(found[kind], *words[kind]) for kind in device))
         _print_some("not seen into:", self.get_coverage()["objects"]["not_seen_into"])
         print()
 
@@ -154,7 +166,8 @@ def _graph_problems(patch, device_type=None):
     so a check added here reaches both.
     """
     problems = find_problems(*from_patch(patch), max_for_live=device_type is not None)
-    return problems + link_problems(patch.get_json()["patcher"])
+    patcher = patch.get_json()["patcher"]
+    return problems + link_problems(patcher) + device_problems(patcher, device_type)
 
 
 def _print_some(heading, items, limit=5):
