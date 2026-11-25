@@ -64,6 +64,11 @@ def test_what_an_object_understands():
     assert understands("no.such.object", "bang") is None
     assert understands("jit.gl.gridshape", "drawto") is None  # its family's methods are elsewhere
     assert understands("outlet", "clear") is None
+    assert understands("live.path", "bang") is True          # the page names it `bang, getid`
+    assert understands("live.object", "id") is True          # and this one `id nn`
+    assert understands("live.dial", "_parameter_range") is True   # on the shared parameters page
+    assert understands("counter", "label") is False          # a note on an attribute, not a message
+    assert understands("counter", "carryflag") is True
 
 
 # ── a message with no method ────────────────────────────────────────────────────
