@@ -5,6 +5,7 @@ the type data. Skipped where Max is not installed, as in CI. Set MAXPYLANG_C74 t
 install's Contents/Resources/C74 folder to use it.
 """
 
+import collections
 import json
 import os
 from pathlib import Path
@@ -429,3 +430,37 @@ def test_counts_that_follow_the_arguments_match_the_shipped_boxes():
     print(f"\n{count} of {total} shipped boxes with arguments have other counts in Max: {wrong}")
     assert total > 15_000, "the corpus looks incomplete"
     assert count <= 0.005 * total, f"{count} of {total}: {wrong}"
+
+
+def test_shipped_messages_are_understood_and_arrive_in_order():
+    """The message checks over every shipped patch. Shipped patches work, so each report is a
+    false alarm or a real slip, and all seven are real:
+
+    - error.maxhelp sends `razzledazzle` to a number box, to show Max's error message
+    - pend.spread.maxpat: a `-` is reached before the chain into its right inlet
+    - a `!/ 44100.` in four BEAP patches and a `pack i i i` in Resynthesis.maxpat are fed
+      only on their right inlets, so they never send anything
+
+    Before the limits in messagecheck.py (only the left inlet, no Jitter or mc. objects,
+    nothing that passes messages on) the first check reported 1,427 cords in 414 files."""
+    from maxpylang.messagecheck import message_problems
+    found = collections.defaultdict(list)
+    files = 0
+    for path in sorted(C74.rglob("*")):
+        if path.suffix not in (".maxpat", ".maxhelp"):
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8", errors="replace"))
+        except (ValueError, OSError):
+            continue
+        if not isinstance(data.get("patcher"), dict):
+            continue
+        files += 1
+        for problem in message_problems(data["patcher"]):
+            found[problem.kind].append(f"{path.name}: {problem.message}")
+    assert files > 3000, "the corpus looks incomplete"
+    print(f"\n{files} files: " + ", ".join(f"{len(v)} {kind}" for kind, v in sorted(found.items())))
+    assert [m.split(":")[0] for m in found["message"]] == ["error.maxhelp"], found["message"]
+    assert [m.split(":")[0] for m in found["message order"]] == ["pend.spread.maxpat"], found["message order"]
+    assert sorted(m.split(":")[0] for m in found["never fires"]) == [
+        "Resynthesis.maxpat", "bp.GL LFO.maxhelp", "bp.GL LFO.maxpat", "bp.GL Scope.maxhelp", "bp.Pan.maxhelp"]

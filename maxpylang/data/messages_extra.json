@@ -1,0 +1,5 @@
+{
+  "_doc": "Messages an object takes that its reference page leaves out, found by running the message check over the patches that ship with Max (tests/test_max_corpus.py). Hand kept, unlike messages.json.",
+  "pcontrol": ["enable"],
+  "detonate": ["dump"]
+}
