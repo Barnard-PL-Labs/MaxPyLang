@@ -6,8 +6,8 @@ cord by rate (audio or not). These look at the message itself and at when it arr
 
     message          an object is sent a message it has no method for. Max prints
                      "doesn't understand" in its console and the object does nothing.
-                     A message box `start` into a metro, a bang into an object that only
-                     takes numbers.
+                     A message box `reset` into a counter, a bang into an object that
+                     only takes numbers.
 
     message order    an object answers before its right inlet has the new value, so it
                      computes with the old one: one outlet has a cord to an object's left
@@ -122,6 +122,8 @@ def understands(name, selector):
     if selector in ("int", "float", "list"):
         return bool(methods & {"int", "float", "list"})
     if selector in methods or selector in attributes or selector in _box_attributes():
+        return True
+    if selector.startswith("_parameter_"):   # a Live parameter's settings, documented on one shared page
         return True
     if selector.startswith("get") and selector[3:] in attributes:
         return True
@@ -406,10 +408,9 @@ def message_problems(patcher):
             for selector, reads in _sent(boxes, into, source, outlet):
                 if understands(name, selector) is not False:
                     continue
-                what = reads if reads.startswith("`") else reads
                 problems.append(Problem(
                     "message",
-                    f"{_label(boxes[source])} sends {what} to {_label(target)}, which has no use for "
+                    f"{_label(boxes[source])} sends {reads} to {_label(target)}, which has no use for "
                     f"{'it' if selector in _TYPED_OUTLETS + ('list',) else repr(selector)}: Max prints "
                     f"\"{_typed(target)}: doesn't understand '{selector}'\" and nothing happens.",
                     [source, dest]))

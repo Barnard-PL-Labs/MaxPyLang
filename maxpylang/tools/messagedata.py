@@ -15,27 +15,47 @@ import json
 import re
 import sys
 from pathlib import Path
+from xml.etree import ElementTree
 
 REFPAGES = Path("/Applications/Max.app/Contents/Resources/C74/docs/refpages")
 DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "messages.json"
 
-_METHODS = re.compile(r"<methodlist>(.*?)</methodlist>", re.S)
-_METHOD = re.compile(r"<method\s+name=\"([^\"]+)\"")
-_ATTRIBUTE = re.compile(r"<attribute\s+name=\"([^\"]+)\"")
+_ENTITY = re.compile(r"&(?!(amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)[A-Za-z0-9#]*;?")
+
+
+def _root(page):
+    """The parsed page. The pages use HTML entities XML does not know, which are dropped."""
+    text = page.read_text(encoding="utf-8", errors="replace")
+    try:
+        return ElementTree.fromstring(text.encode("utf-8"))
+    except ElementTree.ParseError:
+        return ElementTree.fromstring(_ENTITY.sub("", text).encode("utf-8"))
+
+
+def _selectors(name):
+    """The messages a method entry names: `bang, getid` is two, `id nn` is `id`."""
+    return [part.split()[0] for part in name.split(",") if part.split()]
 
 
 def build_messages(refpages=REFPAGES):
     """{object name: {"methods": [...], "attributes": [...]}} from every reference page."""
-    table = {}
+    table, unread = {}, []
     for page in sorted(Path(refpages).rglob("*.maxref.xml")):
-        text = page.read_text(encoding="utf-8", errors="replace")
         name = page.name[:-len(".maxref.xml")]
-        lists = _METHODS.findall(text)
-        methods = sorted({m for block in lists for m in _METHOD.findall(block)})
-        # attributes of the object, not the `inlet` notes kept inside each method
-        outside = _METHODS.sub("", text)
-        attributes = sorted(set(_ATTRIBUTE.findall(outside)))
+        try:
+            root = _root(page)
+        except ElementTree.ParseError:
+            unread.append(name)
+            continue
+        methods = sorted({selector for method in root.findall("./methodlist/method")
+                          for selector in _selectors(method.get("name", ""))})
+        # the object's own attributes: each also holds a nested list of notes on it (label,
+        # style, default...), which are not messages
+        attributes = sorted({attribute.get("name") for attribute in root.findall("./attributelist/attribute")
+                             if attribute.get("name")})
         table[name] = {"methods": methods, "attributes": attributes}
+    if unread:
+        print(f"{len(unread)} pages could not be read: {', '.join(unread)}", file=sys.stderr)
     return table
 
 

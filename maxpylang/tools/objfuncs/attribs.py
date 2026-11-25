@@ -76,6 +76,7 @@ def remove_bad_attribs(self, attribs, attrib_speclist):
         #check for no value specified
         if len(vals) == 0:
             _warn(f"{self._name}: no value given for attribute {attrib}, so it is left out.")
+            notvalid.append(attrib)
             continue
 
         #look for attrib spec in attrib_speclist
