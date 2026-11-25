@@ -24,5 +24,5 @@
   "level_one_sources": ["plugin~", "adc~", "ezadc~", "cycle~", "saw~", "rect~", "tri~", "phasor~", "noise~", "pink~", "triangle~", "rand~", "train~"],
   "level_passes": ["delay~", "live.gain~", "meter~", "live.meter~"],
   "level_set_by_messages": ["line~", "curve~", "adsr~", "zigzag~", "function"],
-  "reads_parameters_by_name": ["pattr", "autopattr", "pattrstorage", "pattrhub", "pattrforward", "js", "jsui", "v8", "v8ui", "thispatcher", "live.banks", "preset"]
+  "reads_parameters_by_name": ["pattr", "autopattr", "pattrstorage", "pattrhub", "pattrforward", "pvar", "js", "jsui", "v8", "v8ui", "thispatcher", "live.banks", "preset"]
 }

@@ -126,6 +126,7 @@ class _Patcher:
                 self.cords[source] += 1
                 self.cords[dest] += 1
         self._levels = {}
+        self._values = {}
 
     def _is_signal(self, source, outlet):
         types = self.boxes[source].get("outlettype") or []
@@ -148,7 +149,11 @@ class _Patcher:
         """The values an outlet sends. None if not known."""
         if box_id in seen:
             return None
-        seen = seen | {box_id}
+        if (box_id, outlet) not in self._values:
+            self._values[(box_id, outlet)] = self._values_out(box_id, outlet, seen | {box_id})
+        return self._values[(box_id, outlet)]
+
+    def _values_out(self, box_id, outlet, seen):
         box = self.boxes[box_id]
         parameter = parameter_of(box)
         if parameter is not None and parameter.lo is not None:
@@ -249,6 +254,8 @@ class _Patcher:
             return None, None
         if _is(names, "level_limiters"):
             if "clip~" in names:
+                if self.into.get((box_id, 1)) or self.into.get((box_id, 2)):   # limits set by cords
+                    return None, None
                 a, b = _number(args, 0), _number(args, 1)
                 return (None, None) if a is None or b is None else (max(abs(a), abs(b)), None)
             return 1.0, None
@@ -291,6 +298,14 @@ class _Patcher:
             return self.level_into(box_id, 1, seen)
         values = self.values_into(box_id, 1)
         return (None, None) if values is None else (max(abs(values.lo), abs(values.hi)), None)
+
+
+def _judged(walk, *args):
+    """The result of a walk, or None for a chain too long to follow: not judged."""
+    try:
+        return walk(*args)
+    except RecursionError:
+        return None
 
 
 def _word(args, index):
@@ -390,7 +405,7 @@ def device_problems(patcher, device_type=None):
             # a parameter's range against the inlet it reaches
             for inlet, spec in ranges.get(_name(box), {}).items():
                 for source, outlet in graph.into.get((box_id, inlet), ()):
-                    values = graph.values_out(source, outlet)
+                    values = _judged(graph.values_out, source, outlet)
                     if values is None:
                         continue
                     quarter = spec["hi"] == "sr/4"
@@ -420,7 +435,7 @@ def device_problems(patcher, device_type=None):
             if _is(names, "audio_out"):
                 worst, cause = 0.0, None
                 for inlet in range(box.get("numinlets", 2)):
-                    level, why = graph.level_into(box_id, inlet)
+                    level, why = _judged(graph.level_into, box_id, inlet) or (None, None)
                     if level is not None and level > worst:
                         worst, cause = level, why
                 if worst > 1.0 + 1e-6:

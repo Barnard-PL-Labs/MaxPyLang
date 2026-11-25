@@ -319,3 +319,84 @@ def test_a_frozen_device_loads(tmp_path):
     path.write_bytes(b"ampf" + struct.pack("<I", 4) + b"aaaa" + b"meta" + struct.pack("<I", 4) + b"\x00" * 4
                      + b"ptch" + struct.pack("<I", len(frozen)) + frozen)
     assert mp.load_amxd(str(path)) == {"patcher": {"boxes": [], "lines": []}}
+
+
+# ── found in review ─────────────────────────────────────────────────────────────
+
+def block_of(obj):
+    return obj._dict["box"]["saved_attribute_attributes"]["valueof"]
+
+
+def test_renaming_keeps_the_kind_of_parameter():
+    """parameter(name) alone changes the name: a tab stays a tab, a whole number dial stays one."""
+    patch, (tab, dial) = device("live.tab", "live.dial")
+    tab.parameter("Mode", options=["a", "b", "c"])
+    tab.parameter("Mode2")
+    assert block_of(tab)["parameter_type"] == 2 and block_of(tab)["parameter_enum"] == ["a", "b", "c"]
+    assert block_of(tab)["parameter_shortname"] == "Mode2"
+
+    dial.parameter("Steps", 0, 8, integer=True, short_name="St")
+    dial.parameter("Steps2")
+    assert block_of(dial)["parameter_type"] == 1 and block_of(dial)["parameter_shortname"] == "St"
+    dial.parameter("Steps2", integer=False)
+    assert block_of(dial)["parameter_type"] == 0
+
+
+def test_a_new_range_must_still_hold_the_start_value():
+    patch, (dial,) = device("live.dial")
+    dial.parameter("Res", 0, 127, initial=64)
+    with pytest.raises(ValueError, match="start value is 64"):
+        dial.parameter("Res", 0, 1)
+    dial.parameter("Res", 0, 1, initial=0.5)
+    assert block_of(dial)["parameter_initial"] == [0.5]
+
+
+def test_replace_does_not_move_a_parameter_block_to_another_kind_of_object():
+    patch, (dial,) = device("live.dial")
+    dial.parameter("Cut", 0, 1)
+    with redirect_stdout(io.StringIO()), warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        patch.replace("obj-1", "comment hello")
+    box = patch.objs["obj-1"]._dict["box"]
+    assert "saved_attribute_attributes" not in box and box.get("parameter_enable") != 1
+    assert parameter_of(box) is None
+
+
+def test_a_parameter_read_by_pvar_is_not_idle():
+    patch, objs = device("plugin~", "plugout~", "live.dial", "pvar cut", cords=THROUGH)
+    assert "idle parameter" not in kinds(patch)
+
+
+def test_a_clip_whose_limits_come_from_cords_is_not_judged():
+    cords = [(1, 0, 3, 0), (3, 0, 4, 0), (5, 0, 4, 2), (4, 0, 2, 0)]
+    patch, objs = device("plugin~", "plugout~", "*~ 4.", "clip~ -1. 1.", "live.dial", cords=cords)
+    assert "output level" not in kinds(patch)
+
+
+def test_a_very_long_chain_is_left_alone_not_a_crash():
+    n = 1500
+    cords = [(1, 0, 3, 0), (n + 2, 0, 2, 0)] + [(i, 0, i + 1, 0) for i in range(3, n + 2)]
+    patch, _ = device("plugin~", "plugout~", *["*~ 1."] * n, cords=cords)
+    assert kinds(patch) == []
+
+
+def test_a_ladder_of_fan_ins_is_walked_once():
+    """Each stage has two paths to the next: without a memo the walk doubles per stage."""
+    texts, cords = ["live.dial"], []
+    last = 1
+    for _ in range(40):
+        a = len(texts) + 1
+        texts += ["* 1.", "* 1.", "float"]
+        cords += [(last, 0, a, 0), (last, 0, a + 1, 0), (a, 0, a + 2, 0), (a + 1, 0, a + 2, 0)]
+        last = a + 2
+    texts.append("lores~")
+    cords.append((last, 0, len(texts), 2))
+    patch, objs = device(*texts, cords=cords)
+    objs[0].parameter("Reso", 0, 5)
+    assert kinds(patch, None) == ["value range"]
+
+
+def test_check_refuses_a_device_type_that_does_not_exist():
+    patch, _ = device("plugin~", "plugout~", cords=THROUGH)
+    with pytest.raises(ValueError, match="Unknown device_type"):
+        patch.check(device_type="audio-effect")
