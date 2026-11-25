@@ -118,6 +118,11 @@ def retain_attribs(self, other):
     #get non-normal extra attribs from other obj
     extra_attribs = other.get_extra_attribs()
 
+    #a Live parameter block describes one kind of control (a dial's range, a tab's choices),
+    #so it only moves to an object of the same class
+    if self._dict['box'].get('maxclass') != other._dict['box'].get('maxclass') or self._dict['box'].get('maxclass') == 'newobj':
+        for attrib in ('parameter_enable', 'saved_attribute_attributes'):
+            extra_attribs.pop(attrib, None)
 
     #add to obj
     self.edit(**extra_attribs)

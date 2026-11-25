@@ -110,7 +110,7 @@ def edit(self, text_add = "append", text = None, **extra_attribs):
 def parameter(self, name: str, lo: Optional[float] = None, hi: Optional[float] = None, *,
               initial: Optional[float] = None, unit: Optional[ParameterUnit] = None,
               exponent: Optional[float] = None, short_name: Optional[str] = None,
-              integer: bool = False, options: Optional[Sequence[str]] = None):
+              integer: Optional[bool] = None, options: Optional[Sequence[str]] = None):
     """
     Make this object a Live parameter: what Live calls it, and the values it can take.
 
@@ -136,11 +136,14 @@ def parameter(self, name: str, lo: Optional[float] = None, hi: Optional[float] =
     :param exponent: the curve of the control. 1 is linear; 2 or 3 gives a frequency dial
         more travel at the low end.
     :param short_name: the name shown on the control itself, if it differs.
-    :param integer: whole numbers only.
+    :param integer: True for whole numbers only, False for any number.
     :param options: the choices of a live.tab or live.menu, in place of a range.
 
     :raises TypeError: on an object that cannot be a parameter (``cycle~``).
     :raises ValueError: on an empty range, a start value outside it, or an unknown unit.
+    What is left out is kept as the object has it: ``toggle.parameter("Bypass")`` on a
+    loaded device renames the toggle and leaves it a switch.
+
     :returns: the object, so the call can follow ``place(...)[0]``.
     """
     box = (self._dict or {}).get("box", {})
@@ -158,11 +161,15 @@ def parameter(self, name: str, lo: Optional[float] = None, hi: Optional[float] =
         raise ValueError("a parameter with options needs at least two")
 
     block = dict(box.get("saved_attribute_attributes", {}).get("valueof", {}))
+    was = block.get("parameter_longname")
     if options is not None:
         low, high = 0, len(options) - 1
         block.update(parameter_type=2, parameter_enum=[str(option) for option in options])
         block.pop("parameter_mmin", None)
         block.pop("parameter_mmax", None)
+    elif block.get("parameter_type") == 2 and lo is None and hi is None and integer is None:
+        # a list of choices and nothing said about it: it stays one
+        low, high = 0, max(len(block.get("parameter_enum", ())) - 1, 1)
     else:
         low = block.get("parameter_mmin", 0.0) if lo is None else lo
         high = block.get("parameter_mmax", 127.0) if hi is None else hi
@@ -171,8 +178,18 @@ def parameter(self, name: str, lo: Optional[float] = None, hi: Optional[float] =
         if lo is not None or hi is not None:
             block.update(parameter_mmin=float(low), parameter_mmax=float(high))
         block.pop("parameter_enum", None)
-        block["parameter_type"] = 1 if integer else 0
-    if initial is not None:
+        if integer is not None:
+            block["parameter_type"] = 1 if integer else 0
+        elif block.get("parameter_type") not in (0, 1):
+            block["parameter_type"] = 0
+    if initial is None:
+        # the start value the object already has must still fit
+        kept = block.get("parameter_initial")
+        kept = kept[0] if isinstance(kept, list) and kept else kept
+        if isinstance(kept, (int, float)) and not low <= kept <= high:
+            raise ValueError(f"parameter {name!r}: its start value is {kept:g}, outside the range "
+                             f"{low:g} to {high:g}. Pass initial= with a value in the range.")
+    else:
         if not low <= initial <= high:
             raise ValueError(f"parameter {name!r}: the start value {initial:g} is outside its range, "
                              f"{low:g} to {high:g}.")
@@ -183,7 +200,11 @@ def parameter(self, name: str, lo: Optional[float] = None, hi: Optional[float] =
         if exponent <= 0:
             raise ValueError(f"parameter {name!r}: the exponent must be above 0")
         block["parameter_exponent"] = float(exponent)
-    block.update(parameter_longname=name, parameter_shortname=name if short_name is None else short_name)
+    block["parameter_longname"] = name
+    if short_name is not None:
+        block["parameter_shortname"] = short_name
+    elif block.get("parameter_shortname") in (None, was):   # it followed the long name: it still does
+        block["parameter_shortname"] = name
 
     box.setdefault("saved_attribute_attributes", {})["valueof"] = block
     box["parameter_enable"] = 1

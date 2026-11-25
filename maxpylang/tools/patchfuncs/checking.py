@@ -16,6 +16,7 @@ import collections
 import os
 
 from maxpylang.cordcheck import coverage, misused_tap_links, unchecked
+from maxpylang.amxd import DEVICE_TYPES
 from maxpylang.devicecheck import device_problems
 from maxpylang.graphcheck import DEVICE_KINDS, find_problems, from_patch, link_problems, warn_problems
 
@@ -39,6 +40,8 @@ def check(self, *flags, device_type=None):
     identified by object id, name, text, and linked file (if applicable).
     :rtype: printed output
     """
+    if device_type is not None and device_type not in DEVICE_TYPES:
+        raise ValueError(f"Unknown device_type '{device_type}'. Choose from: {', '.join(DEVICE_TYPES)}")
 
     flags = list(flags)
 
