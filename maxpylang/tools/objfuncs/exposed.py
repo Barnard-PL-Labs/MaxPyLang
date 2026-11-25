@@ -178,9 +178,12 @@ def parameter(self, name: str, lo: Optional[float] = None, hi: Optional[float] =
         if lo is not None or hi is not None:
             block.update(parameter_mmin=float(low), parameter_mmax=float(high))
         block.pop("parameter_enum", None)
+        # a live.toggle, tab, menu, text or button is a list of choices unless told otherwise:
+        # only a number control, or a call that gives a range, is made a number
+        numeric = box.get("maxclass") in ("live.dial", "live.slider", "live.numbox") or lo is not None or hi is not None
         if integer is not None:
             block["parameter_type"] = 1 if integer else 0
-        elif block.get("parameter_type") not in (0, 1):
+        elif numeric and block.get("parameter_type") not in (0, 1):
             block["parameter_type"] = 0
     if initial is None:
         # the start value the object already has must still fit

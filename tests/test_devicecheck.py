@@ -400,3 +400,22 @@ def test_check_refuses_a_device_type_that_does_not_exist():
     patch, _ = device("plugin~", "plugout~", cords=THROUGH)
     with pytest.raises(ValueError, match="Unknown device_type"):
         patch.check(device_type="audio-effect")
+
+
+def test_naming_a_new_switch_does_not_make_it_a_number():
+    """Max's live.toggle, tab, menu, text and button are lists of choices. A name alone
+    leaves that to Max; a range makes it a number."""
+    patch, (toggle, dial, text) = device("live.toggle", "live.dial", "live.text")
+    toggle.parameter("Bypass")
+    assert "parameter_type" not in block_of(toggle) and block_of(toggle)["parameter_longname"] == "Bypass"
+    dial.parameter("Gain")
+    assert block_of(dial)["parameter_type"] == 0
+    text.parameter("Amount", 0, 10)
+    assert block_of(text)["parameter_type"] == 0
+
+
+def test_an_attribute_with_no_value_is_left_out_as_the_warning_says():
+    with pytest.warns(mp.AttributeWarning, match="no value given"):
+        obj = mp.MaxObject("toggle")
+        obj.edit(hidden=[])
+    assert "hidden" not in obj._dict["box"]

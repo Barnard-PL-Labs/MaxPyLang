@@ -29,7 +29,9 @@ The level reaching plugout~ is followed the same way, as a multiple of full scal
 oscillator or plugin~ is 1, `*~ 0.5` halves it, two cords into one inlet add, clip~ and
 tanh~ bring it back to 1. A filter, a feedback loop or any object with no rule here may
 raise the level, so it counts as unlimited. A subpatcher or an abstraction may hold a
-limiter, so a path through one is not judged.
+limiter, so a path through one is not judged. A live.gain~ counts as passing its level on,
+though its fader goes to +6 dB: it is the device's own volume control, as the fader on a
+Live track is, and 46 of the 82 devices that ship with Max end in one with no clip~.
 
 As everywhere in these checks, what cannot be seen causes no report. The device contract
 is only judged when the file can be seen whole, as for missing names in graphcheck.
