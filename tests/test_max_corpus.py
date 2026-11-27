@@ -467,3 +467,32 @@ def test_shipped_messages_are_understood_and_arrive_in_order():
     # dropping a fraction is often meant, so only a float known to span 2 or less is reported:
     # none in the shipped patches, where reporting every float into `+ 60` gave 333
     assert found["whole numbers"] == [], found["whole numbers"][:10]
+
+
+def test_shipped_patches_start():
+    """The checks for a patch that never starts, over every shipped patch, with the folder
+    of each file searched for what its poly~ and pfft~ boxes load. One report, and it is real:
+    movie.maxhelp has a `metro 200` into a button with nothing connected to its left inlet.
+
+    Before the limits in startcheck.py there were ten. A jit.movie with no bang sends on its
+    own beside a jit.world (jit.mo-Alphablend.maxpat). pfft~.maxhelp, framesnap~.maxhelp and
+    adsr~.maxhelp load files with an inlet nobody feeds: a spare control, not a mistake."""
+    from maxpylang.startcheck import start_problems
+    found = collections.defaultdict(list)
+    files = 0
+    for path in sorted(C74.rglob("*")):
+        if path.suffix not in (".maxpat", ".maxhelp"):
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8", errors="replace"))
+        except (ValueError, OSError):
+            continue
+        if not isinstance(data.get("patcher"), dict):
+            continue
+        files += 1
+        for problem in start_problems(data["patcher"], [path.parent]):
+            found[problem.kind].append(f"{path.name}: {problem.message}")
+    assert files > 3000, "the corpus looks incomplete"
+    print(f"\n{files} files: " + ", ".join(f"{len(v)} {kind}" for kind, v in sorted(found.items())))
+    assert [m.split(":")[0] for m in found["never starts"]] == ["movie.maxhelp"], found["never starts"]
+    assert found["voice patch"] == [] and found["message"] == [], (found["voice patch"], found["message"])

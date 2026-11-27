@@ -12,7 +12,10 @@ Methods dealing with attribs for MaxObjects.
     retain_attribs() --> retain all possible attribs (extra only) from another MaxObject
 """
 
+import json
+import re
 import warnings
+from pathlib import Path
 
 from .. import typechecks as tc
 from ...exceptions import AttributeWarning
@@ -22,6 +25,25 @@ def _warn(message):
     """An AttributeWarning at the user's line: their place(), edit() or MaxObject() call."""
     from ...cordcheck import _user_stacklevel
     warnings.warn(message, AttributeWarning, stacklevel=_user_stacklevel())
+
+
+_GROUPS = None
+_NUMBERED = re.compile(r"^(in|out)\d+_")
+
+
+def inherited_attribs(name):
+    """The attributes an object has from its family, which its own data does not list.
+
+    A Jitter matrix object takes dim, planecount, type and the in_/out_ forms; an OpenGL
+    object takes position, scale, color and the rest. data/attrib_groups.json has both.
+    """
+    global _GROUPS
+    if _GROUPS is None:
+        with open(Path(__file__).resolve().parents[2] / "data" / "attrib_groups.json", encoding="utf-8") as f:
+            raw = json.load(f)
+        _GROUPS = {member: raw["attributes"][group]
+                   for group, names in raw["members"].items() for member in names}
+    return _GROUPS.get(name, [])
 
 
 def add_extra_attribs(self, extra_attribs):
@@ -38,13 +60,18 @@ def get_all_valid_attribs(self, text_attribs, extra_attribs, attrib_info):
     """
     Helper function for instantiation and editing.
 
-    Removes bad text attributes and bad extra attributes, and returns valid attributes.
+    Warns about text attributes it does not know, removes bad extra attributes, and returns
+    the rest.
 
     *As a general rule, text attributes can only access object-specific attributes.
     """
 
-    #first, check text attribs
-    text_attribs = self.remove_bad_attribs(text_attribs, attrib_info)
+    #what the object's family gives it (dim on a Jitter matrix object, scale on an OpenGL one)
+    attrib_info = attrib_info + inherited_attribs(self._name)
+
+    #first, check text attribs. They are part of the box text the user typed, so they stay
+    #in it: the data here is not complete, and Max is the judge of what it gets.
+    text_attribs = self.remove_bad_attribs(text_attribs, attrib_info + self.common_box_attribs, typed=True)
 
     #every box has the common box attributes (presentation, varname, hidden...), whether or
     #not its data file says so, and a place for its Live parameter block
@@ -56,14 +83,43 @@ def get_all_valid_attribs(self, text_attribs, extra_attribs, attrib_info):
     #then, check extra attribs
     extra_attribs = self.remove_bad_attribs(extra_attribs, total_attrib_info)
 
+    #Max reads the box text of an object box only. A UI box (slider, flonum, waveform~) keeps
+    #each attribute as a property of the box, so `slider @size 1000` has to become
+    #"size": 1000.0 there or Max never sees it. A property passed by keyword wins.
+    box = (getattr(self, '_dict', None) or {}).get('box', {})
+    if box.get('maxclass', 'newobj') != 'newobj':
+        for attrib, vals in text_attribs.items():
+            spec = next((spec for spec in attrib_info if spec['name'] == attrib), {})
+            extra_attribs.setdefault(attrib, _as_property(vals, spec.get('type')))
+
     return text_attribs, extra_attribs
 
 
-def remove_bad_attribs(self, attribs, attrib_speclist):
+def _as_property(vals, kind):
+    """The words after an @attribute as the value Max saves for it on a UI box."""
+    def one(word):
+        if not isinstance(word, str):
+            return word
+        if kind not in ('symbol',):
+            try:
+                return float(word) if kind == 'float' or not re.fullmatch(r"-?\d+", word) else int(word)
+            except ValueError:
+                pass
+        return word
+    vals = [vals] if isinstance(vals, (int, float, str)) else list(vals)
+    made = [one(word) for word in vals]
+    return made[0] if len(made) == 1 else made
+
+
+def remove_bad_attribs(self, attribs, attrib_speclist, typed=False):
     """
     Helper function for getting valid attributes.
 
     Checks attributes against attribute info and removes nonvalid attributes.
+
+    typed: the attributes are `@name value` in the box text. One that is not known, or whose
+    values are not the known type, gets a warning and is kept as written. Only one with no
+    value at all is removed, since `@name` alone is not something Max can read.
     """
 
     notvalid = []
@@ -80,26 +136,38 @@ def remove_bad_attribs(self, attribs, attrib_speclist):
             continue
 
         #look for attrib spec in attrib_speclist
-        attrib_spec = [spec for spec in attrib_speclist if spec['name'] == attrib]
+        #in2_dim, out3_name: the numbered inputs and outputs of a matrix object
+        known_as = _NUMBERED.sub(lambda m: m.group(1) + "_", attrib)
+        attrib_spec = [spec for spec in attrib_speclist if spec['name'] in (attrib, known_as)]
 
         #if not found
         if len(attrib_spec) == 0:
-            _warn(f"{self._name} has no attribute '{attrib}', so it is left out.")
-            notvalid.append(attrib)
+            if typed:
+                _warn(f"{self._name} has no attribute '{attrib}' that maxpylang knows of. "
+                      f"It is kept as written, so check the spelling.")
+            else:
+                _warn(f"{self._name} has no attribute '{attrib}', so it is left out.")
+                notvalid.append(attrib)
 
         #if found
         else:
             attrib_spec = attrib_spec[0] #bc list comprehension, etc.....
-            #check length of val at least as big as size (reflecting Max behavior...)
-            if len(vals) < int(attrib_spec['size']):
+            #a size in the data is the most values the attribute holds (32 for a dim or an
+            #expr), not how many it needs, so fewer in the box text is fine. The check stays
+            #for the box properties, whose sizes are exact (a rect is 4 numbers).
+            if not typed and len(vals) < int(attrib_spec.get('size', 1)):
                 _warn(f"{self._name}: attribute {attrib} takes {attrib_spec['size']} values, so it is left out.")
                 notvalid.append(attrib)
 
             #check type for all vals
             elif not all([tc.check_type([attrib_spec['type']], single_val) for single_val in vals]):
-                _warn(f"{self._name}: attribute {attrib} takes values of type {attrib_spec['type']}, "
-                      "so it is left out.")
-                notvalid.append(attrib)
+                if typed:
+                    _warn(f"{self._name}: attribute {attrib} takes values of type {attrib_spec['type']}. "
+                          "It is kept as written.")
+                else:
+                    _warn(f"{self._name}: attribute {attrib} takes values of type {attrib_spec['type']}, "
+                          "so it is left out.")
+                    notvalid.append(attrib)
 
     #remove nonvalid attribs from attribs
     for badattrib in notvalid:

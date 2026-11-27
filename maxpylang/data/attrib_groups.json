@@ -1,0 +1,484 @@
+{
+ "_doc": "Built by maxpylang/tools/messagedata.py from Max's reference pages: the attributes the Jitter matrix objects (mop) and the OpenGL objects (gl) share, and which objects are in each family. An object's own page does not list them. Do not edit by hand.",
+ "attributes": {
+  "mop": [
+   {
+    "name": "adapt",
+    "type": "int"
+   },
+   {
+    "name": "dim",
+    "type": "int"
+   },
+   {
+    "name": "in_dim",
+    "type": "int"
+   },
+   {
+    "name": "in_name",
+    "type": "symbol"
+   },
+   {
+    "name": "in_planecount",
+    "type": "int"
+   },
+   {
+    "name": "in_type",
+    "type": "symbol"
+   },
+   {
+    "name": "out_dim",
+    "type": "int"
+   },
+   {
+    "name": "out_name",
+    "type": "symbol"
+   },
+   {
+    "name": "out_planecount",
+    "type": "int"
+   },
+   {
+    "name": "out_type",
+    "type": "symbol"
+   },
+   {
+    "name": "outputmode",
+    "type": "int"
+   },
+   {
+    "name": "planecount",
+    "type": "int"
+   },
+   {
+    "name": "type",
+    "type": "symbol"
+   }
+  ],
+  "gl": [
+   {
+    "name": "anchor",
+    "type": "float"
+   },
+   {
+    "name": "anim",
+    "type": "symbol"
+   },
+   {
+    "name": "animmode",
+    "type": "symbol"
+   },
+   {
+    "name": "antialias",
+    "type": "int"
+   },
+   {
+    "name": "auto_material",
+    "type": "int"
+   },
+   {
+    "name": "automatic",
+    "type": "int"
+   },
+   {
+    "name": "aux_color",
+    "type": "float"
+   },
+   {
+    "name": "axes",
+    "type": "int"
+   },
+   {
+    "name": "blend",
+    "type": "symbol"
+   },
+   {
+    "name": "blend_enable",
+    "type": "int"
+   },
+   {
+    "name": "blend_mode",
+    "type": "int"
+   },
+   {
+    "name": "camera",
+    "type": "float"
+   },
+   {
+    "name": "capture",
+    "type": "symbol"
+   },
+   {
+    "name": "color",
+    "type": "float"
+   },
+   {
+    "name": "cull_face",
+    "type": "int"
+   },
+   {
+    "name": "depth_clear",
+    "type": "int"
+   },
+   {
+    "name": "depth_enable",
+    "type": "int"
+   },
+   {
+    "name": "depth_write",
+    "type": "int"
+   },
+   {
+    "name": "dest_dim",
+    "type": "int"
+   },
+   {
+    "name": "drawto",
+    "type": "symbol"
+   },
+   {
+    "name": "enable",
+    "type": "int"
+   },
+   {
+    "name": "far_clip",
+    "type": "float"
+   },
+   {
+    "name": "filterclass",
+    "type": "symbol"
+   },
+   {
+    "name": "fog",
+    "type": "float"
+   },
+   {
+    "name": "fog_params",
+    "type": "float"
+   },
+   {
+    "name": "layer",
+    "type": "int"
+   },
+   {
+    "name": "lens_angle",
+    "type": "float"
+   },
+   {
+    "name": "light_ambient",
+    "type": "float"
+   },
+   {
+    "name": "light_diffuse",
+    "type": "float"
+   },
+   {
+    "name": "light_global_ambient",
+    "type": "float"
+   },
+   {
+    "name": "light_position",
+    "type": "float"
+   },
+   {
+    "name": "light_specular",
+    "type": "float"
+   },
+   {
+    "name": "lighting_enable",
+    "type": "int"
+   },
+   {
+    "name": "line_width",
+    "type": "float"
+   },
+   {
+    "name": "lookat",
+    "type": "float"
+   },
+   {
+    "name": "mat_ambient",
+    "type": "float"
+   },
+   {
+    "name": "mat_diffuse",
+    "type": "float"
+   },
+   {
+    "name": "mat_emission",
+    "type": "float"
+   },
+   {
+    "name": "mat_specular",
+    "type": "float"
+   },
+   {
+    "name": "matfile",
+    "type": "symbol"
+   },
+   {
+    "name": "matrixoutput",
+    "type": "int"
+   },
+   {
+    "name": "name",
+    "type": "symbol"
+   },
+   {
+    "name": "near_clip",
+    "type": "float"
+   },
+   {
+    "name": "ortho",
+    "type": "int"
+   },
+   {
+    "name": "point_mode",
+    "type": "symbol"
+   },
+   {
+    "name": "point_size",
+    "type": "float"
+   },
+   {
+    "name": "poly_mode",
+    "type": "int"
+   },
+   {
+    "name": "position",
+    "type": "float"
+   },
+   {
+    "name": "quat",
+    "type": "float"
+   },
+   {
+    "name": "rotate",
+    "type": "float"
+   },
+   {
+    "name": "rotatexyz",
+    "type": "float"
+   },
+   {
+    "name": "scale",
+    "type": "float"
+   },
+   {
+    "name": "shader",
+    "type": "symbol"
+   },
+   {
+    "name": "shadow_caster",
+    "type": "int"
+   },
+   {
+    "name": "shininess",
+    "type": "float"
+   },
+   {
+    "name": "smooth_shading",
+    "type": "int"
+   },
+   {
+    "name": "tex_map",
+    "type": "int"
+   },
+   {
+    "name": "tex_plane_s",
+    "type": "float"
+   },
+   {
+    "name": "tex_plane_t",
+    "type": "float"
+   },
+   {
+    "name": "texture",
+    "type": "symbol"
+   },
+   {
+    "name": "transform_reset",
+    "type": "int"
+   },
+   {
+    "name": "up",
+    "type": "float"
+   },
+   {
+    "name": "verbose",
+    "type": "int"
+   },
+   {
+    "name": "viewalign",
+    "type": "int"
+   }
+  ]
+ },
+ "members": {
+  "mop": [
+   "jit.3m",
+   "jit.alphablend",
+   "jit.altern",
+   "jit.ameba",
+   "jit.argb2ayuv",
+   "jit.argb2grgb",
+   "jit.argb2uyvy",
+   "jit.avg4",
+   "jit.ayuv2argb",
+   "jit.ayuv2luma",
+   "jit.ayuv2uyvy",
+   "jit.bfg",
+   "jit.brass",
+   "jit.brcosa",
+   "jit.bsort",
+   "jit.change",
+   "jit.charmap",
+   "jit.chromakey",
+   "jit.clip",
+   "jit.coerce",
+   "jit.colorspace",
+   "jit.concat",
+   "jit.convolve",
+   "jit.conway",
+   "jit.demultiplex",
+   "jit.desktop",
+   "jit.dimmap",
+   "jit.dimop",
+   "jit.dx.grab",
+   "jit.dx.videoout",
+   "jit.eclipse",
+   "jit.expr",
+   "jit.fastblur",
+   "jit.fft",
+   "jit.findbounds",
+   "jit.fluoride",
+   "jit.fprint",
+   "jit.freeframe",
+   "jit.gen.codebox",
+   "jit.gen",
+   "jit.gencoord",
+   "jit.glop",
+   "jit.glue",
+   "jit.grab",
+   "jit.gradient",
+   "jit.graph",
+   "jit.grgb2argb",
+   "jit.hatch",
+   "jit.histogram",
+   "jit.hsl2rgb",
+   "jit.hue",
+   "jit.keyscreen",
+   "jit.la.determinant",
+   "jit.la.diagproduct",
+   "jit.la.inverse",
+   "jit.la.mult",
+   "jit.la.trace",
+   "jit.la.uppertri",
+   "jit.lcd",
+   "jit.linden",
+   "jit.luma2ayuv",
+   "jit.luma2uyvy",
+   "jit.lumakey",
+   "jit.map",
+   "jit.mgraphics",
+   "jit.movie",
+   "jit.multiplex",
+   "jit.mxform2d",
+   "jit.net.recv",
+   "jit.net.send",
+   "jit.noise",
+   "jit.normalize",
+   "jit.op",
+   "jit.openexr",
+   "jit.p.bounds",
+   "jit.p.shiva",
+   "jit.p.vishnu",
+   "jit.pack",
+   "jit.pix.codebox",
+   "jit.pix",
+   "jit.planeop",
+   "jit.plot",
+   "jit.plume",
+   "jit.plur",
+   "jit.print",
+   "jit.qt.grab",
+   "jit.qt.movie",
+   "jit.qt.record",
+   "jit.qt.videoout",
+   "jit.record",
+   "jit.repos",
+   "jit.resamp",
+   "jit.rgb2hsl",
+   "jit.rgb2luma",
+   "jit.robcross",
+   "jit.rota",
+   "jit.roy",
+   "jit.rubix",
+   "jit.scalebias",
+   "jit.scanoffset",
+   "jit.scanslide",
+   "jit.scanwrap",
+   "jit.scissors",
+   "jit.shade",
+   "jit.slide",
+   "jit.sobel",
+   "jit.spill",
+   "jit.split",
+   "jit.sprinkle",
+   "jit.str.fromsymbol",
+   "jit.str.op",
+   "jit.str.regexp",
+   "jit.str.tosymbol",
+   "jit.streak",
+   "jit.submatrix",
+   "jit.textfile",
+   "jit.thin",
+   "jit.tiffany",
+   "jit.traffic",
+   "jit.transpose",
+   "jit.uldl",
+   "jit.unpack",
+   "jit.uyvy2argb",
+   "jit.uyvy2ayuv",
+   "jit.uyvy2luma",
+   "jit.vcr",
+   "jit.wake",
+   "jit.xfade"
+  ],
+  "gl": [
+   "jit.gl.asyncread",
+   "jit.gl.bfg",
+   "jit.gl.camera",
+   "jit.gl.cornerpin",
+   "jit.gl.cubemap",
+   "jit.gl.graph",
+   "jit.gl.gridshape",
+   "jit.gl.handle",
+   "jit.gl.isosurf",
+   "jit.gl.light",
+   "jit.gl.lua",
+   "jit.gl.material",
+   "jit.gl.mesh",
+   "jit.gl.model",
+   "jit.gl.multiple",
+   "jit.gl.node",
+   "jit.gl.nurbs",
+   "jit.gl.pass",
+   "jit.gl.path",
+   "jit.gl.physdraw",
+   "jit.gl.picker",
+   "jit.gl.pix.codebox",
+   "jit.gl.pix",
+   "jit.gl.plato",
+   "jit.gl.render",
+   "jit.gl.shader",
+   "jit.gl.sketch",
+   "jit.gl.skybox",
+   "jit.gl.slab",
+   "jit.gl.text",
+   "jit.gl.texture",
+   "jit.gl.videoplane",
+   "jit.gl.volume"
+  ]
+ }
+}
