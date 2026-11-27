@@ -419,3 +419,11 @@ def test_an_attribute_with_no_value_is_left_out_as_the_warning_says():
         obj = mp.MaxObject("toggle")
         obj.edit(hidden=[])
     assert "hidden" not in obj._dict["box"]
+
+
+def test_a_range_too_large_to_follow_is_left_alone_not_a_crash():
+    """mtof of 20000 is past what a float holds."""
+    for middle in ("mtof", "dbtoa"):
+        patch, objs = device("live.dial", middle, "lores~", cords=[(1, 0, 2, 0), (2, 0, 3, 2)])
+        objs[0].parameter("Freq", 20, 20000)
+        assert kinds(patch, None) == []
