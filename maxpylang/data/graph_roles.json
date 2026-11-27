@@ -24,5 +24,7 @@
   "level_one_sources": ["plugin~", "adc~", "ezadc~", "cycle~", "saw~", "rect~", "tri~", "phasor~", "noise~", "pink~", "triangle~", "rand~", "train~"],
   "level_passes": ["delay~", "live.gain~", "meter~", "live.meter~"],
   "level_set_by_messages": ["line~", "curve~", "adsr~", "zigzag~", "function"],
-  "reads_parameters_by_name": ["pattr", "autopattr", "pattrstorage", "pattrhub", "pattrforward", "pvar", "js", "jsui", "v8", "v8ui", "thispatcher", "live.banks", "preset"]
+  "reads_parameters_by_name": ["pattr", "autopattr", "pattrstorage", "pattrhub", "pattrforward", "pvar", "js", "jsui", "v8", "v8ui", "thispatcher", "live.banks", "preset"],
+  "right_inlets_cold": ["+", "-", "*", "/", "%", "!-", "!/", "==", "!=", "<", ">", "<=", ">=", "&&", "||", "&", "|", "<<", ">>", "plus", "minus", "times", "div", "modulo", "rminus", "rdiv", "equals", "notequals", "lessthan", "greaterthan", "lessthaneq", "greaterthaneq", "logand", "logor", "bitand", "bitor", "shiftleft", "shiftright", "pow", "atan2", "minimum", "maximum", "int", "i", "float", "f", "pack", "expr"],
+  "answers_at_once": ["+", "-", "*", "/", "%", "!-", "!/", "==", "!=", "<", ">", "<=", ">=", "&&", "||", "&", "|", "<<", ">>", "plus", "minus", "times", "div", "modulo", "rminus", "rdiv", "equals", "notequals", "lessthan", "greaterthan", "lessthaneq", "greaterthaneq", "logand", "logor", "bitand", "bitor", "shiftleft", "shiftright", "pow", "atan2", "minimum", "maximum", "int", "i", "float", "f", "pack", "expr", "number", "flonum", "abs", "mtof", "ftom", "dbtoa", "atodb", "trigger", "t"]
 }

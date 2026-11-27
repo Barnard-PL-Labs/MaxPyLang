@@ -58,6 +58,35 @@ Anything other than `no problems found` means there is a warning to fix. When ou
 piped, the warnings can appear before lines printed earlier, so read the whole output, not
 only its end. For the full per-check report, call `patch.check()`.
 
+`save()` also checks the messages on the cords, and raises a `MessageWarning` for each:
+
+- **A message the object has no method for**, e.g. a message box `reset` into a `counter`
+  (it takes `bang`, a number, `set`, `goto`, `min`, `max`...). Max would print
+  `counter: doesn't understand 'reset'` and do nothing. Send a message the object takes.
+- **An object that answers before its right inlet has the new value.** An object like `+`
+  answers when its left inlet gets a value, using what its right inlet last got. When one
+  outlet feeds both, Max sends to the box placed further right first, so the layout decides
+  the result. Do not rely on positions: use a `trigger`, whose outlets fire right to left.
+
+  ```python
+  import maxpylang as mp
+
+  patch = mp.MaxPatch()
+  num = patch.place("number")[0]
+  order = patch.place("t f f")[0]              # right outlet fires first
+  double = patch.place("* 2")[0]
+  add = patch.place("+")[0]
+  out = patch.place("print")[0]
+  patch.connect((num.outs[0], order.ins[0]),
+                (order.outs[1], double.ins[0]),   # first: set the right inlet of +
+                (double.outs[0], add.ins[1]),
+                (order.outs[0], add.ins[0]),      # then: the left inlet makes it answer
+                (add.outs[0], out.ins[0]))
+  patch.save("ordered")
+  ```
+- **An object fed only on its right inlets**, e.g. a `+` with a cord into its right inlet
+  and none into its left. Only the left inlet makes it answer, so it never sends anything.
+
 A check says nothing about what it does not know. When some of the patch could not be judged,
 the `save()` line ends with how many objects were not checked, e.g. `1 object not checked`, and
 `patch.check()` names them: `not checked:` names the unknown objects and abstractions behind

@@ -57,7 +57,7 @@ import warnings
 from pathlib import Path
 
 from .cordcheck import _max_name, _table, _user_stacklevel
-from .exceptions import DeviceWarning, GraphWarning
+from .exceptions import DeviceWarning, GraphWarning, MessageWarning
 
 _DATA = Path(__file__).resolve().parent / "data"
 
@@ -71,6 +71,8 @@ Node = collections.namedtuple("Node", "names outlet_types opaque label ui text")
 Problem = collections.namedtuple("Problem", "kind message nodes")
 # the kinds devicecheck.py reports, which warn as DeviceWarning
 DEVICE_KINDS = ("device contract", "output level", "parameter name", "idle parameter", "value range")
+# the kinds messagecheck.py reports, which warn as MessageWarning
+MESSAGE_KINDS = ("message", "message order", "never fires")
 
 
 @functools.lru_cache(maxsize=None)
@@ -423,5 +425,6 @@ def warn_problems(problems):
     """One GraphWarning per problem, at the first line outside maxpylang (the user's save())."""
     level = _user_stacklevel()
     for problem in problems:
-        category = DeviceWarning if problem.kind in DEVICE_KINDS else GraphWarning
+        category = (DeviceWarning if problem.kind in DEVICE_KINDS
+                    else MessageWarning if problem.kind in MESSAGE_KINDS else GraphWarning)
         warnings.warn(problem.message, category, stacklevel=level)
