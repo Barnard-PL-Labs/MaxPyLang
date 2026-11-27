@@ -15,76 +15,197 @@ import { firstNum, isBang, nums, type Atom, type Msg } from '../../runtime/atoms
 
 const HAS_DOM = typeof document !== 'undefined';
 
-/** Parse creation args into menu items. A lone number = an item count (labels
- *  "0".."n-1"); otherwise each arg becomes an item label. */
-function parseItems(args: Atom[]): string[] {
-  if (args.length === 1 && typeof args[0] === 'number') {
-    const n = Math.max(0, Math.round(args[0]));
-    return Array.from({ length: n }, (_, i) => String(i));
+/** Split atoms into comma-separated items, the way Max's umenu `items` attribute is
+ *  written ("red , orange" or "red, orange"): each item is the atoms between commas. */
+function splitCommas(atoms: Atom[]): Atom[][] {
+  const items: Atom[][] = [];
+  let cur: Atom[] = [];
+  const close = () => { if (cur.length) items.push(cur); cur = []; };
+  for (const a of atoms) {
+    if (typeof a !== 'string' || !a.includes(',')) { cur.push(a); continue; }
+    a.split(',').forEach((piece, i) => {
+      if (i > 0) close();
+      if (piece) cur.push(piece);
+    });
   }
-  return args.map((a) => String(a));
+  close();
+  return items;
+}
+
+/** The atoms after `@key` in box text (up to the next @attribute), if it is there. */
+function textAttr(tokens: Atom[], key: string): Atom[] | undefined {
+  const at = tokens.indexOf(`@${key}`);
+  if (at < 0) return undefined;
+  const vals: Atom[] = [];
+  for (let i = at + 1; i < tokens.length && !String(tokens[i]).startsWith('@'); i++) vals.push(tokens[i]);
+  return vals;
+}
+
+/** A saved attribute value as atoms (Max writes a list as an array, one atom as a scalar). */
+function rawAtoms(v: unknown): Atom[] | undefined {
+  if (Array.isArray(v)) return v.map((a) => (typeof a === 'number' ? a : String(a)));
+  if (typeof v === 'number') return [v];
+  if (typeof v === 'string') return v.trim().split(/\s+/).filter(Boolean).map((t) => (Number.isFinite(Number(t)) ? Number(t) : t));
+  return undefined;
+}
+
+/**
+ * The menu's items, read where Max keeps them. In Max they are box attributes, not
+ * arguments: umenu's `items` (atoms, items separated by commas: "red, orange, yellow")
+ * and tab's `tabs` (one symbol per tab). A saved patch has them in the box dict; a box
+ * typed as `umenu @items a , b` (how maxpylang writes it) has them in the text. Bare
+ * args still work as items (a lone number = that many items "0".."n-1"), for boxes
+ * built directly. A tab with no tabs shows Max's default "one two three".
+ */
+function readItems(tag: 'select' | 'tabs', className: string, args: Atom[], raw: Record<string, unknown>): Atom[][] {
+  const tokens = args[0] === className ? args.slice(1) : args;
+  const key = tag === 'select' ? 'items' : 'tabs';
+  const split = (atoms: Atom[]): Atom[][] => (tag === 'select' ? splitCommas(atoms) : atoms.map((a) => [a]));
+
+  const saved = rawAtoms(raw[key]);
+  // maxpylang writes the placeholder "<empty>" for a umenu with no saved items.
+  if (saved && !(saved.length === 1 && saved[0] === '<empty>')) return split(saved);
+  const typed = textAttr(tokens, key);
+  if (typed) return split(typed);
+
+  const positional: Atom[] = [];
+  for (const t of tokens) { if (String(t).startsWith('@')) break; positional.push(t); }
+  if (positional.length === 1 && typeof positional[0] === 'number') {
+    const n = Math.max(0, Math.round(positional[0]));
+    return Array.from({ length: n }, (_, i) => [i]);
+  }
+  if (positional.length) return tag === 'select' && positional.some((a) => String(a).includes(',')) ? split(positional) : positional.map((a) => [a]);
+  return tag === 'tabs' ? [['one'], ['two'], ['three']] : [];
 }
 
 // ── umenu / tab : an index -> item selector ──────────────────────────────────
-// Both emit the selected index (int) on outlet 0 and the selected item (symbol)
-// on outlet 1; umenu's outlet 2 is its "middle/dump" outlet (unused here). A tab
-// is the same contract drawn as tabs. Args set the item list (see parseItems).
+// Per Max's reference pages. Both output the selected index (from 0) on outlet 0 and
+// the item on outlet 1 (umenu: the item's atoms, so an item "60" comes out as the
+// number 60; tab: the tab text), right outlet first. The rightmost outlet answers
+// `count` (umenu) and is otherwise idle.
+//   int / float      select (clamped to the items) and output
+//   bang             output the current selection
+//   set N | set sym  select without output (a symbol finds the item that begins with it)
+//   setsymbol sym    select by name without output;  symbol sym: select by name, output
+//   next / prev      step to the next / previous item and output (wrapping)
+//   umenu only       append …, insert N …, setitem N …, delete N…, clear, count
+//   tab only         tabs a b c … (set the tabs, as the `tabs` attribute message does)
 function makeSelector(tag: 'select' | 'tabs') {
-  return (args: Atom[]): MaxNode => {
+  const className = tag === 'select' ? 'umenu' : 'tab';
+  return (args: Atom[], build?: { node?: { raw?: Record<string, unknown> } }): MaxNode => {
     const o = makeOutlets();
-    const items = parseItems(args);
-    const count = items.length;
+    let items = readItems(tag, className, args, build?.node?.raw ?? {});
     let index = 0;
 
     const clampIdx = (n: number): number => {
       const r = Math.round(n);
-      return count > 0 ? Math.max(0, Math.min(count - 1, r)) : Math.max(0, r);
+      return items.length > 0 ? Math.max(0, Math.min(items.length - 1, r)) : 0;
     };
-    const label = (i: number): string => items[i] ?? String(i);
+    const text = (it: Atom[]): string => it.map(String).join(' ');
     const emit = (): void => {
+      if (!items.length) return;
+      const item = items[index];
+      o.emit(1, tag === 'select' ? [...item] : [text(item)]);
       o.emit(0, [index]);
-      o.emit(1, [label(index)]);
+    };
+    const show = (): void => {
+      if (!el) return;
+      if (tag === 'select') (el as HTMLSelectElement).selectedIndex = index;
+      else Array.from(el.children).forEach((b, i) => b.classList.toggle('is-on', i === index));
     };
     const setIndex = (n: number, doEmit = true): void => {
       index = clampIdx(n);
-      if (el && 'selectedIndex' in el) (el as HTMLSelectElement).selectedIndex = index;
+      show();
       if (doEmit) emit();
+    };
+    const find = (name: Atom, prefix: boolean): number => {
+      const want = String(name);
+      return items.findIndex((it) => (prefix ? text(it).startsWith(want) : text(it) === want));
     };
 
     let el: HTMLElement | undefined;
-    if (HAS_DOM) {
-      if (tag === 'select' || count === 0) {
-        const sel = document.createElement('select');
-        items.forEach((it, i) => {
+    const render = (): void => {
+      if (!el) return;
+      el.replaceChildren();
+      items.forEach((it, i) => {
+        if (tag === 'select') {
           const opt = document.createElement('option');
           opt.value = String(i);
-          opt.textContent = it;
-          sel.appendChild(opt);
-        });
+          opt.textContent = text(it);
+          el!.appendChild(opt);
+        } else {
+          const b = document.createElement('button');
+          b.textContent = text(it);
+          b.addEventListener('click', () => setIndex(i));
+          el!.appendChild(b);
+        }
+      });
+      show();
+    };
+    if (HAS_DOM) {
+      if (tag === 'select') {
+        const sel = document.createElement('select');
         sel.addEventListener('change', () => setIndex(sel.selectedIndex));
         el = sel;
       } else {
-        const wrap = document.createElement('div');
-        items.forEach((it, i) => {
-          const b = document.createElement('button');
-          b.textContent = it;
-          b.addEventListener('click', () => setIndex(i));
-          wrap.appendChild(b);
-        });
-        el = wrap;
+        el = document.createElement('div');
       }
+      render();
     }
+    const changed = (): void => { index = clampIdx(index); render(); };
+
+    const message = (m: Msg): void => {
+      if (isBang(m)) return emit();
+      const head = m[0];
+      const rest = m.slice(1);
+      if (typeof head === 'number') return setIndex(head);
+      switch (head) {
+        case 'int': case 'float': { const n = firstNum(rest); if (n !== undefined) setIndex(n); return; }
+        case 'set': {
+          if (typeof rest[0] === 'number') return setIndex(rest[0], false);
+          const i = rest.length ? find(rest[0], true) : -1;
+          if (i >= 0) setIndex(i, false);
+          return;
+        }
+        case 'setsymbol': case 'symbol': {
+          const i = rest.length ? find(rest.map(String).join(' '), false) : -1;
+          if (i >= 0) setIndex(i, head === 'symbol');
+          return;
+        }
+        case 'next': if (items.length) setIndex((index + 1) % items.length); return;
+        case 'prev': if (items.length) setIndex((index - 1 + items.length) % items.length); return;
+      }
+      if (tag === 'tabs') {
+        if (head === 'tabs') { items = rest.map((a) => [a]); changed(); }
+        return;
+      }
+      switch (head) {
+        case 'append': if (rest.length) { items.push(rest); changed(); } return;
+        case 'insert': {
+          const at = firstNum(rest.slice(0, 1));
+          if (at !== undefined && rest.length > 1) { items.splice(Math.max(0, Math.round(at)), 0, rest.slice(1)); changed(); }
+          return;
+        }
+        case 'setitem': {
+          const at = firstNum(rest.slice(0, 1));
+          if (at !== undefined && items[Math.round(at)] && rest.length > 1) { items[Math.round(at)] = rest.slice(1); changed(); }
+          return;
+        }
+        case 'delete': {
+          const drop = new Set(nums(rest).map(Math.round));
+          items = items.filter((_, i) => !drop.has(i));
+          changed();
+          return;
+        }
+        case 'clear': items = []; changed(); return;
+        case 'count': o.emit(2, ['count', items.length]); return;
+      }
+    };
 
     return {
       signalIns: [],
       signalOuts: [],
-      controlIns: [
-        (m) => {
-          if (isBang(m)) { emit(); return; }
-          const n = firstNum(m);
-          if (n !== undefined) setIndex(n);
-        },
-      ],
+      controlIns: [message],
       onControlOut: o.onControlOut,
       el,
     };

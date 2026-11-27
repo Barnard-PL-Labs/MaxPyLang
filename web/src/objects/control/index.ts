@@ -31,17 +31,25 @@ function isTrigger(m: Msg): boolean {
 //
 // Prototype convenience: on by default, and the shared scheduler only lets it tick
 // while the transport is running — so a loaded patch plays on ▶ without a toggle
-// click. An explicit 0 into inlet 0 still stops it.
+// click. An explicit 0 into inlet 0 still stops it. Like Max's, it bangs at once when
+// it starts, not one interval later.
 register('metro', (args) => {
   const o = makeOutlets();
   let interval = Math.max(1, num(args[0], 500));
   let cancel: (() => void) | null = null;
-  const on = () => { if (!cancel) cancel = scheduler.everyMs(interval, () => o.emit(0, BANG)); };
+  // As in Max, a metro bangs as soon as it starts, then every interval: when it is
+  // switched on while the transport runs, and (being on by default) when ▶ starts it.
+  const on = () => {
+    if (cancel) return;
+    cancel = scheduler.everyMs(interval, () => o.emit(0, BANG));
+    if (scheduler.isRunning) o.emit(0, BANG);
+  };
   const off = () => { if (cancel) { cancel(); cancel = null; } };
   on(); // auto-start (scheduler gates actual ticking to the transport)
   return {
     signalIns: [],
     signalOuts: [],
+    start: () => { if (cancel) o.emit(0, BANG); },
     controlIns: [
       (m) => {
         if (isBang(m)) on();
@@ -449,11 +457,48 @@ register('bng', makeButton);
 // Unlike the controls above, this widget draws the box itself — border, background and
 // its own contents — because a message box IS its text. ui/layout.ts sizes it from that
 // text and the two renderers suppress their caption for it; see SELF_LABELLED there.
+/**
+ * A message box's contents as the messages it sends, in order. As in Max, a comma ends
+ * one message and starts the next: "0 60, 1 64" sends "0 60" then "1 64". The box text
+ * arrives split on whitespace, so a comma can be its own token or stuck to one ("60,").
+ */
+export function messageSegments(args: readonly (number | string)[]): Msg[] {
+  const out: Msg[] = [];
+  let cur: (number | string)[] = [];
+  const push = (t: string) => {
+    if (t === '') return;
+    const n = Number(t);
+    cur.push(t.trim() !== '' && Number.isFinite(n) ? n : t);
+  };
+  const end = () => { if (cur.length) out.push(cur as Msg); cur = []; };
+  for (const a of args) {
+    if (typeof a !== 'string' || !a.includes(',')) { cur.push(a); continue; }
+    const parts = a.split(',');
+    parts.forEach((part, i) => { push(part); if (i < parts.length - 1) end(); });
+  }
+  end();
+  return out;
+}
+
 register('message', (args) => {
   const o = makeOutlets();
   let el: HTMLElement | undefined;
+  let contents: (number | string)[] = [...args];
+  let segments = messageSegments(contents);
 
-  const send = () => o.emit(0, args.length ? (args as Msg) : BANG);
+  // As in Max: a bang sends the contents; any other message sends them with $1..$9
+  // replaced by its items (0 where it has none). "set ..." replaces the contents silently.
+  const send = (input: Msg | null = null) => {
+    if (!segments.length) { o.emit(0, BANG); return; }
+    for (const seg of segments) {
+      if (!input) { o.emit(0, seg); continue; }
+      o.emit(0, seg.map((a) => {
+        if (typeof a !== 'string') return a;
+        const d = /^\$([1-9])$/.exec(a);
+        return d ? (input[Number(d[1]) - 1] ?? 0) : a;
+      }) as Msg);
+    }
+  };
 
   if (hasDOM()) {
     el = widgetDiv(
@@ -461,16 +506,22 @@ register('message', (args) => {
       'border:1px solid #3a414c;border-radius:4px;color:#e6e9ef;' +
       'font:11px ui-monospace,Menlo,monospace;white-space:nowrap;overflow:hidden;',
     );
-    el.textContent = args.join(' ');
-    el.addEventListener('click', send);
+    el.textContent = contents.join(' ');
+    el.addEventListener('click', () => send());
   }
 
   return {
     signalIns: [],
     signalOuts: [],
     controlIns: [(m) => {
+      if (m[0] === 'set') {
+        contents = m.slice(1) as (number | string)[];
+        segments = messageSegments(contents);
+        if (el) el.textContent = contents.join(' ');
+        return;
+      }
       if (!isTrigger(m) && m.length === 0) return;
-      send();
+      send(isBang(m) ? null : m);
     }],
     onControlOut: o.onControlOut,
     el,

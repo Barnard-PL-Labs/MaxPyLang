@@ -85,17 +85,15 @@ describe('active', () => {
 });
 
 describe('clocks', () => {
-  it('date reports day/month/year across three outlets on a bang', () => {
+  it('date answers `date` with month day year out the left outlet (as in Max)', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 7, 2)); // month index 7 == August
     const { capture, send } = build('date');
-    const day = capture(0);
-    const month = capture(1);
-    const year = capture(2);
-    send(bang);
-    expect(day[0]).toEqual([2]);
-    expect(month[0]).toEqual([8]);
-    expect(year[0]).toEqual([2026]);
+    const dateOut = capture(0);
+    send(bang); // bang is not a date message
+    expect(dateOut.length).toBe(0);
+    send(['date']);
+    expect(dateOut[0]).toEqual([8, 2, 2026]);
   });
 
   it('cpuclock outputs a numeric timestamp on a bang', () => {

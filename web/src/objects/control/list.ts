@@ -449,24 +449,62 @@ register('mean', () => {
   } satisfies MaxNode;
 });
 
-// ── bucket N : a bucket-brigade / shift register of N stages. Each incoming number
-// is pushed into stage 0, shifting every stage along; the value falling off the end
-// is emitted. With N=1 this is a one-step delay. A bang re-emits the tail. ──
+// ── bucket N [echo] : an N-stage bucket brigade (Max reference, bucket.maxref.xml).
+// N outlets, one per stage (default 1); every stage starts at 0. A number sends the
+// CURRENT contents of every stage out its outlet (right-to-left: highest outlet
+// first), then shifts each value one outlet along (left-to-right by default) and
+// stores the new number in the first stage (the leftmost; the rightmost after
+// `r2l`). So outlet k sends the number received k+1 inputs ago. With a non-zero
+// second arg ("echo to output") the shift and store happen first, so outlet 0
+// echoes the new number at once. bang re-sends all stages without shifting.
+// l2r/L2R and r2l/R2L set the direction; `clear` zeroes the stages silently;
+// `freeze` suspends output (shifting continues) until `thaw`; `set N` stores N in
+// every stage and sends it out every outlet; `roll` feeds the value in the last
+// stage back in as the new input. ──
 register('bucket', (args) => {
   const o = makeOutlets();
-  const n = Math.max(1, num(args[0], 1));
-  const stages: number[] = new Array(n).fill(0);
+  const n = Math.max(1, Math.trunc(num(args[0], 1)));
+  const echo = num(args[1], 0) !== 0;
+  let stages: number[] = new Array(n).fill(0);
+  let l2r = true;
+  let frozen = false;
+  const out = () => {
+    if (frozen) return;
+    for (let i = n - 1; i >= 0; i--) o.emit(i, [stages[i]]);
+  };
+  const shiftIn = (v: number) => {
+    if (l2r) { stages.pop(); stages.unshift(v); } else { stages.shift(); stages.push(v); }
+  };
+  const input = (v: number) => {
+    if (echo) { shiftIn(v); out(); } else { out(); shiftIn(v); }
+  };
   return {
     signalIns: [],
     signalOuts: [],
     controlIns: [
       (m) => {
-        if (isBang(m)) { o.emit(0, [stages[n - 1]]); return; }
+        if (isBang(m)) { out(); return; }
+        const sel = typeof m[0] === 'string' ? m[0] : undefined;
+        if (sel !== undefined) {
+          switch (sel) {
+            case 'l2r': case 'L2R': l2r = true; return;
+            case 'r2l': case 'R2L': l2r = false; return;
+            case 'clear': stages = new Array(n).fill(0); return;
+            case 'freeze': frozen = true; return;
+            case 'thaw': frozen = false; return;
+            case 'set': {
+              const v = firstNum(m.slice(1));
+              if (v === undefined) return;
+              stages = new Array(n).fill(v);
+              out();
+              return;
+            }
+            case 'roll': input(l2r ? stages[n - 1] : stages[0]); return;
+            default: return;
+          }
+        }
         const v = firstNum(m);
-        if (v === undefined) return;
-        o.emit(0, [stages[n - 1]]);
-        stages.pop();
-        stages.unshift(v);
+        if (v !== undefined) input(v);
       },
     ],
     onControlOut: o.onControlOut,
