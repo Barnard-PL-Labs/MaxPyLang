@@ -1,8 +1,8 @@
 """
 Gaps in what maxpylang can express or check about a Max for Live device.
 
-Every test here states what SHOULD happen and is marked xfail(strict=True) because it
-does not happen yet. The pair is the point: the test is the executable half of an entry
+Every test for an open gap states what SHOULD happen and is marked xfail(strict=True)
+because it does not happen yet. The pair is the point: the test is the executable half of an entry
 in docs/type-system/m4l-gaps.md, and strict means that the day a gap is closed its test
 fails loudly as "unexpectedly passing", which is the cue to delete the mark, update the
 log, and remove the matching workaround from the plugin generator's fxgen.py.
@@ -53,33 +53,43 @@ def stereo_through(patch):
 
 # ── expressing a device ─────────────────────────────────────────────────────────
 
-@gap
 def test_m4l_01_a_dial_range_can_be_set():
-    """M4L-01: a live.dial's range, unit and start value live in the Live parameter block."""
+    """M4L-01, closed. A live.dial's name, range, unit and start value are set with parameter()."""
+    patch = mp.MaxPatch(verbose=False)
+    (dial,) = place(patch, "live.dial")
+    dial.parameter("Cutoff", 40, 18000, initial=1000, unit="hertz", exponent=3)
+    saved = box(patch, dial)
+    assert saved["parameter_enable"] == 1
+    assert saved["saved_attribute_attributes"]["valueof"] == {
+        "parameter_longname": "Cutoff", "parameter_shortname": "Cutoff", "parameter_type": 0,
+        "parameter_mmin": 40.0, "parameter_mmax": 18000.0,
+        "parameter_initial": [1000], "parameter_initial_enable": 1,
+        "parameter_unitstyle": 3, "parameter_exponent": 3.0,
+    }
+
+
+def test_m4l_01_the_parameter_block_can_also_be_given_whole():
+    """M4L-01, closed. edit() used to drop the block; a script that builds its own can pass it."""
     patch = mp.MaxPatch(verbose=False)
     (dial,) = place(patch, "live.dial")
     block = {"valueof": {"parameter_longname": "Cutoff", "parameter_mmin": 40.0, "parameter_mmax": 18000.0}}
-    with redirect_stdout(io.StringIO()):
-        dial.edit(saved_attribute_attributes=block)
+    dial.edit(saved_attribute_attributes=block)
     assert box(patch, dial).get("saved_attribute_attributes") == block
 
 
-@gap
 def test_m4l_01_a_rejected_attribute_is_not_silent():
-    """M4L-01: edit() drops an attribute it does not know with a print, so a script cannot tell."""
+    """M4L-01, closed. edit() dropped an attribute it did not know with a print. It warns now."""
     patch = mp.MaxPatch(verbose=False)
     (dial,) = place(patch, "live.dial")
-    with redirect_stdout(io.StringIO()), pytest.warns(Warning):
+    with pytest.warns(mp.AttributeWarning, match="not_an_attribute"):
         dial.edit(not_an_attribute=1)
 
 
-@gap
 def test_m4l_02_any_box_can_be_put_in_presentation():
-    """M4L-02: presentation is a property of every box, but edit() accepts it only on some."""
+    """M4L-02, closed. Presentation is a property of every box; edit() took it only on some."""
     patch = mp.MaxPatch(verbose=False)
     (panel,) = place(patch, "panel")
-    with redirect_stdout(io.StringIO()):
-        panel.edit(presentation=1, presentation_rect=[0.0, 0.0, 100.0, 169.0])
+    panel.edit(presentation=1, presentation_rect=[0.0, 0.0, 100.0, 169.0])
     saved = box(patch, panel)
     assert saved.get("presentation") == 1
     assert saved.get("presentation_rect") == [0.0, 0.0, 100.0, 169.0]
@@ -132,63 +142,70 @@ def test_m4l_05_a_tapout_needs_a_tapin(tmp_path):
     assert any("tapin~" in message for message in save_warnings(patch, tmp_path))
 
 
-@gap
 def test_m4l_06_an_instrument_needs_midi_in(tmp_path):
-    """M4L-06: the device type is a contract. An instrument with no MIDI input cannot be played."""
+    """M4L-06, closed. The device type is a contract. An instrument with no MIDI input cannot be played."""
     patch = mp.MaxPatch(verbose=False)
     osc, plug_out = place(patch, "cycle~ 440", "plugout~")
     patch.connect([osc.outs[0], plug_out.ins[0]], verbose=False)
-    assert save_warnings(patch, tmp_path, device_type="instrument")
+    assert any("no MIDI input" in message for message in save_warnings(patch, tmp_path, device_type="instrument"))
 
 
-@gap
 def test_m4l_06_an_audio_effect_needs_audio_in(tmp_path):
-    """M4L-06: an audio effect that never reads plugin~ ignores the track it sits on."""
+    """M4L-06, closed. An audio effect that never reads plugin~ ignores the track it sits on."""
     patch = mp.MaxPatch(verbose=False)
     osc, plug_out = place(patch, "cycle~ 440", "plugout~")
     patch.connect([osc.outs[0], plug_out.ins[0]], verbose=False)
-    assert save_warnings(patch, tmp_path, device_type="audio_effect")
+    assert any("never reads plugin~" in message for message in save_warnings(patch, tmp_path))
 
 
-@gap
 def test_m4l_07_a_dial_range_is_checked_against_its_inlet(tmp_path):
-    """M4L-07: a dial that sweeps 40..18000 is wired to svf~'s resonance, which takes 0..1."""
+    """M4L-07, closed for the inlets whose range Max documents. A dial that sweeps 40..18000
+    is wired to svf~'s resonance, which takes 0..1."""
     patch = mp.MaxPatch(verbose=False)
     plug_in, plug_out = place(patch, "plugin~", "plugout~")
-    filt, dial = place(patch, "svf~ 1000. 0.5", "live.dial")
-    dial._dict["box"]["saved_attribute_attributes"] = {
-        "valueof": {"parameter_longname": "Cutoff", "parameter_mmin": 40.0, "parameter_mmax": 18000.0}
-    }
-    patch.connect([plug_in.outs[0], filt.ins[0]], [filt.outs[0], plug_out.ins[0]], [dial.outs[0], filt.ins[2]], verbose=False)
-    assert save_warnings(patch, tmp_path)
+    filt, dial, limit = place(patch, "svf~ 1000. 0.5", "live.dial", "clip~ -1. 1.")
+    dial.parameter("Cutoff", 40, 18000)
+    patch.connect([plug_in.outs[0], filt.ins[0]], [filt.outs[0], limit.ins[0]], [limit.outs[0], plug_out.ins[0]],
+                  [dial.outs[0], filt.ins[2]], verbose=False)
+    (message,) = save_warnings(patch, tmp_path)
+    assert "'Cutoff'" in message and "40 to 18000" in message and "resonance" in message and "0 to 1" in message
 
 
-@gap
 def test_m4l_08_parameter_names_are_unique(tmp_path):
-    """M4L-08: Live identifies a parameter by its long name, so two dials cannot share one."""
+    """M4L-08, closed. Live identifies a parameter by its long name, so two dials cannot share one."""
     patch = mp.MaxPatch(verbose=False)
-    stereo_through(patch)
-    for dial in place(patch, "live.dial", "live.dial"):
-        dial._dict["box"]["saved_attribute_attributes"] = {"valueof": {"parameter_longname": "Gain"}}
-    assert save_warnings(patch, tmp_path)
+    plug_in, plug_out = place(patch, "plugin~", "plugout~")
+    for side, dial, gain in zip((0, 1), place(patch, "live.dial", "live.dial"), place(patch, "*~", "*~")):
+        dial.parameter("Gain", 0, 1)
+        patch.connect([dial.outs[0], gain.ins[1]], [plug_in.outs[side], gain.ins[0]],
+                      [gain.outs[0], plug_out.ins[side]], verbose=False)
+    (message,) = save_warnings(patch, tmp_path)
+    assert "2 parameters are named 'Gain'" in message
 
 
-@gap
 def test_m4l_09_output_level_is_bounded(tmp_path):
-    """M4L-09: the project's own rule is clip~ -1. 1. before plugout~. Nothing checks it."""
+    """M4L-09, closed. The project's own rule is clip~ -1. 1. before plugout~."""
     patch = mp.MaxPatch(verbose=False)
     plug_in, gain, plug_out = place(patch, "plugin~", "*~ 4.", "plugout~")
     patch.connect([plug_in.outs[0], gain.ins[0]], [gain.outs[0], plug_out.ins[0]], verbose=False)
-    assert save_warnings(patch, tmp_path)
+    (message,) = save_warnings(patch, tmp_path)
+    assert "4 times full scale" in message and "clip~ -1. 1." in message
 
 
-@gap
 def test_m4l_10_a_parameter_controls_something(tmp_path):
-    """M4L-10: a dial wired to nothing shows up in Live as a parameter that does nothing."""
+    """M4L-10, closed. A dial wired to nothing shows up in Live as a parameter that does nothing."""
     patch = mp.MaxPatch(verbose=False)
     stereo_through(patch)
     place(patch, "live.dial")
-    assert save_warnings(patch, tmp_path)
+    (message,) = save_warnings(patch, tmp_path)
+    assert "parameter with no cords" in message
+
+
+def test_the_smallest_audio_effect_saves_with_no_warning(tmp_path):
+    """The base the tests above build on is itself clean, so each of them sees its own warning."""
+    patch = mp.MaxPatch(verbose=False)
+    stereo_through(patch)
+    assert save_warnings(patch, tmp_path) == []
 
 
 # ── what already works, so the log does not overstate ──────────────────────────

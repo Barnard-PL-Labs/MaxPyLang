@@ -119,7 +119,12 @@ obj = mp.MaxObject("metro 500 @active 1")   # with attributes
 ```python
 obj.edit(text_add="append", text=None, **extra_attribs)  # modify object
 obj.move(x, y)                                           # reposition
+obj.parameter(name, lo, hi, initial=..., unit=...)       # a Live parameter's name and range
 ```
+
+`edit()` and `place()` raise an `AttributeWarning` for an attribute the object does not have,
+and leave it out. Every box takes the common ones: `presentation`, `presentation_rect`,
+`hidden`, `varname`, `annotation`, `hint`, `background`.
 
 ### Connections
 
@@ -356,6 +361,51 @@ plugin~ → [processing] → clip~ -1. 1. → plugout~
 ```
 midiin → midiparse → [processing] → midiformat → midiout
 ```
+
+### Parameters
+
+A `live.dial`, `live.slider` or `live.numbox` runs 0 to 127 until it is told otherwise.
+Give every one a name and a range with `parameter()`, right after placing it:
+
+```python
+plug_in = patch.place(plugin_tilde)[0]
+filt = patch.place("svf~ 1000. 0.5")[0]
+limit = patch.place("clip~ -1. 1.")[0]
+plug_out = patch.place(plugout_tilde)[0]
+
+cutoff = patch.place(live_dial)[0]
+cutoff.parameter("Cutoff", 40, 11000, initial=1000, unit="hertz", exponent=3)
+reso = patch.place(live_dial)[0]
+reso.parameter("Resonance", 0, 1, initial=0.5)
+
+patch.connect((plug_in.outs[0], filt.ins[0]),
+              (cutoff.outs[0], filt.ins[1]), (reso.outs[0], filt.ins[2]),
+              (filt.outs[0], limit.ins[0]),
+              (limit.outs[0], plug_out.ins[0]), (limit.outs[0], plug_out.ins[1]))
+patch.save("my_filter.amxd", device_type="audio_effect")
+```
+
+- `name` is what Live shows and automates by. It must be the only parameter of that name.
+- `unit` is one of `"hertz"`, `"decibel"`, `"time"` (ms), `"percent"`, `"pan"`, `"semitones"`,
+  `"midi"`, `"int"`, `"float"`. `exponent=3` gives a frequency dial more travel at the low end.
+- `integer=True` for whole numbers. `options=["Low", "Band", "High"]` in place of a range for
+  a `live.tab` or `live.menu`.
+- A wrong call raises: an empty range, a start value outside it, an unknown unit, or an
+  object that cannot be a parameter.
+
+### What `save()` checks in a device
+
+Each of these raises a `DeviceWarning` (a kind of `GraphWarning`). Fix every one.
+
+- **The device lacks what its type needs**: an audio effect with no `plugin~`, an instrument
+  or MIDI effect with no MIDI input, no `plugout~`, a MIDI effect with no MIDI output.
+- **Nothing limits the level reaching `plugout~`**: a gain above 1, two signals added, a
+  filter or a feedback loop, with no `clip~ -1. 1.` after it.
+- **Two parameters share a name.**
+- **A parameter has no cords**, so it shows in Live and controls nothing.
+- **A parameter's range does not fit the inlet it reaches**, e.g. a dial that runs 0 to 127
+  wired straight into `svf~`'s resonance, which takes 0 to 1. Set the range with
+  `parameter()`, or put a `scale` between them.
 
 ### M4L Key Rules
 

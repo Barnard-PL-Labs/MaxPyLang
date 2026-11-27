@@ -118,7 +118,7 @@ def replace(self, curr_obj_num: str, new_obj, retain=True, verbose=False,  **new
         new_obj.retain_attribs(old_obj)
 
     #put in new attributes
-    new_obj.edit(**new_attribs, verbose=verbose)
+    new_obj.edit(**new_attribs)
 
     #give the new obj its final id first, so connection warnings name the right box
     new_obj._dict['box']['id'] = curr_obj_num
