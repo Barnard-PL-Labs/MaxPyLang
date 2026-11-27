@@ -152,7 +152,13 @@ class _Patcher:
         if box_id in seen:
             return None
         if (box_id, outlet) not in self._values:
-            self._values[(box_id, outlet)] = self._values_out(box_id, outlet, seen | {box_id})
+            try:
+                values = self._values_out(box_id, outlet, seen | {box_id})
+            except (OverflowError, ZeroDivisionError):   # mtof of 20000: past what a float holds
+                values = None
+            if values is not None and not all(map(math.isfinite, values[:2])):
+                values = None
+            self._values[(box_id, outlet)] = values
         return self._values[(box_id, outlet)]
 
     def _values_out(self, box_id, outlet, seen):
