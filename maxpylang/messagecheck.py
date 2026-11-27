@@ -18,6 +18,17 @@ cord by rate (audio or not). These look at the message itself and at when it arr
     never fires      an object with cords into its right inlets and none into its left.
                      Only the left inlet makes it answer, so it never sends anything.
 
+    whole numbers    a float is sent into an operator that works in whole numbers, which
+                     drops the fraction: a dial's 0 to 1 outlet into `* 100` gives 0 or
+                     100. An operator is whole or float by its argument: `* 2` and `*`
+                     are whole, `* 2.` is float, whatever arrives. Dropping the fraction
+                     is often meant (a pixel, a MIDI note), so this is only reported when
+                     the values are known to span 2 or less: a number in a message box,
+                     or a Live parameter's range followed through arithmetic. Unrestricted
+                     it reports 333 cords in Max's shipped patches. Also a `scale` whose
+                     four arguments are all whole numbers, which then sends whole numbers
+                     only: `scale 0 127 0 1` sends 0 or 1 and nothing between.
+
 What a cord carries is known in two cases: it leaves a message box, whose text is the
 message, or it leaves an outlet Max saves a type for (bang, int, float). What an object
 understands is in data/messages.json, built from Max's reference pages: its methods and its
@@ -39,6 +50,7 @@ Against the 3,122 patches that ship with Max: see tests/test_max_corpus.py.
 
 import functools
 import json
+import math
 import re
 from pathlib import Path
 
@@ -255,6 +267,145 @@ def _order_problems(boxes, cords):
     return problems
 
 
+# whole or float by their argument: `* 2` is whole, `* 2.` is float
+_ARITHMETIC = {"plus", "minus", "times", "div", "rminus", "rdiv", "modulo"}
+# these compare in whole numbers or floats by their argument, and send 0 or 1
+_COMPARISONS = {"equals", "notequals", "lessthan", "greaterthan", "lessthaneq", "greaterthaneq"}
+# these work in whole numbers whatever their argument, so no argument keeps a fraction
+_BITWISE = {"logand", "logor", "bitand", "bitor", "shiftleft", "shiftright"}
+_FLOAT_OUT = {"mtof", "dbtoa", "atodb", "sqrt", "snapshot~", "peakamp~", "sin", "cos", "tan", "atan", "atan2",
+              "pow", "exp", "log"}
+_LIVE_NUMBERS = ("live.dial", "live.slider", "live.numbox")
+_NARROW = 2   # a range this wide or less has almost nothing left once the fraction is gone
+
+
+def _works_in(box):
+    """ "int" or "float" for what an arithmetic or comparison operator computes in, by its
+    argument. None for any other box, and for an argument filled in later (#1)."""
+    name, args = _words(box)
+    if name not in _ARITHMETIC and name not in _COMPARISONS:
+        return None
+    if not args:
+        return "int"
+    if not _NUMBER.match(args[0]):
+        return None
+    return "int" if _INT.match(args[0]) else "float"
+
+
+def _operator_sends(box):
+    """ "int" or "float" for the numbers an operator sends, or None if it is not one."""
+    name, _ = _words(box)
+    if name in _COMPARISONS or name in _BITWISE:
+        return "int"
+    return _works_in(box)
+
+
+def _whole_scale(box):
+    """A scale's four arguments if they are all whole numbers, which makes its output whole."""
+    name, args = _words(box)
+    if name != "scale" or len(args) != 4 or not all(_INT.match(arg) for arg in args):
+        return None
+    return [int(arg) for arg in args]
+
+
+def number_kind(boxes, into, source, outlet):
+    """ "float" or "int" for the numbers an outlet sends, or None if not known. An operator
+    sends what it works in, whatever it is sent, so this needs no walk back up the patch."""
+    box = boxes[source]
+    maxclass = box.get("maxclass")
+    if maxclass == "message":
+        sent = _sent(boxes, into, source, outlet)
+        return sent[0][0] if len(sent) == 1 and sent[0][0] in ("int", "float") else None
+    if outlet == 0 and maxclass in ("flonum", "number"):
+        return "float" if maxclass == "flonum" else "int"
+    if maxclass in _LIVE_NUMBERS:
+        if outlet == 1:
+            return "float"   # the value as 0 to 1
+        block = (box.get("saved_attribute_attributes") or {}).get("valueof") or {}
+        # Max leaves the type out of the block when it is the default, a float
+        return {0: "float", 1: "int"}.get(block.get("parameter_type", 0)) if outlet == 0 else None
+    if maxclass != "newobj" or "patcher" in box:
+        return None
+    name, _ = _words(box)
+    if name in _ARITHMETIC | _COMPARISONS | _BITWISE:
+        return _operator_sends(box) if outlet == 0 else None
+    if name == "scale":
+        return "int" if _whole_scale(box) else None
+    if name in _FLOAT_OUT and outlet == 0:
+        return "float"
+    types = box.get("outlettype") or []
+    if (name in _known() and not _is({name}, "opaque") 
+            and outlet < len(types) and types[outlet] in ("int", "float")):
+        return types[outlet]
+    return None
+
+
+def _number_problems(current, boxes, into, cords):
+    from .devicecheck import _Patcher
+    graph = _Patcher(current)
+    problems = []
+    for box_id, box in boxes.items():
+        args = _whole_scale(box)
+        # whole numbers out are often meant (`scale 0 500 0 127`), so only a narrow output range
+        if args and 0 < abs(args[3] - args[2]) <= _NARROW < abs(args[1] - args[0]):
+            text = (box.get("text") or "").split(" @")[0].strip()
+            fixed = " ".join(text.split()[:3] + [f"{args[2]}.", f"{args[3]}."])
+            problems.append(Problem(
+                "whole numbers",
+                f"{_label(box)}: `{text}` has four whole-number arguments, so all it sends is "
+                f"{_whole_numbers(min(args[2:]), max(args[2:]))}. Write `{fixed}` to get the values between.",
+                [box_id]))
+    for source, outlet, dest, inlet in cords:
+        target = boxes[dest]
+        if inlet > 1 or target.get("maxclass") != "newobj" or _works_in(target) != "int":
+            continue
+        if number_kind(boxes, into, source, outlet) != "float":
+            continue
+        # dropping the fraction is often meant (a pixel, a MIDI note). It is only a sure
+        # mistake when the values are known to lie so close together that little is left
+        span = _span(boxes, into, graph, source, outlet)
+        if span is None or span[1] - span[0] > _NARROW:
+            continue
+        lo, hi = span
+        if lo == hi and lo == int(lo):   # 440. has no fraction to lose
+            continue
+        words = (target.get("text") or "").split()
+        argument = f"`{words[0]} {words[1]}.`" if len(words) > 1 else f"a float argument, `{words[0]} 0.`,"
+        values = f"{lo:g}" if lo == hi else f"{lo:g} to {hi:g}"
+        problems.append(Problem(
+            "whole numbers",
+            f"{_label(boxes[source])} sends {values} into {_label(target)} inlet {inlet}, and "
+            f"`{' '.join(words[:2])}` works in whole numbers: it drops the fraction, so all it sees is "
+            f"{_whole_numbers(int(lo), int(hi))}. Write {argument} to keep the fraction.",
+            [source, dest]))
+    return problems
+
+
+def _whole_numbers(lo, hi):
+    """ "0 or 1", "-1, 0 or 1": every whole number from lo to hi."""
+    numbers = [str(n) for n in range(lo, hi + 1)]
+    return numbers[0] if len(numbers) == 1 else ", ".join(numbers[:-1]) + " or " + numbers[-1]
+
+
+def _span(boxes, into, graph, source, outlet):
+    """(lowest, highest) value an outlet sends, if known: a number in a message box, or a
+    Live parameter's range followed through arithmetic (devicecheck)."""
+    box = boxes[source]
+    if box.get("maxclass") == "message":
+        try:
+            value = float((box.get("text") or "").strip())
+        except ValueError:
+            return None
+        if not math.isfinite(value):
+            return None
+        return (value, value) if _sent(boxes, into, source, outlet) else None
+    try:
+        values = graph.values_out(source, outlet)
+    except (RecursionError, OverflowError):
+        return None
+    return None if values is None else (values.lo, values.hi)
+
+
 def message_problems(patcher):
     """Messages sent to an object that has no method for them, in a whole patcher (the
     "patcher" dict of a .maxpat or .amxd), nested patchers included."""
@@ -269,6 +420,7 @@ def message_problems(patcher):
                 into.setdefault((dest, inlet), []).append((source, outlet))
                 cords.append((source, outlet, dest, inlet))
         problems += _order_problems(boxes, cords)
+        problems += _number_problems(current, boxes, into, cords)
         for source, outlet, dest, inlet in cords:
             target = boxes[dest]
             if inlet != 0 or "patcher" in target or target.get("maxclass") == "message":

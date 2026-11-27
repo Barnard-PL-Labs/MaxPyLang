@@ -464,3 +464,6 @@ def test_shipped_messages_are_understood_and_arrive_in_order():
     assert [m.split(":")[0] for m in found["message order"]] == ["pend.spread.maxpat"], found["message order"]
     assert sorted(m.split(":")[0] for m in found["never fires"]) == [
         "Resynthesis.maxpat", "bp.GL LFO.maxhelp", "bp.GL LFO.maxpat", "bp.GL Scope.maxhelp", "bp.Pan.maxhelp"]
+    # dropping a fraction is often meant, so only a float known to span 2 or less is reported:
+    # none in the shipped patches, where reporting every float into `+ 60` gave 333
+    assert found["whole numbers"] == [], found["whole numbers"][:10]

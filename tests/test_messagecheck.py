@@ -165,3 +165,108 @@ def test_check_prints_a_messages_line(capsys):
         warnings.simplefilter("ignore")
         patch.check("graph")
     assert "PatchCheck: messages : 1 message its object does not understand" in capsys.readouterr().out
+
+
+# ── whole numbers and floats ────────────────────────────────────────────────────
+
+def whole(patch):
+    return [p.message for p in message_problems(patch.get_json()["patcher"]) if p.kind == "whole numbers"]
+
+
+def test_a_dials_zero_to_one_outlet_into_a_whole_number_operator():
+    """live.dial's second outlet sends 0 to 1. `* 100` works in whole numbers, so it sees 0 or 1."""
+    patch = patch_of("live.dial", "* 100", "print", cords=[(1, 1, 2, 0), (2, 0, 3, 0)])
+    (message,) = whole(patch)
+    assert "0 to 1" in message and "`* 100.`" in message and "0 or 1" in message
+
+    fixed = patch_of("live.dial", "* 100.", "print", cords=[(1, 1, 2, 0), (2, 0, 3, 0)])
+    assert whole(fixed) == []
+
+
+def test_a_parameters_range_is_followed_to_the_operator():
+    patch = patch_of("live.dial", "* 0.5", "> 0", "print", cords=[(1, 0, 2, 0), (2, 0, 3, 0), (3, 0, 4, 0)])
+    patch.objs["obj-1"].parameter("Mix", 0, 1)
+    (message,) = whole(patch)
+    assert "0 to 0.5" in message and "`> 0.`" in message
+
+
+def test_a_float_in_a_message_box_into_a_whole_number_operator():
+    patch = patch_of("message 0.5", "* 2", "print", cords=[(1, 0, 2, 0), (2, 0, 3, 0)])
+    assert len(whole(patch)) == 1
+
+
+@pytest.mark.parametrize("texts, cords", [
+    (("flonum", "+ 60", "print"), [(1, 0, 2, 0), (2, 0, 3, 0)]),              # range not known: may be meant
+    (("message 0.5", "* 2.", "print"), [(1, 0, 2, 0), (2, 0, 3, 0)]),         # a float operator
+    (("message 3", "* 2", "print"), [(1, 0, 2, 0), (2, 0, 3, 0)]),            # a whole number
+    (("message 0.5", "* #1", "print"), [(1, 0, 2, 0), (2, 0, 3, 0)]),         # argument filled in later
+    (("message 0.5", "int", "print"), [(1, 0, 2, 0), (2, 0, 3, 0)]),          # int says it drops the fraction
+])
+def test_floats_that_are_kept_or_dropped_on_purpose(texts, cords):
+    assert whole(patch_of(*texts, cords=cords)) == []
+
+
+def test_a_wide_parameter_into_a_whole_number_operator_is_not_reported():
+    """A 0 to 127 dial into `+ 60`: dropping the fraction of a note number is usual."""
+    patch = patch_of("live.dial", "+ 60", "print", cords=[(1, 0, 2, 0), (2, 0, 3, 0)])
+    patch.objs["obj-1"].parameter("Note", 0, 127)
+    assert whole(patch) == []
+
+
+def test_a_scale_with_four_whole_arguments_sends_whole_numbers():
+    patch = patch_of("number", "scale 0 127 0 1", "print", cords=[(1, 0, 2, 0), (2, 0, 3, 0)])
+    (message,) = whole(patch)
+    assert "`scale 0 127 0. 1.`" in message
+
+    for text in ("scale 0 127 0. 1.", "scale 0 1 0 127", "scale 0 127 0 1 1.06", "scale 0 500 0 127"):
+        assert whole(patch_of("number", text, "print", cords=[(1, 0, 2, 0), (2, 0, 3, 0)])) == []
+
+
+# ── found in review of the whole-number check ───────────────────────────────────
+
+RUN = [(1, 0, 2, 0), (2, 0, 3, 0)]
+
+
+def test_a_float_with_no_fraction_has_nothing_to_lose():
+    assert whole(patch_of("message 440.", "* 2", "print", cords=RUN)) == []
+    assert len(whole(patch_of("message 440.5", "* 2", "print", cords=RUN))) == 1
+
+
+def test_operators_that_are_always_whole_get_no_advice_that_cannot_help():
+    """`>> 1.` is still a whole-number shift, so writing the point changes nothing."""
+    for text in (">> 1", "&& 1", "& 3", "|| 0"):
+        assert whole(patch_of("message 0.5", text, "print", cords=RUN)) == []
+
+
+def test_a_comparison_compares_by_its_argument_and_sends_a_whole_number():
+    assert len(whole(patch_of("message 0.5", "> 0", "print", cords=RUN))) == 1
+    assert whole(patch_of("message 0.5", "> 0.", "print", cords=RUN)) == []
+    # the 0 or 1 it sends is whole, so the next operator has nothing to drop
+    cords = [(1, 0, 2, 0), (2, 0, 3, 0), (3, 0, 4, 0)]
+    assert whole(patch_of("message 0.5", "> 0.2", "* 100", "print", cords=cords)) == []
+
+
+def test_every_whole_number_left_is_named():
+    patch = patch_of("live.dial", "* 10", "print", cords=RUN)
+    patch.objs["obj-1"].parameter("Amount", 0, 2)
+    assert "all it sees is 0, 1 or 2" in whole(patch)[0]
+    (message,) = whole(patch_of("number", "scale 0 127 -1 1", "print", cords=RUN))
+    assert "all it sends is -1, 0 or 1" in message
+
+
+def test_a_scale_to_a_single_value_and_a_number_past_a_float_are_left_alone():
+    assert whole(patch_of("number", "scale 0 127 0 0", "print", cords=RUN)) == []
+    assert whole(patch_of("message 1e400", "* 2", "print", cords=RUN)) == []
+
+
+def test_a_parameter_range_that_overflows_is_left_alone():
+    patch = patch_of("live.dial", "mtof", "* 2", "print", cords=[(1, 0, 2, 0), (2, 0, 3, 0), (3, 0, 4, 0)])
+    patch.objs["obj-1"].parameter("Freq", 20, 20000)
+    assert whole(patch) == []
+
+
+def test_a_parameter_block_with_no_type_is_a_float():
+    patch = patch_of("live.dial", "* 100", "print", cords=RUN)
+    patch.objs["obj-1"].parameter("Mix", 0, 1)
+    del patch.objs["obj-1"]._dict["box"]["saved_attribute_attributes"]["valueof"]["parameter_type"]
+    assert len(whole(patch)) == 1

@@ -86,6 +86,12 @@ only its end. For the full per-check report, call `patch.check()`.
   ```
 - **An object fed only on its right inlets**, e.g. a `+` with a cord into its right inlet
   and none into its left. Only the left inlet makes it answer, so it never sends anything.
+- **A float cut down to a whole number.** An operator works in whole numbers or in floats
+  by its argument, whatever it is sent: `* 100` and `*` drop the fraction, `* 100.` keeps
+  it. So `live.dial`'s 0 to 1 outlet into `* 100` gives 0 or 100 and nothing between. Write
+  the argument with a decimal point (`* 100.`, `/ 127.`, `> 0.`) whenever floats arrive.
+  `scale 0 127 0 1` has the same trap: with four whole-number arguments it sends whole
+  numbers only. Write `scale 0 127 0. 1.`.
 
 A check says nothing about what it does not know. When some of the patch could not be judged,
 the `save()` line ends with how many objects were not checked, e.g. `1 object not checked`, and

@@ -72,7 +72,7 @@ Problem = collections.namedtuple("Problem", "kind message nodes")
 # the kinds devicecheck.py reports, which warn as DeviceWarning
 DEVICE_KINDS = ("device contract", "output level", "parameter name", "idle parameter", "value range")
 # the kinds messagecheck.py reports, which warn as MessageWarning
-MESSAGE_KINDS = ("message", "message order", "never fires")
+MESSAGE_KINDS = ("message", "message order", "never fires", "whole numbers")
 
 
 @functools.lru_cache(maxsize=None)

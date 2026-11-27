@@ -126,7 +126,8 @@ def check(self, *flags, device_type=None):
             words = {"message": ("message its object does not understand", "messages their objects do not understand"),
                      "message order": ("object that answers before its right inlet is set",
                                        "objects that answer before their right inlet is set"),
-                     "never fires": ("object fed only on its right inlets", "objects fed only on their right inlets")}
+                     "never fires": ("object fed only on its right inlets", "objects fed only on their right inlets"),
+                     "whole numbers": ("float cut down to a whole number", "floats cut down to whole numbers")}
             print("PatchCheck: messages : " + ", ".join(count(found[kind], *words[kind])
                                                         for kind in MESSAGE_KINDS if found[kind]))
         device = [kind for kind in DEVICE_KINDS if found[kind]]
