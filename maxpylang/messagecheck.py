@@ -29,8 +29,13 @@ cord by rate (audio or not). These look at the message itself and at when it arr
                      four arguments are all whole numbers, which then sends whole numbers
                      only: `scale 0 127 0 1` sends 0 or 1 and nothing between.
 
-What a cord carries is known in two cases: it leaves a message box, whose text is the
-message, or it leaves an outlet Max saves a type for (bang, int, float). What an object
+What a cord carries is known when it leaves a message box, whose text is the message; an
+outlet Max saves a type for (bang, int, float); a UI box (a number box sends an int, a
+button a bang); or an object whose output follows from its own text: `prepend open`,
+`loadmess 1`, `pack 0 0`, an operator. A message box keeps its text unless it is sent set,
+append or prepend, so it is only read when everything feeding it is known to send
+something else. Following messages through these took the cords judged in Max's shipped
+patches from 29,124 to 47,728, with the same seven reports. What an object
 understands is in data/messages.json, built from Max's reference pages: its methods and its
 attributes, which are set by a message of the same name. Only the left inlet is judged: a
 gate, a switch or a router passes anything that arrives at its other inlets.
@@ -87,7 +92,7 @@ def messages_of(text):
         if not atoms:
             continue
         first = atoms[0]
-        if any(mark in part for mark in ("$", "#", "\\", '"')):
+        if any(mark in part for mark in ("\\", '"')) or "$" in first or "#" in first:
             found.append(None)
         elif _NUMBER.match(first):
             found.append("list" if len(atoms) > 1 else "int" if _INT.match(first) else "float")
@@ -107,9 +112,10 @@ def understands(name, selector):
     """True, False, or None if not known, for whether the object has a use for a message."""
     # what these do with a message is somewhere else: inside them, in the parent patch, or
     # in methods their whole family shares (Jitter's ob3d and matrix operators, the mc.
-    # wrapper), which each reference page does not repeat
+    # wrapper), which each reference page does not repeat. A gen object takes a message for
+    # each param its patcher declares
     if (_is({name}, "opaque") or _is({name}, "part_of_a_bigger_patch") or _is({name}, "may_hold_the_other_end")
-            or name.startswith(("jit.", "mc.", "mcs."))):
+            or name.startswith(("jit.", "mc.", "mcs.", "gen"))):
         return None
     entry = vocabulary().get(name)
     if entry is None:
@@ -154,29 +160,62 @@ def _patchers(patcher):
                 todo.append(inner)
 
 
-def _sent(boxes, into, source, outlet):
+# what a box sends out its left outlet whatever it is sent, by its class
+_UI_SENDS = {"number": "int", "flonum": "float", "toggle": "int", "button": "bang", "slider": "int", "dial": "int",
+             "live.dial": "float", "live.slider": "float", "live.numbox": "float", "live.toggle": "int",
+             "live.tab": "int", "live.menu": "int", "umenu": "int"}
+_NUMBERS_OUT = {"scale", "expr", "mtof", "ftom", "clip", "abs", "dbtoa", "atodb", "pow", "sqrt", "random", "drunk"}
+_A = {"bang": "a bang", "int": "an int", "float": "a float", "list": "a list"}
+
+
+def _sent(boxes, into, source, outlet, seen=frozenset()):
     """[(selector, how the message reads)] for what an outlet sends, or [] if not known."""
+    if source in seen or len(seen) > 8:
+        return []
     box = boxes[source]
-    if box.get("maxclass") == "message":
+    maxclass = box.get("maxclass")
+    if maxclass == "message":
         if outlet != 0 or into.get((source, 1)):
             return []
-        # a set, append or prepend sent to the box changes its text
-        for feeder, _ in into.get((source, 0), ()):
-            other = boxes[feeder]
-            words = (other.get("text") or "").split()
-            if other.get("maxclass") != "message" or (words and words[0] in _SETTERS):
-                if other.get("maxclass") == "message" or _name(other) not in ("button", "loadbang", "bangbang",
-                                                                              "trigger", "metro", "toggle"):
-                    return []
+        # a set, append or prepend sent to the box changes its text, so everything that
+        # feeds it must be known to send something else
+        for feeder, feeder_outlet in into.get((source, 0), ()):
+            arriving = _sent(boxes, into, feeder, feeder_outlet, seen | {source})
+            if not arriving or any(selector in _SETTERS for selector, _ in arriving):
+                return []
         return [(selector, f"`{box.get('text', '').strip()}`") for selector in messages_of(box.get("text") or "")
                 if selector is not None]
-    types = box.get("outlettype") or []
-    if box.get("maxclass") == "newobj" and outlet < len(types) and types[outlet] in _TYPED_OUTLETS:
-        name = _name(box)
-        if "patcher" in box or name not in _known() or _is({name}, "opaque"):
+    if maxclass in _UI_SENDS:
+        if outlet != 0:
             return []
+        kind = _UI_SENDS[maxclass]
+        return [(kind, _A[kind])]
+    if maxclass != "newobj" or "patcher" in box:
+        return []
+    name, args = _words(box)
+    if name not in _known() or _is({name}, "opaque"):
+        return []
+    types = box.get("outlettype") or []
+    if outlet < len(types) and types[outlet] in _TYPED_OUTLETS:
         kind = types[outlet]
-        return [(kind, "a bang" if kind == "bang" else f"{'an' if kind == 'int' else 'a'} {kind}")]
+        return [(kind, _A[kind])]
+    if outlet != 0:
+        return []
+    if name == "loadmess":
+        text = " ".join(args)
+        return [(selector, f"`{text}`") for selector in messages_of(text) if selector is not None]
+    if name == "prepend" and args and messages_of(args[0]) not in ([None], []):
+        first = messages_of(args[0])[0]
+        # a number in front makes a list of whatever follows
+        return [("list", _A["list"])] if first in ("int", "float") else [(first, f"a message starting `{args[0]}`")]
+    # a pack whose first item is a number sends a list; with a word first (`pak slide 0 0`)
+    # the word is the message
+    if name in ("pack", "pak") and len(args) != 1 and (not args or args[0] in ("i", "f") or _NUMBER.match(args[0])):
+        return [("list", _A["list"])]
+    if _works_in(box) is not None:
+        return [(_works_in(box), _A[_works_in(box)])]
+    if name in _NUMBERS_OUT:
+        return [("float", "a number")]
     return []
 
 

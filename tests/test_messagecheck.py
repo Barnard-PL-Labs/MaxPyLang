@@ -46,7 +46,7 @@ def kinds(patch):
     ("interval 250", ["interval"]),
     ("stop, 0", ["stop", "int"]),
     ("1; pd dsp 1", ["int"]),            # after the semicolon it goes to a receive
-    ("set $1", [None]),
+    ("set $1", ["set"]),                 # the first word is the message, whatever fills $1
     ("$1 100", [None]),
     ("", []),
 ])
@@ -86,7 +86,7 @@ def test_a_message_the_object_has_no_method_for():
     (("message 440", "cycle~"), [(1, 0, 2, 0)]),                      # an int where a float is taken
     (("message whatever", "print"), [(1, 0, 2, 0)]),                  # takes anything
     (("message whatever", "gate"), [(1, 0, 2, 1)]),                   # a right inlet passes it on
-    (("message whatever $1", "flonum"), [(1, 0, 2, 0)]),              # filled in when it is sent
+    (("message $1 whatever", "flonum"), [(1, 0, 2, 0)]),              # filled in when it is sent
     (("message whatever", "my.abstraction"), []),                     # nothing to judge
     (("button", "message razzledazzle", "message set stop", "flonum"),
      [(3, 0, 2, 0), (2, 0, 4, 0)]),                                   # the text can be set
@@ -220,3 +220,38 @@ def test_a_scale_with_four_whole_arguments_sends_whole_numbers():
 
     for text in ("scale 0 127 0. 1.", "scale 0 1 0 127", "scale 0 127 0 1 1.06", "scale 0 500 0 127"):
         assert whole(patch_of("number", text, "print", cords=[(1, 0, 2, 0), (2, 0, 3, 0)])) == []
+
+
+# ── what an outlet sends, followed through objects ──────────────────────────────
+
+def said(patch):
+    return [p.message for p in message_problems(patch.get_json()["patcher"]) if p.kind == "message"]
+
+
+@pytest.mark.parametrize("texts, cords, selector", [
+    (("button", "mtof"), [(1, 0, 2, 0)], "bang"),                                  # a UI box
+    (("number", "message razzledazzle", "flonum"), [(1, 0, 2, 0), (2, 0, 3, 0)],
+     "razzledazzle"),                                                              # a message box set off by a number
+    (("message razzledazzle $1", "flonum"), [(1, 0, 2, 0)], "razzledazzle"),       # the first word is known
+    (("number", "prepend razzledazzle", "flonum"), [(1, 0, 2, 0), (2, 0, 3, 0)], "razzledazzle"),
+    (("loadmess razzledazzle", "flonum"), [(1, 0, 2, 0)], "razzledazzle"),
+])
+def test_a_message_followed_through_the_object_that_sends_it(texts, cords, selector):
+    (message,) = said(patch_of(*texts, cords=cords))
+    assert f"doesn't understand '{selector}'" in message
+
+
+@pytest.mark.parametrize("texts, cords", [
+    (("number", "prepend set", "message razzledazzle", "flonum"),
+     [(1, 0, 2, 0), (2, 0, 3, 0), (3, 0, 4, 0)]),                    # `set 5` rewrites the message box
+    (("route a", "message razzledazzle", "flonum"),
+     [(1, 0, 2, 0), (2, 0, 3, 0)]),                                  # what route sends is not known
+    (("pak slide 0 0", "flonum"), [(1, 0, 2, 0)]),                   # a word first: not a list
+    (("number", "prepend $1", "flonum"), [(1, 0, 2, 0), (2, 0, 3, 0)]),
+    (("toggle", "metro 500"), [(1, 0, 2, 0)]),                       # a number it takes
+    (("message phase $1", "gen~"), [(1, 0, 2, 0)]),                  # a gen param
+])
+def test_messages_that_cannot_be_followed_or_are_understood(texts, cords):
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        assert said(patch_of(*texts, cords=cords)) == []
