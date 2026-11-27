@@ -81,6 +81,15 @@ def test_an_object_that_nothing_starts_is_reported(texts, cords, says):
     (("message set snd", "waveform~"), [(1, 0, 2, 0)]),
     # a message with $1 in it could be a set
     (("message $1 $2", "waveform~"), [(1, 0, 2, 0)]),
+    # name and buffername do what set does
+    (("message name snd", "waveform~"), [(1, 0, 2, 0)]),
+    (("loadmess buffername snd", "waveform~"), [(1, 0, 2, 0)]),
+    # a transport also answers a get message
+    (("message getclocksources", "transport", "umenu"), [(1, 0, 2, 0), (2, 8, 3, 0)]),
+    # the jit.world may be in the abstraction, or in the patch this one is loaded into
+    (("jit.grab", "outlet"), [(1, 0, 2, 0)]),
+    # tempo has no active attribute, so this one is on only by a cord
+    (("toggle", "tempo 120", "counter"), [(1, 0, 2, 0), (2, 0, 3, 0)]),
 ])
 def test_what_is_started_or_cannot_be_seen_is_left_alone(texts, cords):
     assert kinds(patch_of(*texts, cords=cords)) == []
@@ -107,6 +116,8 @@ def test_set_and_a_number_into_a_buffer_reader_is_reported(texts, cords):
     (("message set $1", "sig~ 1.", "groove~ snd", "ezdac~"), [(1, 0, 3, 0), (2, 0, 3, 0), (3, 0, 4, 0)]),
     # set on a number box is fine
     (("message set 0", "flonum"), [(1, 0, 2, 0)]),
+    # after a `;` the words go to a receiver called set, not out the outlet
+    (("message 1; set 0", "sig~ 1.", "groove~ snd", "ezdac~"), [(1, 0, 3, 0), (2, 0, 3, 0), (3, 0, 4, 0)]),
 ])
 def test_set_and_a_name_or_an_unknown_is_left_alone(texts, cords):
     assert kinds(patch_of(*texts, cords=cords)) == []
@@ -143,18 +154,46 @@ def test_a_voice_file_with_inlet_objects_is_reported(tmp_path):
 def test_a_voice_inlet_nothing_feeds_is_reported_when_in_1_takes_one_number(tmp_path):
     save_voice(tmp_path, "voice", "in 1", "in 2", "mtof", "cycle~", "*~", "out~ 1",
                cords=[(1, 0, 3, 0), (3, 0, 4, 0), (4, 0, 5, 0), (2, 0, 5, 1), (5, 0, 6, 0)])
-    patch = host("poly~ voice 1", 2, 1, feeders=["number"], cords=[(2, 0, 1, 0)])
+    patch = host("poly~ voice 1", 2, 1, feeders=["pack 0 0", "prepend note"], cords=[(2, 0, 3, 0), (3, 0, 1, 0)])
     reports = found(patch, [tmp_path])
     assert [kind for kind, _ in reports] == ["voice patch"]
     assert "reads `in 2`" in reports[0][1] and "arrives whole at `in 1`" in reports[0][1]
+
+
+def test_a_spare_voice_inlet_is_left_alone_when_one_number_arrives(tmp_path):
+    """`in 2` is a gain with a default, and each voice gets one pitch: the patch works."""
+    save_voice(tmp_path, "voice", "in 1", "in 2", "mtof", "cycle~", "*~", "out~ 1",
+               cords=[(1, 0, 3, 0), (3, 0, 4, 0), (4, 0, 5, 0), (2, 0, 5, 1), (5, 0, 6, 0)])
+    patch = host("poly~ voice 4", 2, 1, feeders=["number", "prepend note"], cords=[(2, 0, 3, 0), (3, 0, 1, 0)])
+    assert kinds(patch, [tmp_path]) == []
 
 
 def test_a_voice_that_unpacks_its_list_may_leave_inlets_unfed(tmp_path):
     """Max's own adsr~ help does this: `in 1` into an unpack, and a spare inlet nobody feeds."""
     save_voice(tmp_path, "voice", "in 1", "in 2", "unpack 0 0", "mtof", "cycle~", "*~", "out~ 1",
                cords=[(1, 0, 3, 0), (3, 0, 4, 0), (4, 0, 5, 0), (5, 0, 6, 0), (2, 0, 6, 1), (6, 0, 7, 0)])
-    patch = host("poly~ voice 1", 2, 1, feeders=["number"], cords=[(2, 0, 1, 0)])
+    patch = host("poly~ voice 1", 2, 1, feeders=["pack 0 0", "prepend note"], cords=[(2, 0, 3, 0), (3, 0, 1, 0)])
     assert kinds(patch, [tmp_path]) == []
+
+
+def test_a_file_with_both_inlet_and_in_works_as_an_abstraction_too(tmp_path):
+    save_voice(tmp_path, "voice", "inlet", "in 1", "out 1", cords=[(1, 0, 3, 0), (2, 0, 3, 0)])
+    assert kinds(host("poly~ voice 1", 1, 1), [tmp_path]) == []
+
+
+@pytest.mark.parametrize("content", [
+    '{"patcher": 5}', '{"patcher": []}', '{"patcher": {"boxes": null}}', '{"patcher": {"boxes": [{"box": null}]}}',
+    '{"patcher": {"boxes": [], "lines": [{"patchline": null}]}}',
+    '{"patcher": {"boxes": [{"box": {"id": "a", "maxclass": "newobj", "text": 5}}], "lines": [{"patchline": {"source": []}}]}}',
+    'not json', '{}',
+])
+def test_a_voice_file_that_is_not_a_patcher_is_left_alone_not_a_crash(tmp_path, content):
+    (tmp_path / "voice.maxpat").write_text(content)
+    patch = host("poly~ voice 4", 2, 1, feeders=["pack 0 0"], cords=[(2, 0, 1, 0)])
+    assert kinds(patch, [tmp_path]) == []
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        patch.save(str(tmp_path / "main"), verbose=False)
 
 
 def test_a_voice_file_that_is_not_there_is_left_alone(tmp_path):
@@ -162,11 +201,12 @@ def test_a_voice_file_that_is_not_there_is_left_alone(tmp_path):
     assert kinds(patch, [tmp_path]) == []
 
 
-def test_several_voices_that_only_ever_get_a_list_are_reported():
-    patch = host("poly~ voice 8", 1, 1, feeders=["pack 0 0"], cords=[(2, 0, 1, 0)])
+def test_several_voices_that_get_their_notes_as_a_plain_list_are_reported():
+    patch = host("poly~ voice 8", 1, 1, feeders=["notein", "pack 0 0"],
+                 cords=[(2, 0, 3, 0), (2, 1, 3, 1), (3, 0, 1, 0)])
     reports = found(patch)
     assert [kind for kind, _ in reports] == ["voice patch"]
-    assert "all 8 do the same thing" in reports[0][1]
+    assert "all 8 play the same thing" in reports[0][1]
 
 
 @pytest.mark.parametrize("text, feeders, cords", [
@@ -178,8 +218,11 @@ def test_several_voices_that_only_ever_get_a_list_are_reported():
     ("poly~ voice 8 @target 1", ["pack 0 0"], [(2, 0, 1, 0)]),
     # one voice
     ("poly~ voice 1", ["pack 0 0"], [(2, 0, 1, 0)]),
-    # a number to every voice is a way to set all of them
+    # a number to every voice is a way to set all of them, and so is a list (cutoff and Q)
     ("poly~ voice 8", ["flonum"], [(2, 0, 1, 0)]),
+    ("poly~ voice 8", ["flonum", "pack 1000. 0.5"], [(2, 0, 3, 0), (3, 0, 1, 0)]),
+    # a voice count Python's isdigit() takes and int() does not
+    ("poly~ voice \u00b2", ["notein", "pack 0 0"], [(2, 0, 3, 0), (3, 0, 1, 0)]),
     # what the subpatcher's inlet carries is not known
     ("poly~ voice 8", ["pack 0 0", "inlet"], [(2, 0, 1, 0), (3, 0, 1, 0)]),
 ])
@@ -257,3 +300,49 @@ def test_edit_sets_the_property_too():
     obj = mp.MaxObject("slider")
     obj.edit(text="@size 500")
     assert obj._dict["box"]["size"] == 500.
+
+
+def test_edit_takes_the_property_away_with_the_text():
+    obj = mp.MaxObject("slider @size 1000")
+    obj.edit(text_add="replace", text="slider")
+    assert "size" not in obj._dict["box"]
+
+
+@pytest.mark.parametrize("text, absent", [
+    ("comment add @hidden 1 to hide a box", "hidden"),      # the words of a comment are its content
+    ("message size 100 @hidden 1", "hidden"),
+    ("toggle @nonsense 3", "nonsense"),                     # not known: stays in the text alone
+    ("slider @size abc", "size"),                           # not the known type
+])
+def test_what_is_not_a_known_attribute_of_a_ui_box_is_not_made_a_property(text, absent):
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        assert absent not in mp.MaxObject(text)._dict["box"]
+
+
+def test_text_cannot_change_what_a_box_is():
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        box = mp.MaxObject("slider @maxclass newobj @numinlets 5 @patching_rect 1 2")._dict["box"]
+    assert box["maxclass"] == "slider" and box["numinlets"] == 1 and len(box["patching_rect"]) == 4
+
+
+@pytest.mark.parametrize("text, key, value", [
+    ('waveform~ @buffername "my buf"', "buffername", "my buf"),   # one name, saved without its quotes
+    ("toggle @varname 12", "varname", "12"),                      # a name stays a name
+])
+def test_a_property_from_text_has_the_type_the_attribute_has(text, key, value):
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        assert mp.MaxObject(text)._dict["box"][key] == value
+
+
+def test_tempo_is_not_told_to_use_an_attribute_it_does_not_have():
+    reports = found(patch_of("tempo 120 @active 1", "counter", cords=[(1, 0, 2, 0)]))
+    assert [kind for kind, _ in reports] == ["never starts"] and "@active" not in reports[0][1]
+
+
+def test_a_pfft_file_is_pointed_at_fftin(tmp_path):
+    save_voice(tmp_path, "freeze", "inlet", "outlet", cords=[(1, 0, 2, 0)])
+    (_, message), = found(host("pfft~ freeze 1024 4", 1, 1), [tmp_path])
+    assert "`fftin~ 1` for the first audio inlet" in message and "in~" not in message.replace("fftin~", "")

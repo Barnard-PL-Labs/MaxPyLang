@@ -27,6 +27,11 @@ def _warn(message):
     warnings.warn(message, AttributeWarning, stacklevel=_user_stacklevel())
 
 
+#boxes whose text is what they say or send, not a name and attributes
+_TEXT_IS_CONTENT = ('comment', 'message', 'live.comment', 'textbutton', 'textedit')
+#what a box is, which no attribute in its text may change
+_NOT_A_PROPERTY = ('id', 'maxclass', 'numinlets', 'numoutlets', 'outlettype', 'patching_rect', 'text')
+
 _GROUPS = None
 _NUMBERED = re.compile(r"^(in|out)\d+_")
 
@@ -86,11 +91,26 @@ def get_all_valid_attribs(self, text_attribs, extra_attribs, attrib_info):
     #Max reads the box text of an object box only. A UI box (slider, flonum, waveform~) keeps
     #each attribute as a property of the box, so `slider @size 1000` has to become
     #"size": 1000.0 there or Max never sees it. A property passed by keyword wins.
+    #Only an attribute that is known and whose values are the known type is copied: an
+    #unknown one stays in the text alone, since a guess here would be a property Max acts on.
+    #The words of a comment or a message box are its content, not attributes.
     box = (getattr(self, '_dict', None) or {}).get('box', {})
-    if box.get('maxclass', 'newobj') != 'newobj':
+    if box.get('maxclass', 'newobj') not in ('newobj',) + _TEXT_IS_CONTENT:
+        known = attrib_info + self.common_box_attribs
+        copied = set()
         for attrib, vals in text_attribs.items():
-            spec = next((spec for spec in attrib_info if spec['name'] == attrib), {})
-            extra_attribs.setdefault(attrib, _as_property(vals, spec.get('type')))
+            spec = next((spec for spec in known if spec['name'] == attrib), None)
+            vals = [vals] if isinstance(vals, (int, float, str)) else list(vals)
+            if (spec is None or attrib in _NOT_A_PROPERTY
+                    or not all(tc.check_type([spec['type']], val) for val in vals)):
+                continue
+            copied.add(attrib)
+            extra_attribs.setdefault(attrib, _as_property(vals, spec['type']))
+        #a property that came from the text goes when the text no longer has it
+        for attrib in getattr(self, '_props_from_text', set()) - copied:
+            if attrib not in extra_attribs:
+                box.pop(attrib, None)
+        self._props_from_text = copied
 
     return text_attribs, extra_attribs
 
@@ -100,6 +120,8 @@ def _as_property(vals, kind):
     def one(word):
         if not isinstance(word, str):
             return word
+        if len(word) > 1 and word[0] == word[-1] == '"':
+            return word[1:-1]      #"my pic.png" is one name, saved without its quotes
         if kind not in ('symbol',):
             try:
                 return float(word) if kind == 'float' or not re.fullmatch(r"-?\d+", word) else int(word)
