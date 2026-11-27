@@ -220,3 +220,53 @@ def test_a_scale_with_four_whole_arguments_sends_whole_numbers():
 
     for text in ("scale 0 127 0. 1.", "scale 0 1 0 127", "scale 0 127 0 1 1.06", "scale 0 500 0 127"):
         assert whole(patch_of("number", text, "print", cords=[(1, 0, 2, 0), (2, 0, 3, 0)])) == []
+
+
+# ── found in review of the whole-number check ───────────────────────────────────
+
+RUN = [(1, 0, 2, 0), (2, 0, 3, 0)]
+
+
+def test_a_float_with_no_fraction_has_nothing_to_lose():
+    assert whole(patch_of("message 440.", "* 2", "print", cords=RUN)) == []
+    assert len(whole(patch_of("message 440.5", "* 2", "print", cords=RUN))) == 1
+
+
+def test_operators_that_are_always_whole_get_no_advice_that_cannot_help():
+    """`>> 1.` is still a whole-number shift, so writing the point changes nothing."""
+    for text in (">> 1", "&& 1", "& 3", "|| 0"):
+        assert whole(patch_of("message 0.5", text, "print", cords=RUN)) == []
+
+
+def test_a_comparison_compares_by_its_argument_and_sends_a_whole_number():
+    assert len(whole(patch_of("message 0.5", "> 0", "print", cords=RUN))) == 1
+    assert whole(patch_of("message 0.5", "> 0.", "print", cords=RUN)) == []
+    # the 0 or 1 it sends is whole, so the next operator has nothing to drop
+    cords = [(1, 0, 2, 0), (2, 0, 3, 0), (3, 0, 4, 0)]
+    assert whole(patch_of("message 0.5", "> 0.2", "* 100", "print", cords=cords)) == []
+
+
+def test_every_whole_number_left_is_named():
+    patch = patch_of("live.dial", "* 10", "print", cords=RUN)
+    patch.objs["obj-1"].parameter("Amount", 0, 2)
+    assert "all it sees is 0, 1 or 2" in whole(patch)[0]
+    (message,) = whole(patch_of("number", "scale 0 127 -1 1", "print", cords=RUN))
+    assert "all it sends is -1, 0 or 1" in message
+
+
+def test_a_scale_to_a_single_value_and_a_number_past_a_float_are_left_alone():
+    assert whole(patch_of("number", "scale 0 127 0 0", "print", cords=RUN)) == []
+    assert whole(patch_of("message 1e400", "* 2", "print", cords=RUN)) == []
+
+
+def test_a_parameter_range_that_overflows_is_left_alone():
+    patch = patch_of("live.dial", "mtof", "* 2", "print", cords=[(1, 0, 2, 0), (2, 0, 3, 0), (3, 0, 4, 0)])
+    patch.objs["obj-1"].parameter("Freq", 20, 20000)
+    assert whole(patch) == []
+
+
+def test_a_parameter_block_with_no_type_is_a_float():
+    patch = patch_of("live.dial", "* 100", "print", cords=RUN)
+    patch.objs["obj-1"].parameter("Mix", 0, 1)
+    del patch.objs["obj-1"]._dict["box"]["saved_attribute_attributes"]["valueof"]["parameter_type"]
+    assert len(whole(patch)) == 1
