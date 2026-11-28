@@ -93,6 +93,31 @@ only its end. For the full per-check report, call `patch.check()`.
   `scale 0 127 0 1` has the same trap: with four whole-number arguments it sends whole
   numbers only. Write `scale 0 127 0. 1.`.
 
+`save()` knows what a MIDI input sends (`notein`, `ctlin`, `bendin`, `touchin` and `kslider`
+send 0 to 127, `xbendin` 0 to 16383) and raises a `MessageWarning` when that range does not
+suit where it goes:
+
+- **A velocity straight into `adsr~`.** `adsr~` takes the number that triggers it as the
+  envelope's amplitude, so a velocity of 100 is 100 times full scale. Put `/ 127.` between.
+- **`bendin` scaled as 14 bits.** `bendin` sends 0 to 127 with 64 in the middle. Use
+  `scale 0 127 -2. 2.`, or `xbendin` for 0 to 16383.
+- **`gate` with its cords swapped.** The left inlet opens and closes the gate (0 closes it)
+  and the right inlet takes what passes through. A pitch into the left and a 0/1 flag into
+  the right is the wrong way round.
+- **`live.tab` straight into `selector~`.** A tab or menu counts its items from 0, while
+  `selector~`, `gate` and `switch` count from 1 and take 0 as "off". Put `+ 1` between.
+- **A number out of an inlet's range**, such as a velocity into a resonance inlet that
+  takes 0 to 1.
+
+Two things Max accepts as typed and then does not do, which `save()` also warns about:
+
+- **An envelope for `line~` is one message.** A comma in a message box ends a message, so
+  `1 40, 0 160` sends two ramps at once and the second replaces the first: no attack. Write
+  `0, 1 40 0 160`: a jump to 0, then pairs of a value and the time to reach it.
+- **`jit.expr` reads `@expr`, and calls its inputs `in[0]`, `in[1]`.** Write
+  `jit.expr @expr in[0]*0.5`, with one expression for each plane. `in1` and `out1` are
+  jit.gen's names, and an expression typed without `@expr` is read as plane count and type.
+
 `save()` also checks that the patch starts, and raises a `GraphWarning` for each of these.
 Every cord in such a patch is legal, and it still does nothing:
 
@@ -103,7 +128,10 @@ Every cord in such a patch is legal, and it still does nothing:
 - **A clock that is never switched on.** `metro`, `qmetro`, `tempo` and `clocker` need a
   toggle or `loadmess 1` in the left inlet. `metro`, `qmetro` and `clocker` also start with
   `@active 1` in the box. `tempo` has no such attribute.
-- **A `jit.world` that is never enabled.** Write `jit.world @enable 1`.
+- **A `jit.world` that is never enabled.** Write `jit.world @enable 1`. A `loadbang` into it
+  draws one frame and stops.
+- **A picture that is loaded and never sent.** `importmovie` loads a file into a `jit.matrix`
+  and sends nothing. Follow it with a bang: a message box `importmovie picture.png, bang`.
 - **A `groove~` with no speed.** `groove~` plays at the speed of the audio signal in its left
   inlet. Connect `sig~ 1.` there. A number there sets where it plays from, not how fast.
   `set` takes a buffer name, so `set 0` does not rewind: send `0` alone.

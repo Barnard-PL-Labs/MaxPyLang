@@ -72,7 +72,11 @@ Problem = collections.namedtuple("Problem", "kind message nodes")
 # the kinds devicecheck.py reports, which warn as DeviceWarning
 DEVICE_KINDS = ("device contract", "output level", "parameter name", "idle parameter", "value range")
 # the kinds messagecheck.py reports, which warn as MessageWarning
-MESSAGE_KINDS = ("message", "message order", "never fires", "whole numbers")
+MESSAGE_KINDS = ("message", "message order", "never fires", "whole numbers",
+                 # what a number on a cord means: maxpylang/valuecheck.py
+                 "envelope level", "always zero", "scale input", "swapped inlets", "off by one",
+                 # what is typed in a box: maxpylang/textcheck.py
+                 "envelope message", "expression")
 
 
 @functools.lru_cache(maxsize=None)

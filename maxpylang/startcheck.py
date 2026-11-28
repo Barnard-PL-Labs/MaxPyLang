@@ -16,7 +16,10 @@ missing is the thing that sets it going.
                        - metro, qmetro, tempo and clocker tick only once they are switched
                          on. `@active 1` or `@autostart 1` in the box counts as on.
                        - jit.world draws nothing until it is enabled: `@enable 1`, or a
-                         toggle into its left inlet.
+                         toggle into its left inlet. A bang draws one frame, so a world
+                         whose left inlet gets only bangs or other messages is not enabled.
+                       - jit.matrix sends nothing when `importmovie` or `read` loads a
+                         file into it: a bang has to follow.
                        - groove~ plays at the speed of the audio signal in its left inlet.
                          With no signal there the speed is 0. A number there sets where
                          it plays from, not how fast.
@@ -333,6 +336,29 @@ def start_problems(patcher, folders=()):
                         f"{label} sends {_ON_A_BANG[name]} only when it gets a bang, and its left inlet gets "
                         f"{got}, never a bang, so it never sends. Connect a `qmetro 33 @active 1` or a "
                         f"metro with a toggle to its left inlet as well.",
+                        [box_id]))
+
+            # cords into the left inlet, and none of them carries what starts it
+            if name in ("jit.world", "jit.matrix") and left:
+                arriving = [_sent(boxes, into, source, outlet) for source, outlet in left]
+                selectors = {selector for sent in arriving for selector, _ in sent} if all(arriving) else None
+                if (name == "jit.world" and selectors is not None and not _ON.search(text)
+                        and not selectors & {"int", "float", "enable", "list"}):
+                    got = "only a bang, which draws one frame" if selectors == {"bang"} else "no `enable`"
+                    problems.append(Problem(
+                        "never starts",
+                        f"{label} is never enabled: its left inlet gets {got}, so it does not keep "
+                        f"drawing. Add `@enable 1` to the box, or connect a toggle to its left inlet.",
+                        [box_id]))
+                if (name == "jit.matrix" and selectors is not None and box_id in out_of
+                        and selectors & {"importmovie", "read"}
+                        and not selectors & {"bang", "jit_matrix", "outputmatrix", "int", "float", "list"}):
+                    loads = "importmovie" if "importmovie" in selectors else "read"
+                    problems.append(Problem(
+                        "never starts",
+                        f"{label} is sent `{loads}`, which loads the file into the matrix and sends nothing. "
+                        f"No bang follows, so what it loaded never leaves. Send a `bang` after it: a message "
+                        f"box `{loads} picture.png, bang` does both in order.",
                         [box_id]))
 
             if left or box_id not in out_of and name != "jit.world":
