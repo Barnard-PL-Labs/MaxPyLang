@@ -19,6 +19,16 @@ from xml.etree import ElementTree
 
 REFPAGES = Path("/Applications/Max.app/Contents/Resources/C74/docs/refpages")
 DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "messages.json"
+GROUPS_PATH = DATA_PATH.with_name("attrib_groups.json")
+
+# The pages of the two Jitter families whose members share attributes. An object's own page
+# does not repeat them: it only carries a <mop> or <OB3D/> tag.
+_GROUP_PAGES = {"mop": "jit.group-mop", "gl": "jit.group-gl"}
+_GROUP_TAGS = {"mop": "mop", "gl": "OB3D"}
+# The matrix family's page writes `[in/out]_dim` for in_dim, out_dim, in2_dim..., and leaves
+# out the plain dim, planecount and type every matrix object takes (jit.grab @dim 320 240).
+_MOP_PLAIN = [{"name": "dim", "type": "int"}, {"name": "planecount", "type": "int"},
+              {"name": "type", "type": "symbol"}]
 
 _ENTITY = re.compile(r"&(?!(amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)[A-Za-z0-9#]*;?")
 
@@ -59,6 +69,48 @@ def build_messages(refpages=REFPAGES):
     return table
 
 
+def build_groups(refpages=REFPAGES):
+    """{"attributes": {group: [{"name", "type"}]}, "members": {group: [object names]}}.
+
+    No size is kept: a page gives the most values an attribute holds (32 for a dim), not how
+    many it needs.
+    """
+    refpages = Path(refpages)
+    attributes, members = {}, {group: [] for group in _GROUP_PAGES}
+    for group, page_name in _GROUP_PAGES.items():
+        page = next(refpages.rglob(page_name + ".maxref.xml"))
+        specs = {}
+        for attribute in _root(page).findall("./attributelist/attribute"):
+            name, kind = attribute.get("name"), attribute.get("type")
+            if not name:
+                continue
+            for name in ([name.replace("[in/out]", side) for side in ("in", "out")]
+                         if name.startswith("[in/out]") else [name]):
+                specs[name] = {"name": name, "type": kind}
+        if group == "mop":
+            specs.update({spec["name"]: spec for spec in _MOP_PLAIN})
+        attributes[group] = sorted(specs.values(), key=lambda spec: spec["name"])
+    for page in sorted(refpages.rglob("*.maxref.xml")):
+        name = page.name[:-len(".maxref.xml")]
+        if name in _GROUP_PAGES.values():
+            continue
+        try:
+            root = _root(page)
+        except ElementTree.ParseError:
+            continue
+        for group, tag in _GROUP_TAGS.items():
+            if root.find(".//" + tag) is not None:
+                members[group].append(name)
+    return {"attributes": attributes, "members": members}
+
+
+def dump_groups(groups, path=GROUPS_PATH):
+    doc = ("Built by maxpylang/tools/messagedata.py from Max's reference pages: the attributes the "
+           "Jitter matrix objects (mop) and the OpenGL objects (gl) share, and which objects are in "
+           "each family. An object's own page does not list them. Do not edit by hand.")
+    Path(path).write_text(json.dumps({"_doc": doc, **groups}, indent=1) + "\n", encoding="utf-8")
+
+
 def dump_messages(table, path=DATA_PATH):
     lines = [f'  {json.dumps(name)}: {json.dumps(entry)}' for name, entry in sorted(table.items())]
     doc = ('"_doc": "Built by maxpylang/tools/messagedata.py from Max\'s reference pages: the messages each '
@@ -70,3 +122,7 @@ if __name__ == "__main__":
     built = build_messages(sys.argv[1] if len(sys.argv) > 1 else REFPAGES)
     dump_messages(built)
     print(f"{len(built)} objects written to {DATA_PATH}")
+    groups = build_groups(sys.argv[1] if len(sys.argv) > 1 else REFPAGES)
+    dump_groups(groups)
+    print(", ".join(f"{len(names)} {group} objects" for group, names in groups["members"].items()),
+          f"written to {GROUPS_PATH}")

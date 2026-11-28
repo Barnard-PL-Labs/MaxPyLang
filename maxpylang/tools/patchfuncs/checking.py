@@ -20,6 +20,7 @@ from maxpylang.amxd import DEVICE_TYPES
 from maxpylang.devicecheck import device_problems
 from maxpylang.graphcheck import DEVICE_KINDS, MESSAGE_KINDS, find_problems, from_patch, link_problems, warn_problems
 from maxpylang.messagecheck import message_problems
+from maxpylang.startcheck import START_KINDS, start_problems
 
 def check(self, *flags, device_type=None):
     """
@@ -130,6 +131,12 @@ def check(self, *flags, device_type=None):
                      "whole numbers": ("float cut down to a whole number", "floats cut down to whole numbers")}
             print("PatchCheck: messages : " + ", ".join(count(found[kind], *words[kind])
                                                         for kind in MESSAGE_KINDS if found[kind]))
+        if any(found[kind] for kind in START_KINDS):
+            words = {"never starts": ("object that nothing starts", "objects that nothing starts"),
+                     "voice patch": ("problem between a poly~ or pfft~ and its file",
+                                     "problems between a poly~ or pfft~ and its file")}
+            print("PatchCheck: starts : " + ", ".join(count(found[kind], *words[kind])
+                                                      for kind in START_KINDS if found[kind]))
         device = [kind for kind in DEVICE_KINDS if found[kind]]
         if device:
             words = {"device contract": ("thing the device type needs is missing", "things the device type needs are missing"),
@@ -179,7 +186,11 @@ def _graph_problems(patch, device_type=None):
     """
     problems = find_problems(*from_patch(patch), max_for_live=device_type is not None)
     patcher = patch.get_json()["patcher"]
-    return problems + link_problems(patcher) + message_problems(patcher) + device_problems(patcher, device_type)
+    # a poly~ or pfft~ loads a file: look where this patch was saved, then where Python runs
+    saved_as = getattr(patch, "_filename", None)
+    folders = ([os.path.dirname(os.path.abspath(saved_as))] if saved_as else []) + [os.getcwd()]
+    return (problems + link_problems(patcher) + message_problems(patcher) + start_problems(patcher, folders)
+            + device_problems(patcher, device_type))
 
 
 def _print_some(heading, items, limit=5):

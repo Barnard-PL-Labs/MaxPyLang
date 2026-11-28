@@ -93,6 +93,29 @@ only its end. For the full per-check report, call `patch.check()`.
   `scale 0 127 0 1` has the same trap: with four whole-number arguments it sends whole
   numbers only. Write `scale 0 127 0. 1.`.
 
+`save()` also checks that the patch starts, and raises a `GraphWarning` for each of these.
+Every cord in such a patch is legal, and it still does nothing:
+
+- **An object that only sends when it gets a bang, with no bang coming.** `jit.grab`,
+  `jit.movie`, `jit.catch~`, `jit.noise` and `transport` send nothing on their own. Connect
+  a `qmetro 33 @active 1` to the left inlet. A toggle into `transport` starts the clock, but
+  it still reports its tempo and position only on a bang.
+- **A clock that is never switched on.** `metro`, `qmetro`, `tempo` and `clocker` need a
+  toggle or `loadmess 1` in the left inlet. `metro`, `qmetro` and `clocker` also start with
+  `@active 1` in the box. `tempo` has no such attribute.
+- **A `jit.world` that is never enabled.** Write `jit.world @enable 1`.
+- **A `groove~` with no speed.** `groove~` plays at the speed of the audio signal in its left
+  inlet. Connect `sig~ 1.` there. A number there sets where it plays from, not how fast.
+  `set` takes a buffer name, so `set 0` does not rewind: send `0` alone.
+- **A `waveform~` with no buffer.** Write `waveform~ @buffername mybuffer`.
+- **A `poly~` whose voices all get the same note.** A plain list into `poly~` goes to every
+  voice. Use `prepend note` to give it to one free voice, and `thispoly~` in the voice to
+  mark it busy. The list arrives whole at the voice's `in 1`: `unpack` it there. It is not
+  split across `in 1`, `in 2`.
+- **`inlet` or `outlet` in a file that a `poly~` or `pfft~` loads.** In a `poly~` only `in`,
+  `in~`, `out` and `out~` make inlets and outlets. In a `pfft~` audio comes in and out
+  through `fftin~` and `fftout~`, and messages through `in` and `out`.
+
 A check says nothing about what it does not know. When some of the patch could not be judged,
 the `save()` line ends with how many objects were not checked, e.g. `1 object not checked`, and
 `patch.check()` names them: `not checked:` names the unknown objects and abstractions behind
@@ -264,6 +287,11 @@ from maxpylang.objects import metro, jit_movie
 patch.place(metro(500, active=1))[0]                 # "metro 500 @active 1"
 patch.place(jit_movie(moviefile="crashtest.mov"))[0] # "jit.movie @moviefile crashtest.mov"
 ```
+
+On a UI object (a `slider`, a `flonum`, a `waveform~`) an attribute in the text also sets the
+property of the box that Max reads: `patch.place("slider @size 1000")` saves `"size": 1000.0`,
+as `mp.MaxObject("slider", size=1000.)` does. An attribute maxpylang does not know raises an
+`AttributeWarning` and is kept in the text as written.
 
 ### Loading and modifying existing patches
 
