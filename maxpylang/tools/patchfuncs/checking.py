@@ -21,6 +21,8 @@ from maxpylang.devicecheck import device_problems
 from maxpylang.graphcheck import DEVICE_KINDS, MESSAGE_KINDS, find_problems, from_patch, link_problems, warn_problems
 from maxpylang.messagecheck import message_problems
 from maxpylang.startcheck import START_KINDS, start_problems
+from maxpylang.textcheck import text_problems
+from maxpylang.valuecheck import value_problems
 
 def check(self, *flags, device_type=None):
     """
@@ -190,7 +192,7 @@ def _graph_problems(patch, device_type=None):
     saved_as = getattr(patch, "_filename", None)
     folders = ([os.path.dirname(os.path.abspath(saved_as))] if saved_as else []) + [os.getcwd()]
     return (problems + link_problems(patcher) + message_problems(patcher) + start_problems(patcher, folders)
-            + device_problems(patcher, device_type))
+            + device_problems(patcher, device_type) + value_problems(patcher) + text_problems(patcher))
 
 
 def _print_some(heading, items, limit=5):

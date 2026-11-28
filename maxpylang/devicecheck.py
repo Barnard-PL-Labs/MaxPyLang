@@ -20,7 +20,8 @@ The first, second and fourth are only judged for a device (save(device_type=...)
 other two hold for any patch that uses live.* objects.
 
 A parameter's range is read from its parameter block, which obj.parameter() writes. A
-range is followed from the parameter through the objects that have a plain rule for it
+MIDI input's range is fixed by MIDI (notein sends 0 to 127), as is a comparison's (0 or 1).
+A range is followed from there through the objects that have a plain rule for it
 (* / + - !- !/ scale zmap clip abs mtof dbtoa, number boxes, trigger) and compared with the
 inlet's documented range in data/value_ranges.json. Anything else on the way, or a cord
 into an operator's right inlet, and the range is not known: no report.
@@ -113,6 +114,51 @@ def _number(args, index):
         return None
 
 
+# what a MIDI input sends, by outlet, as Max's reference pages give it: a MIDI data byte
+# is 0 to 127, a channel 1 to 16, and xbendin sends pitch bend "as a single 14-bit value"
+_MIDI_OUT = {
+    "notein": {0: (0, 127), 1: (0, 127), 2: (1, 16)},
+    "ctlin": {0: (0, 127)},
+    "bendin": {0: (0, 127)},
+    "touchin": {0: (0, 127)},
+    "xbendin": {0: (0, 16383)},
+    "kslider": {0: (0, 127), 1: (0, 127)},
+}
+_COMPARES = {"equals", "notequals", "lessthan", "greaterthan", "lessthaneq", "greaterthaneq"}
+_CHOICES = ("live.tab", "live.menu")
+
+
+def choices_of(box):
+    """How many items a live.tab or live.menu holds, which it sends as 0 to one less. None
+    for any other box."""
+    if box.get("maxclass") not in _CHOICES or box.get("parameter_enable") != 1:
+        return None
+    block = (box.get("saved_attribute_attributes") or {}).get("valueof") or {}
+    items = block.get("parameter_enum")
+    return len(items) if isinstance(items, list) and items else None
+
+
+def _fixed_values(graph, box, name, args, box_id, outlet):
+    """(lo, hi) for an outlet whose values are fixed by what the object is: a MIDI input,
+    a comparison, a toggle nothing sets, a random with its limit typed in, a tab's items."""
+    if name in _MIDI_OUT:
+        return _MIDI_OUT[name].get(outlet)
+    if name in _COMPARES:
+        return (0, 1) if outlet == 0 else None
+    if name == "toggle":
+        # a toggle passes on any number it is sent, so only one that is clicked is 0 or 1
+        return (0, 1) if outlet == 0 and not graph.into.get((box_id, 0)) else None
+    if name == "random" and outlet == 0 and not graph.into.get((box_id, 1)):
+        word = _word(args, 0)
+        if word is not None and word.lstrip("-").isdigit() and int(word) >= 1:
+            return (0, int(word) - 1)
+        return None
+    count = choices_of(box)
+    if count is not None and outlet == 0:
+        return (0, count - 1)
+    return None
+
+
 class _Patcher:
     """One patcher's boxes and cords, with the value and level that reach each inlet."""
 
@@ -171,6 +217,12 @@ class _Patcher:
         name, args = _words(box)
         if name is None:
             name = box.get("maxclass", "")
+
+        fixed = _fixed_values(self, box, name, args, box_id, outlet)
+        if fixed is not None:
+            return Values(fixed[0], fixed[1], _label(box))
+        if name == "stripnote":   # pitch and velocity pass straight through, inlet to outlet
+            return self.values_into(box_id, outlet, seen) if outlet in (0, 1) else None
 
         def left():
             return self.values_into(box_id, 0, seen)
@@ -426,7 +478,7 @@ def device_problems(patcher, device_type=None):
                         "value range",
                         f"{values.origin} sends {_g(values.lo)} to {_g(values.hi)} into {_label(box)} inlet {inlet}, "
                         f"its {spec['what']}, which takes {_g(lo)} to {_g(hi)}{note}. Past that the control "
-                        "does nothing, or the object misbehaves. Change the parameter's range, or put a "
+                        "does nothing, or the object misbehaves. Change the range it sends, or put a "
                         "`scale` between them.", [source, box_id]))
 
             if device_type is None:

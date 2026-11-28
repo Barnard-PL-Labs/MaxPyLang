@@ -496,3 +496,29 @@ def test_shipped_patches_start():
     print(f"\n{files} files: " + ", ".join(f"{len(v)} {kind}" for kind, v in sorted(found.items())))
     assert [m.split(":")[0] for m in found["never starts"]] == ["movie.maxhelp"], found["never starts"]
     assert found["voice patch"] == [] and found["message"] == [], (found["voice patch"], found["message"])
+
+
+def test_shipped_patches_have_no_value_or_text_problems():
+    """The checks on what a number on a cord means and on what is typed in a box
+    (an envelope cut short, a jit.expr it cannot read), over every shipped patch and device.
+    None report. The divide rule first also reported a range that reaches its divisor:
+    Serialosc/bp.Launchpad.maxpat sends a velocity into `/ 127` to get 0 or 1, on purpose."""
+    from maxpylang.textcheck import text_problems
+    from maxpylang.valuecheck import value_problems
+    found = []
+    files = 0
+    for path in sorted(C74.rglob("*")):
+        if path.suffix not in (".maxpat", ".maxhelp", ".amxd"):
+            continue
+        try:
+            raw = path.read_bytes()
+            data = json.JSONDecoder().raw_decode(raw[raw.find(b"{"):].decode("utf-8", errors="replace"))[0]
+        except (ValueError, OSError):
+            continue
+        if not isinstance(data.get("patcher"), dict):
+            continue
+        files += 1
+        found += [f"{path.name}: {problem.message}"
+                  for problem in value_problems(data["patcher"]) + text_problems(data["patcher"])]
+    assert files > 3000, "the corpus looks incomplete"
+    assert found == [], found[:10]
